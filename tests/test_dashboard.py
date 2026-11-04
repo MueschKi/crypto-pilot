@@ -27,6 +27,24 @@ class DashboardChecks(unittest.TestCase):
         for needle in banned:
             self.assertNotIn(needle, self.html)
 
+    def test_live_kraken_candles_and_paper_markers(self):
+        self.assertIn('src="./market-chart.js"', self.html)
+        self.assertIn('id="marketChart"', self.html)
+        self.assertIn('CryptoPilotChart.tick(id,q.last,q.time)', self.html)
+        self.assertIn('CryptoPilotChart.trades(S.sim.trades)', self.html)
+        chart = (ROOT / "docs" / "market-chart.js").read_text(encoding="utf-8")
+        self.assertIn("/0/public/OHLC?", chart)
+        self.assertIn("interval:\"1\"", chart)
+        self.assertIn("minute>last.t", chart)
+        self.assertIn("trade.id!==state.selected", chart)
+        self.assertNotIn("/private/AddOrder", chart)
+        import shutil
+        node = shutil.which("node")
+        if node:
+            result = subprocess.run([node,"--check",str(ROOT / "docs" / "market-chart.js")],
+                                    capture_output=True,text=True)
+            self.assertEqual(result.returncode,0,result.stderr)
+
     def test_safe_default_for_autotrading(self):
         self.assertIn("active:false", self.html)
         self.assertIn("S.sim.active=false", self.html)
