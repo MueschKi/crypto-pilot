@@ -121,6 +121,23 @@ function refreshTicker(){
  }
  for(const item of tickerNodes){const c=S.coins.find(c=>c.id===item.id);if(!c)continue;const q=S.quotes.get(c.id);const n=Number(c.price_change_percentage_24h||0);const latest=priceEUR(quoteFresh(q)&&S.connection?q.last:c.current_price);if(item.price.textContent!==latest)item.price.textContent=latest;item.pctEl.textContent=(n>=0?"+":"")+PCT.format(n)+"%";item.pctEl.className="ticker-change "+(n>=0?"green":"red")}
 }
+function observeTick(id,q){
+ let tape=S.tape.get(id);
+ if(!tape){tape=[];S.tape.set(id,tape)}
+ tape.push({price:q.last,time:q.time});
+ while(tape.length>150||(tape.length&&tape[0].time<q.time-120000))tape.shift();
+}
+function renderSignal(){
+ const id=$("chartCoin").value,c=S.coins.find(c=>c.id===id);
+ text("signalCoin",c?c.symbol.toUpperCase()+"/EUR":"Kein Coin gewählt");
+ const m=CryptoPilotSignals.summarize(S.tape.get(id)||[],S.quotes.get(id),Date.now());
+ text("signalDirection",m.state);
+ text("signalMomentum",m.movement===null?"—":(m.movement>=0?"+":"")+PCT.format(m.movement)+"%");
+ text("signalSpread",m.spread===null?"—":PCT.format(m.spread)+"%");
+ text("signalQuality",m.eligible?"Ausreichende Ticks":m.age!==null&&m.age<20000?"Noch nicht ausreichend":"Kein frischer Kurs");
+ text("signalReason",m.reason);
+ $("signalDirection").className=m.state==="AUFWÄRTS"?"green":m.state==="ABWÄRTS"?"red":"muted";
+}
 function renderMarket(){
  if(!S.coins.length)return;
  const key=S.coins.map(c=>c.id).join("|");
@@ -178,7 +195,7 @@ const key=[...byPair.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([pair,i
 if(S.livePairKey===key&&S.ws&&(S.ws.readyState===WebSocket.OPEN||S.ws.readyState===WebSocket.CONNECTING))return;
 if(S.ws){S.ws.onclose=null;S.ws.close()}
 S.connection=false;S.quotes.clear();S.byPair=byPair;S.livePairKey=key;
-const ws=new WebSocket("wss://ws.kraken.com");S.ws=ws;ws.onopen=()=>{if(S.ws!==ws)return;ws.send(JSON.stringify({event:"subscribe",pair:[...byPair.keys()],subscription:{name:"ticker"}}));text("diagnostic","WebSocket geöffnet; warte auf bestätigte Ticker-Ereignisse.")};ws.onmessage=event=>{if(S.ws!==ws)return;let data;try{data=JSON.parse(event.data)}catch(_){return}if(!Array.isArray(data)||data.length<4||data[data.length-2]!=="ticker")return;const pair=data[data.length-1],id=S.byPair.get(pair);if(!id)return;const payload=data[1],q={ask:Number(payload.a?.[0]),bid:Number(payload.b?.[0]),last:Number(payload.c?.[0]),time:Date.now()};if(!quoteFresh(q))return;S.quotes.set(id,q);S.tickCount++;const wasOffline=!S.connection;S.connection=true;S.lastTick=q.time;if(wasOffline)setNotice("KRAKEN LIVE · Echte EUR-Kurse. Virtuelle Orders nur bei aktiviertem Paper Trading.",true);evaluate(id,q);CryptoPilotChart.tick(id,q.last,q.time);S.pendingRender=true;};ws.onerror=()=>{S.connection=false;S.sim.active=false;save();setNotice("LIVE-VERBINDUNG FEHLER · Kein Paper Trading.",false)};ws.onclose=()=>{if(S.ws!==ws)return;S.connection=false;S.sim.active=false;save();S.livePairKey="";setNotice("VERBINDUNG UNTERBROCHEN · Paper Trading gestoppt.",false);setTimeout(()=>{if(S.ws===ws&&S.rankingOk&&!document.hidden)connect()},6000)}}
+const ws=new WebSocket("wss://ws.kraken.com");S.ws=ws;ws.onopen=()=>{if(S.ws!==ws)return;ws.send(JSON.stringify({event:"subscribe",pair:[...byPair.keys()],subscription:{name:"ticker"}}));text("diagnostic","WebSocket geöffnet; warte auf bestätigte Ticker-Ereignisse.")};ws.onmessage=event=>{if(S.ws!==ws)return;let data;try{data=JSON.parse(event.data)}catch(_){return}if(!Array.isArray(data)||data.length<4||data[data.length-2]!=="ticker")return;const pair=data[data.length-1],id=S.byPair.get(pair);if(!id)return;const payload=data[1],q={ask:Number(payload.a?.[0]),bid:Number(payload.b?.[0]),last:Number(payload.c?.[0]),time:Date.now()};if(!quoteFresh(q))return;S.quotes.set(id,q);observeTick(id,q);S.tickCount++;const wasOffline=!S.connection;S.connection=true;S.lastTick=q.time;if(wasOffline)setNotice("KRAKEN LIVE · Echte EUR-Kurse. Virtuelle Orders nur bei aktiviertem Paper Trading.",true);evaluate(id,q);CryptoPilotChart.tick(id,q.last,q.time);S.pendingRender=true;};ws.onerror=()=>{S.connection=false;S.sim.active=false;save();setNotice("LIVE-VERBINDUNG FEHLER · Kein Paper Trading.",false)};ws.onclose=()=>{if(S.ws!==ws)return;S.connection=false;S.sim.active=false;save();S.livePairKey="";setNotice("VERBINDUNG UNTERBROCHEN · Paper Trading gestoppt.",false);setTimeout(()=>{if(S.ws===ws&&S.rankingOk&&!document.hidden)connect()},6000)}}
 $("toggle").addEventListener("click",()=>{if(S.sim.stopped){alert("Virtueller Not-Aus aktiv. Nur Reset ermöglicht neue Paper-Trades.");return}if(!S.sim.active&&(!S.connection||Date.now()-S.lastTick>20000||!S.rankingOk)){alert("Noch kein frischer Kraken-Live-Tick. Kein Paper Trading ohne bestätigte Daten.");return}S.sim.active=!S.sim.active;save();renderDepot()});
 $("reset").addEventListener("click",()=>{if(!confirm("Virtuelles Depot und gesamtes Paper-Journal zurücksetzen?"))return;S.sim={cash:1000,holdings:{},trades:[],stopped:false,lastTrade:{},active:false,series:[1000]};save();renderDepot()});
 $("refresh").addEventListener("click",loadRanking);
@@ -186,7 +203,7 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden&&S.sim.acti
 function updateChartOptions(){const sel=$("chartCoin");const candidates=S.coins.filter(c=>!STABLE.has(c.id)&&S.pairs.get(BASE[c.id]));const previous=sel.value;sel.replaceChildren();for(const coin of candidates){const option=document.createElement("option");option.value=coin.id;option.textContent=coin.symbol.toUpperCase()+" · "+coin.name;sel.appendChild(option)}const preferred=candidates.some(c=>c.id===previous)?previous:candidates.some(c=>c.id==="bitcoin")?"bitcoin":candidates[0]?.id||"";if(!preferred){CryptoPilotChart.draw();return}sel.value=preferred;if(CryptoPilotChart.selected!==preferred){const coin=candidates.find(c=>c.id===preferred);CryptoPilotChart.select(preferred,S.pairs.get(BASE[preferred]).pair,coin.symbol)}}
 $("chartZoom").addEventListener("change",event=>CryptoPilotChart.setZoom(Number(event.target.value)));
 CryptoPilotChart.setZoom(30);
-$("chartCoin").addEventListener("change",event=>{const id=event.target.value,coin=S.coins.find(c=>c.id===id),pair=coin&&S.pairs.get(BASE[id]);if(coin&&pair)CryptoPilotChart.select(id,pair.pair,coin.symbol)});
+$("chartCoin").addEventListener("change",event=>{renderSignal();const id=event.target.value,coin=S.coins.find(c=>c.id===id),pair=coin&&S.pairs.get(BASE[id]);if(coin&&pair)CryptoPilotChart.select(id,pair.pair,coin.symbol)});
 $("exportJournal").addEventListener("click",()=>{
  const entries=S.sim.trades;if(!entries.length){alert("Noch keine virtuellen Trades vorhanden.");return}
  const fields=["Zeit","Typ","Coin","EUR","Grund"];
@@ -196,9 +213,9 @@ $("exportJournal").addEventListener("click",()=>{
  const link=document.createElement("a");link.href=URL.createObjectURL(file);link.download="cryptopilot-paper-journal.csv";link.click();
  setTimeout(()=>URL.revokeObjectURL(link.href),1000);
 });
-load();CryptoPilotChart.trades(S.sim.trades);renderDepot();loadRanking();setInterval(()=>{if(!document.hidden&&S.pendingRender){S.pendingRender=false;renderMarket();if(Object.keys(S.sim.holdings).length)renderDepot()}},400);
+load();CryptoPilotChart.trades(S.sim.trades);renderDepot();renderSignal();loadRanking();setInterval(()=>{if(!document.hidden&&S.pendingRender){S.pendingRender=false;renderMarket();if(Object.keys(S.sim.holdings).length)renderDepot()}},400);
 // Age, data-source and connection indicators refresh every second even without fresh prices.
-setInterval(()=>{if(!document.hidden&&S.coins.length)renderMarket()},2000);
+setInterval(()=>{if(!document.hidden&&S.coins.length)renderMarket();if(!document.hidden)renderSignal()},2000);
 setInterval(()=>{text("clock",new Date().toLocaleTimeString("de-DE"));text("age",S.lastTick?Math.floor((Date.now()-S.lastTick)/1000)+"s":"—");if(S.connection&&Date.now()-S.lastTick>20000){S.connection=false;S.sim.active=false;save();setNotice("KURSE VERALTET · Paper Trading automatisch gestoppt.",false)}if(!document.hidden){mark();if(Object.keys(S.sim.holdings).length)renderDepot()}},1500);
 setInterval(()=>{if(!document.hidden)loadRanking()},900000);
 window.addEventListener("pageshow",()=>{if(S.rankingOk&&(!S.ws||S.ws.readyState===WebSocket.CLOSED))connect()});
