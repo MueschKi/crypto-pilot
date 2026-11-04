@@ -11,7 +11,7 @@
 - **Keine falsche Abdeckung:** Stablecoins bleiben in der Übersicht, werden aber nicht als spekulativer Trendtrade betrachtet. Unbekannte Coin-IDs oder nicht verfügbare EUR-Handelspaare werden klar ausgewiesen; keine Ersatzcoins von Platz 21+.
 - **Wichtig:** Jeder Python-Backtest simuliert für sich 1.000 EUR. Das separate Safari-Dashboard besitzt inzwischen ein browserlokales virtuelles Depot; es ist kein dauerhaft laufendes Cloud-Depot. Keine KI mit nachgewiesenem Prognosevorteil.
 
-## Safari-Dashboard (aktuell: v3.8)
+## Safari-Dashboard (aktuell: v3.9)
 
 Die öffentliche GitHub-Pages-Website ist unter **https://mueschki.github.io/crypto-pilot/** erreichbar. Das browserbasierte Dashboard zeigt:
 
@@ -21,6 +21,17 @@ Die öffentliche GitHub-Pages-Website ist unter **https://mueschki.github.io/cry
 - Browserlokales simuliertes Depot (1.000 EUR Startwert), CSV-Orderjournal und simulierte Positionsbewertung. Paper-Autohandel wird bei jedem Seitenstart ausdrücklich neu eingeschaltet und bei relevanten Verbindungsabbrüchen beendet.
 
 **Wichtige Betriebsgrenzen:** Die Safari-Seite muss für neue virtuelle Trades geöffnet bleiben, und iOS kann Hintergrund-Tabs anhalten. Es gibt noch **keinen** zuverlässigen serverseitigen 24/7-Paper-Prozess. Kein realer Kraken-Kontozugriff, keine echten Orders, keine API-Schlüssel. Auch die Signalbewertung beweist keinen Gewinnvorteil.
+
+## Strategy Lab v3.9 (Browser)
+
+Im Safari-Dashboard kannst du im Bereich **Strategy Lab** ein verfügbares Kraken-EUR-Handelspaar und 1-Stunden- oder 4-Stunden-Kerzen auswählen und auf **Strategien vergleichen** tippen. Erst dann werden öffentliche historische Kraken-OHLC-Daten abgerufen. Die letzte, noch nicht abgeschlossene Kraken-Kerze wird ausdrücklich entfernt.
+
+- Verglichen werden **Kaufen & Halten**, **EMA 8/21** und **20-Kerzen-Ausbruch** mit identischen historischen Daten. Alle Strategien starten in jedem Testfenster mit eigenen 1.000 EUR.
+- Die Simulation ist long-oder-cash und berücksichtigt bei Ein- und Ausstiegen **0,4 % Gebühr plus 0,1 % Slippage je Seite**. Entscheidungen nutzen ausschließlich vorherige abgeschlossene Kerzen; Handel erfolgt hypothetisch zur nächsten Kerzeneröffnung.
+- Ergebnisse: Netto-Rendite, maximaler Rückgang vom bisherigen Portfoliohöchststand, Anzahl Käufe, geschätzte tatsächlich gezahlte Handelskosten und Kurven für den Testabschnitt.
+- Die Zeitreihe wird chronologisch geteilt: **erste 60 % Entwicklung, letzte 40 % unabhängiger Testabschnitt**. Zusätzlich laufen drei zeitlich nacheinander liegende Evaluationsfenster mit festen Parametern; sie sind keine echte automatische Parameteroptimierung.
+- Fehlende, ungeordnete, doppelte oder lückenhafte Kerzen werden abgelehnt, nicht interpoliert. Es werden mindestens 180 vollständig abgeschlossene Kerzen benötigt.
+- **Einschränkung:** Kraken stellt nur begrenzte OHLC-Historie bereit. Ergebnisse von 1h- und 4h-Daten erlauben keine belastbare Aussage über langfristige Gewinne. Keines dieser Modelle wird automatisch für den Paper-Bot aktiviert. Es handelt sich um Forschung, nicht um ein trainiertes KI-Prognosemodell.
 
 ## Bedienung am iPhone – ohne Terminal
 
