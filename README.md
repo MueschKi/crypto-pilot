@@ -11,7 +11,7 @@
 - **Keine falsche Abdeckung:** Stablecoins bleiben in der Übersicht, werden aber nicht als spekulativer Trendtrade betrachtet. Unbekannte Coin-IDs oder nicht verfügbare EUR-Handelspaare werden klar ausgewiesen; keine Ersatzcoins von Platz 21+.
 - **Wichtig:** Jeder Python-Backtest simuliert für sich 1.000 EUR. Das separate Safari-Dashboard besitzt inzwischen ein browserlokales virtuelles Depot; es ist kein dauerhaft laufendes Cloud-Depot. Keine KI mit nachgewiesenem Prognosevorteil.
 
-## Safari-Dashboard (aktuell: v4.2)
+## Safari-Dashboard (aktuell: v4.3)
 
 Die öffentliche GitHub-Pages-Website ist unter **https://mueschki.github.io/crypto-pilot/** erreichbar. Das browserbasierte Dashboard zeigt:
 
@@ -34,6 +34,16 @@ Die öffentliche GitHub-Pages-Website ist unter **https://mueschki.github.io/cry
 - Jede auf Anfrage generierte Prognose wird mit Zeitstempel, Markt, Horizont, Ausgangspreis und den vorab ermittelten Grenzen **lokal in Safari** gespeichert. Wenn später ausreichend tatsächlich abgeschlossene Kraken-Kerzen verfügbar sind, wird die ursprüngliche Schätzung gegen den realen Schlusskurs geprüft. Die Speicherung umfasst höchstens 100 Einträge; ältere Daten können durch die beschränkte Kraken-Historie später nicht mehr zugeordnet werden.
 - **Keine automatische Orderfreigabe:** Prognose und Protokollierung sind von der bestehenden Paper-Strategie getrennt. Das Modell optimiert noch keine Kauf-/Verkaufsschwellen; es empfiehlt keine garantierten Tiefs/Hochs. Vor einer Integration in die Paper-Handelslogik sind echte, zeitlich unabhängige Forward-Ergebnisse und eine Bewertung nach Handelskosten erforderlich.
 - **Kein Cloud-Journal:** Die Daten verbleiben im lokalen Browser und können durch Löschen der Website-Daten verloren gehen. Ein stabiler Cloud-Prozess ist ein gesondertes Zukunftsprojekt.
+
+## Prognose-Beobachtung v4.3: Prospektive Messung
+
+Das Prognose-Labor besitzt jetzt eine ausdrücklich aktivierbare Funktion **„Prognosen automatisch beobachten“**. Sie ist zunächst ausgeschaltet. Nach Aktivierung wird das Einverständnis browserlokal gespeichert; die **Ausführung** funktioniert nur während der sichtbaren Safari-Sitzung, nicht bei geschlossenem iPhone-Tab oder als Cloud-Dienst.
+
+- Für den aktuell ausgewählten Coin erstellt der Beobachter aus öffentlichen **abgeschlossenen Kraken-1h-Kerzen** höchstens alle sechs Stunden eine neue 6h-Prognose. Nach sechs abgeschlossenen Folgestunden prüft er – bei nächster Gelegenheit mit vorhandenen Kursen – die ursprünglich gespeicherte Schätzung. Die Ausführung prüft bei sichtbarem Tab höchstens jede Minute, führt Netzabfragen aber höchstens alle 15 Minuten aus und nur, wenn neue Daten benötigt werden.
+- Das Prognosejournal enthält maximal 100 Einträge, wird lokal in Safari gespeichert und kann als **CSV** exportiert werden. Browserdaten löschen, Gerätewechsel oder zu weit zurückliegende historische Kerzen können Ergebnisse unvollständig machen. Auch die separate manuelle 24h-Prognose wird im selben Journal protokolliert.
+- Die Auswertung enthält **mittleren absoluten prozentualen Prognosefehler**, Fehler einer „unveränderten Kurs“-Baseline, Richtungstrefferquote, beobachtete Abdeckung des historischen Bandes und Anteil an Prognosen mit kleinerem Fehler als die Baseline. Angaben werden getrennt je ausgewähltem Coin und Horizont angezeigt.
+- Weniger als **30 abgeschlossene Beobachtungen** werden ausdrücklich als unzureichende Datenlage gekennzeichnet; 30 oder mehr sind noch **kein statistischer Nachweis** eines Handelsvorteils. Messungen über Zeit und Coins sind nicht zwingend unabhängig.
+- **Keine Kauf-/Verkaufsautomatik aus dem Prognosemodell**. Der alte Paper-Bot bleibt unverändert. Für belastbare Empfehlungen sind weitere unabhängige Prognosen, stabile Verbesserung gegenüber der Baseline, Verlusttests und Gebühren-/Slippage-Bereinigung nötig. Kein Anspruch, zukünftige Tief- oder Hochpunkte exakt zu erkennen.
 
 ## Paper-Strategie v4.0: ausführliche Sicherheitsregeln
 
