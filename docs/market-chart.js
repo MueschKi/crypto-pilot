@@ -127,7 +127,7 @@ function draw(){
  const age=state.lastTick===null?null:Math.max(0,Math.floor((now-state.lastTick)/1000));
  const secondsToNext=60-(Math.floor(now/1000)%60);
  const feedLabel=age===null?"Letzter Tick: noch keiner":age>20?"Tick veraltet: "+age+"s":"Letzter Tick: "+age+"s";
- const heartbeat="Nächste Minute in "+secondsToNext+"s  ·  "+feedLabel;
+ const heartbeat=w<530?"Kerze "+secondsToNext+"s · Tick "+(age===null?"—":age+"s"):"Nächste Minute in "+secondsToNext+"s  ·  "+feedLabel;
  ctx.font="11px system-ui";const tw=ctx.measureText(heartbeat).width;
  ctx.fillStyle=age!==null&&age<=20?"#40dfa3":"#f2be73";
  ctx.fillText(heartbeat,Math.max(L+6,w-R-tw-5),T+16);
