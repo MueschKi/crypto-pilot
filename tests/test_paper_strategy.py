@@ -46,7 +46,7 @@ assert.equal(R.inspectExit(pos,{...quote,bid:105.5},now).reason,"Gewinnziel (Dem
 assert.equal(R.inspectExit(pos,{...quote,bid:103},now).reason,"Nachziehender Gewinnschutz (Demo)");
 assert.equal(R.inspectExit({...pos,peakBid:99,openedAt:now-50*60000},{...quote,bid:99.5},now).reason,"Zeitstopp bei Verlust (Demo)");
 assert(!R.inspectExit(pos,{...quote,time:now-21000},now).sell,"stale tick is no fill");
-assert(!R.inspectExit(pos,{...quote,bid:101.6},now).sell,"still hold");
+assert(!R.inspectExit({...pos,peakBid:101.6},{...quote,bid:101.6},now).sell,"still hold");
 """
         p=subprocess.run([node,"-e",script],cwd=ROOT,text=True,capture_output=True)
         self.assertEqual(p.returncode,0,p.stderr)
