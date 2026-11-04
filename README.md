@@ -11,7 +11,7 @@
 - **Keine falsche Abdeckung:** Stablecoins bleiben in der Übersicht, werden aber nicht als spekulativer Trendtrade betrachtet. Unbekannte Coin-IDs oder nicht verfügbare EUR-Handelspaare werden klar ausgewiesen; keine Ersatzcoins von Platz 21+.
 - **Wichtig:** Jeder Python-Backtest simuliert für sich 1.000 EUR. Das separate Safari-Dashboard besitzt inzwischen ein browserlokales virtuelles Depot; es ist kein dauerhaft laufendes Cloud-Depot. Keine KI mit nachgewiesenem Prognosevorteil.
 
-## Safari-Dashboard (aktuell: v4.1)
+## Safari-Dashboard (aktuell: v4.2)
 
 Die öffentliche GitHub-Pages-Website ist unter **https://mueschki.github.io/crypto-pilot/** erreichbar. Das browserbasierte Dashboard zeigt:
 
@@ -23,6 +23,17 @@ Die öffentliche GitHub-Pages-Website ist unter **https://mueschki.github.io/cry
 - Browserlokales simuliertes Depot (1.000 EUR Startwert), CSV-Orderjournal und simulierte Positionsbewertung. Der Nutzer schaltet den **Paper-Autohandel einmal bewusst ein**; diese Absicht bleibt lokal in Safari gespeichert, bis er manuell stoppt, einen Depot-Reset ausführt oder ein Sicherheits-Not-Aus greift. Bei Verbindungsabbrüchen und im Hintergrund ist die Ausführung pausiert und läuft erst nach einem neuen bestätigten Kraken-Tick im sichtbaren Tab wieder an.
 
 **Wichtige Betriebsgrenzen:** Die Safari-Seite muss für neue virtuelle Trades geöffnet bleiben, und iOS kann Hintergrund-Tabs anhalten. Es gibt noch **keinen** zuverlässigen serverseitigen 24/7-Paper-Prozess. Kein realer Kraken-Kontozugriff, keine echten Orders, keine API-Schlüssel. Auch die Signalbewertung beweist keinen Gewinnvorteil.
+
+## Prognose-Labor v4.2 (experimentell)
+
+Über den eingeklappten Abschnitt **Prognose-Labor** kann ein historisch verfügbarer Kraken-EUR-Coin gewählt und eine Prognose für die nächsten **6 Stunden (6×1h-Kerzen)** oder **24 Stunden (6×4h-Kerzen)** auf Anfrage erstellt werden.
+
+- Grundlage sind ausschließlich **abgeschlossene**, lückenlos aufeinanderfolgende Kraken-OHLC-Kerzen. Der aktuelle offene Kraken-Intervall wird vor der Berechnung entfernt. Fehlende Historie, zeitliche Lücken und unplausible Kerzen führen zu einer Fehlermeldung, nicht zu erfundenen Daten.
+- Das Modell vergleicht die aktuelle Marktphase mit ähnlichen früheren Preisphasen anhand von 12-Kerzen-Trend, 24-Kerzen-Volatilität und Position innerhalb der lokalen Preisspanne. Die bis zu 30 nächsten ähnlichen **vollständig historischen** Fälle liefern eine **empirische Median-Prognose**, historische Schlusskursbandbreite (10.–90. Perzentil der Analogfälle) und Szenarien für zwischenzeitliche Tiefs/Hochs. Das sind **keine garantierten Preisziele** oder statistisch kalibrierten Wahrscheinlichkeiten.
+- Ein **rückwirkender, chronologischer Vergleich** testet an früheren Zeitpunkten, ob das Modell den Endkurs genauer schätzte als die naive Prognose „unveränderter Kurs“. Messgrößen: mittlerer absoluter prozentualer Fehler und beobachtete Bandabdeckung. Historische Wiederholungen können korreliert und nicht repräsentativ sein; dies ist **keine unabhängige Prospektivvalidierung**.
+- Jede auf Anfrage generierte Prognose wird mit Zeitstempel, Markt, Horizont, Ausgangspreis und den vorab ermittelten Grenzen **lokal in Safari** gespeichert. Wenn später ausreichend tatsächlich abgeschlossene Kraken-Kerzen verfügbar sind, wird die ursprüngliche Schätzung gegen den realen Schlusskurs geprüft. Die Speicherung umfasst höchstens 100 Einträge; ältere Daten können durch die beschränkte Kraken-Historie später nicht mehr zugeordnet werden.
+- **Keine automatische Orderfreigabe:** Prognose und Protokollierung sind von der bestehenden Paper-Strategie getrennt. Das Modell optimiert noch keine Kauf-/Verkaufsschwellen; es empfiehlt keine garantierten Tiefs/Hochs. Vor einer Integration in die Paper-Handelslogik sind echte, zeitlich unabhängige Forward-Ergebnisse und eine Bewertung nach Handelskosten erforderlich.
+- **Kein Cloud-Journal:** Die Daten verbleiben im lokalen Browser und können durch Löschen der Website-Daten verloren gehen. Ein stabiler Cloud-Prozess ist ein gesondertes Zukunftsprojekt.
 
 ## Paper-Strategie v4.0: ausführliche Sicherheitsregeln
 
