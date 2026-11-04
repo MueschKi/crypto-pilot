@@ -28,7 +28,7 @@ class DashboardChecks(unittest.TestCase):
             self.assertNotIn(needle, self.html)
 
     def test_live_kraken_candles_and_paper_markers(self):
-        self.assertIn('src="./market-chart.js?v=20261104-mobile35"', self.html)
+        self.assertIn('src="./market-chart.js?v=20261104-stable36"', self.html)
         self.assertIn('id="marketChart"', self.html)
         self.assertIn('CryptoPilotChart.tick(id,q.last,q.time)', self.html)
         self.assertIn('CryptoPilotChart.trades(S.sim.trades)', self.html)
@@ -120,6 +120,21 @@ class DashboardChecks(unittest.TestCase):
         self.assertNotIn("streamAge", self.html)
         self.assertNotIn("offsetWidth", self.html)
         self.assertIn("if(!document.hidden&&S.pendingRender)", self.html)
+
+    def test_periodic_ranking_refresh_preserves_live_stream(self):
+        self.assertIn('livePairKey', self.html)
+        self.assertIn('if(S.livePairKey===key&&S.ws', self.html)
+        self.assertIn('S.ws.readyState===WebSocket.OPEN', self.html)
+        self.assertIn('Vorherige Rangliste bleibt erhalten.', self.html)
+        self.assertIn('if(!document.hidden)loadRanking()', self.html)
+        self.assertNotIn('setInterval(loadRanking,300000)', self.html)
+
+    def test_candles_merge_inflight_kraken_ticks(self):
+        chart=(ROOT/"docs"/"market-chart.js").read_text(encoding="utf-8")
+        self.assertIn('const merged=new Map(ordered.map(bar=>[bar.t,bar]))', chart)
+        self.assertIn('Math.max(rest.h,c.h)', chart)
+        self.assertIn('cacheEntry&&cacheEntry.pair===pair', chart)
+        self.assertIn('const formatPrice=p=>', chart)
 
     def test_safe_default_for_autotrading(self):
         self.assertIn("active:false", self.html)
