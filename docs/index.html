@@ -447,7 +447,7 @@ async function runForecast(){
   if(keys.length!==1||!Array.isArray(body.result[keys[0]]))throw Error("Kerzenantwort ist unvollständig.");
   const raw=body.result[keys[0]],closed=raw.slice(0,-1);
   const predicted=CryptoPilotForecast.forecast({rows:closed,period});
-  const score=predicted.checked,stamp=new Date(predicted.until*1000).toLocaleString("de-DE");
+  const score=predicted.checked,stamp=new Date((predicted.until+period*60)*1000).toLocaleString("de-DE");
   text("forecastMedian",priceEUR(predicted.price*(1+predicted.expectedReturnPct/100)));
   text("forecastLow",priceEUR(predicted.lowScenario));
   text("forecastHigh",priceEUR(predicted.highScenario));
