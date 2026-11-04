@@ -12,7 +12,7 @@ class PaperStrategyChecks(unittest.TestCase):
         self.assertIn('src="./paper-rules.js?v=20261104-paper40"',html)
         self.assertIn("armed:d.armed===true&&!d.stopped,active:false",html)
         self.assertIn('JSON.stringify({...S.sim,active:false})',html)
-        self.assertIn('if(S.sim.armed){S.sim.armed=false;S.sim.active=false}',html)
+        self.assertIn('if(S.sim.armed){S.sim.armed=false;S.sim.active=false;releasePaperLease()}',html)
         self.assertIn('function maybeResumePaper()',html)
         self.assertIn('!document.hidden&&S.connection&&S.rankingOk',html)
         self.assertIn('maybeResumePaper();if(wasOffline)',html)
