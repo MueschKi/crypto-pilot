@@ -1,8 +1,14 @@
 name: CryptoPilot Top-20-Marktbericht
 on:
   workflow_dispatch:
+  schedule:
+    # Once per day, 07:17 CET / 08:17 CEST. UTC scheduling is fixed.
+    - cron: '17 6 * * *'
 permissions:
   contents: read
+concurrency:
+  group: crypto-pilot-daily-market
+  cancel-in-progress: false
 jobs:
   analyse:
     runs-on: ubuntu-latest
@@ -16,15 +22,40 @@ jobs:
           python-version: '3.11'
       - name: Analyse oeffentlicher Top-20- und Kraken-EUR-Daten
         run: python src/bot.py market > crypto-pilot-market-report.json
-      - name: Zusammenfassung anzeigen
+      - name: Bericht zusammenfassen
         run: |
           python - <<'PY'
           import json
-          data=json.load(open('crypto-pilot-market-report.json'))['report']
-          print('Top-20:', len(data['universe']))
-          print('Analysiert:', data['counts']['analyzed'])
+          from pathlib import Path
+          data = json.loads(Path('crypto-pilot-market-report.json').read_text(encoding='utf-8'))['report']
+          lines = [
+              '# CryptoPilot – Top-20-Tagesbericht',
+              '',
+              f"Erfasst (UTC): {data['captured_at_utc']}",
+              f"Analysiert: {data['counts']['analyzed']} von 20",
+              '',
+              '| Rang | Coin | Status | Trend |',
+              '| ---: | --- | --- | --- |',
+          ]
           for row in data['universe']:
-              print(row['rank'],row['symbol'],row['status'])
+              analysis = row.get('market_analysis') or {}
+              lines.append(
+                  f"| {row['rank']} | {row['symbol']} | {row['status']} | "
+                  f"{analysis.get('trend', '—')} |"
+              )
+          lines.extend([
+              '',
+              '**Nur öffentliches Research.** Keine echten Orders, keine Anlageempfehlung.',
+              'Die heutige Top-20-Auswahl ist für historische Strategievergleiche selektionsverzerrt.',
+              'Fehlende Märkte oder Daten werden nicht durch andere Coins ersetzt.',
+          ])
+          summary = '\n'.join(lines) + '\n'
+          print(summary)
+          import os
+          summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
+          if summary_path:
+              with open(summary_path, 'a', encoding='utf-8') as fp:
+                  fp.write(summary)
           PY
       - name: Marktbericht als Datei bereitstellen
         uses: actions/upload-artifact@v4
