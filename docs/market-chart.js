@@ -2,7 +2,7 @@
    Visual only; never generates trading signals or orders. */
 (function(){
 "use strict";
-const state={selected:null,pair:null,candles:[],lastTick:null,token:0,pending:false,status:"Wähle einen Coin",trades:[],lastHistoricalLoad:0,cache:new Map(),activeController:null,recentTicks:[],visible:true};
+const state={selected:null,pair:null,candles:[],lastTick:null,token:0,pending:false,status:"Wähle einen Coin",trades:[],lastHistoricalLoad:0,cache:new Map(),activeController:null,recentTicks:[],visible:true,visibleBars:0};
 const canvas=()=>document.getElementById("marketChart");
 const label=()=>document.getElementById("marketChartStatus");
 const euro=new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR",maximumFractionDigits:2});
@@ -102,7 +102,7 @@ function draw(){
  const ctx=el.getContext("2d");if(!ctx)return;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
  const L=12,R=w<440?55:70,T=28,B=31,pw=Math.max(150,w-L-R),ph=h-T-B;
  ctx.fillStyle="#0a172c";ctx.fillRect(0,0,w,h);
- const visibleCount=w<500?28:w<750?48:90;
+ const visibleCount=state.visibleBars|| (w<500?28:w<750?48:90);
  const data=state.candles.slice(-visibleCount);
  if(!data.length){
   ctx.fillStyle="#99aecd";ctx.font="13px system-ui";
@@ -164,7 +164,12 @@ function draw(){
  const lastC=data[data.length-1];ctx.fillStyle="#dceaff";ctx.font="bold 13px system-ui";ctx.fillText(formatPrice(lastC.c),L+5,17);
  ctx.fillStyle="#8ea5c5";ctx.font="11px system-ui";ctx.fillText("▲ Kauf   ▼ Verkauf (virtuell)",L+8,h-11);
 }
-window.CryptoPilotChart={select,tick,trades,draw,get selected(){return state.selected}};
+function setZoom(count){
+ if(![15,30,60,90].includes(count))return;
+ state.visibleBars=count;state.pending=true;
+ if(state.visible&&!document.hidden)draw();
+}
+window.CryptoPilotChart={select,tick,trades,draw,setZoom,get selected(){return state.selected}};
 window.addEventListener("resize",()=>{state.pending=true});
 // Only repaint on real events, and at most once every 450ms on iPhone.
 // A one-second lightweight heartbeat advances the minute bar when visible.
