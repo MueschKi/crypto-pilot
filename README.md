@@ -11,16 +11,26 @@
 - **Keine falsche Abdeckung:** Stablecoins bleiben in der Übersicht, werden aber nicht als spekulativer Trendtrade betrachtet. Unbekannte Coin-IDs oder nicht verfügbare EUR-Handelspaare werden klar ausgewiesen; keine Ersatzcoins von Platz 21+.
 - **Wichtig:** Jeder Python-Backtest simuliert für sich 1.000 EUR. Das separate Safari-Dashboard besitzt inzwischen ein browserlokales virtuelles Depot; es ist kein dauerhaft laufendes Cloud-Depot. Keine KI mit nachgewiesenem Prognosevorteil.
 
-## Safari-Dashboard (aktuell: v3.9)
+## Safari-Dashboard (aktuell: v4.0)
 
 Die öffentliche GitHub-Pages-Website ist unter **https://mueschki.github.io/crypto-pilot/** erreichbar. Das browserbasierte Dashboard zeigt:
 
 - Top-20-Marktkapitalisierungs-Rangliste (CoinGecko), sofern die öffentliche API verfügbar ist; EUR-Ticker von Kraken per öffentlichem WebSocket, soweit passende Handelspaare vorhanden sind.
 - Echte Kraken-1-Minuten-Kerzen für den ausgewählten Coin, Zoom (15/30/60/90 Kerzen), Tippen auf einen Coin in der Marktübersicht und Markierungen virtueller Orders.
 - **Signal-Cockpit (v3.8):** rein beobachtende 60-Sekunden-Tick-Auswertung mit Richtung, Spread und Datenqualität. **Nicht** identisch mit der separaten einfachen Paper-Momentumstrategie, kein validiertes Prognosemodell und keine automatischen Empfehlungen.
-- Browserlokales simuliertes Depot (1.000 EUR Startwert), CSV-Orderjournal und simulierte Positionsbewertung. Paper-Autohandel wird bei jedem Seitenstart ausdrücklich neu eingeschaltet und bei relevanten Verbindungsabbrüchen beendet.
+- Browserlokales simuliertes Depot (1.000 EUR Startwert), CSV-Orderjournal und simulierte Positionsbewertung. Der Nutzer schaltet den **Paper-Autohandel einmal bewusst ein**; diese Absicht bleibt lokal in Safari gespeichert, bis er manuell stoppt, einen Depot-Reset ausführt oder ein Sicherheits-Not-Aus greift. Bei Verbindungsabbrüchen und im Hintergrund ist die Ausführung pausiert und läuft erst nach einem neuen bestätigten Kraken-Tick im sichtbaren Tab wieder an.
 
 **Wichtige Betriebsgrenzen:** Die Safari-Seite muss für neue virtuelle Trades geöffnet bleiben, und iOS kann Hintergrund-Tabs anhalten. Es gibt noch **keinen** zuverlässigen serverseitigen 24/7-Paper-Prozess. Kein realer Kraken-Kontozugriff, keine echten Orders, keine API-Schlüssel. Auch die Signalbewertung beweist keinen Gewinnvorteil.
+
+## Paper-Strategie v4.0: ausführliche Sicherheitsregeln
+
+Diese **neue heuristische Paper-Strategie ist noch nicht durch historische Tests als profitabler nachgewiesen** und wird nicht automatisch mit realem Geld verbunden. Die bisherigen Limits bleiben: maximal drei Positionen, je höchstens 150 EUR, maximal 60 % Kapitalexposition, Mindestreserve und Not-Aus bei unter 950 EUR virtuellem Depotwert.
+
+- **Einstieg:** Mindestens zwölf echte Kursereignisse über mindestens 20 Sekunden, enger Kraken-Spread (maximal 0,35 %), positive kurzfristige Richtung und mindestens 1,15 % Kursanstieg über das Beobachtungsfenster. Kein Einstieg bei starken kurzfristigen Schwankungen über 3,5 % oder innerhalb von zehn Minuten nach dem letzten Trade dieses Coins.
+- **Ausstieg:** Geschätzter Nettoerlös unter −2,5 % gegenüber Einstiegskosten (Verluststopp); Nettoertrag ab +3,5 % (Gewinnziel); nach +2 % erreichten Zwischengewinnen optionaler nachziehender Stop bei −1 % vom beobachteten Kurshoch, frühestens nach 30 Sekunden; negativ stehende Positionen werden nach 45 Minuten bei verfügbaren echten Kursen geschlossen.
+- **Simulation:** Unverändert 0,4 % Gebühren plus 0,1 % Slippage je Seite. Sämtliche Orders bleiben **virtuell** und hängen von aktuellen Kraken-Kursen ab; technische Kurslücken können Stop-Niveaus überspringen.
+- **Aktivierung:** Die ausdrücklich gewählte Paper-Aktivierung übersteht das Neuladen und erneute Öffnen des Browsers. **Nicht** die tatsächliche Ausführung: Safari muss die Seite sichtbar ausführen, und ein neuer gültiger WebSocket-Tick muss die Handelsbereitschaft bestätigen. Unterbrechungen, fehlende Verbindung und veraltete Preise führen zur Pause, nicht zum heimlichen Trading. Ein Sicherheits-Not-Aus widerruft die Aktivierung.
+- **Keine Profitgarantie:** Zusätzliche Filter können Trades und Gewinne verhindern oder Verluste nicht vermeiden. Die Live-Regeln sind **nicht** identisch mit den drei Strategy-Lab-Modellen und dürfen nicht als deren validiertes Ergebnis ausgegeben werden.
 
 ## Strategy Lab v3.9 (Browser)
 
