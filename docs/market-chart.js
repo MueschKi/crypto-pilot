@@ -122,9 +122,22 @@ function draw(){
   ctx.closePath();ctx.fill();
  }
  const lastC=data[data.length-1];ctx.fillStyle="#dceaff";ctx.font="bold 13px system-ui";ctx.fillText(euro.format(lastC.c),L+8,T+16);
+ // Visible heartbeat based only on the clock. Prices move ONLY on genuine Kraken ticks.
+ const now=Date.now();
+ const age=state.lastTick===null?null:Math.max(0,Math.floor((now-state.lastTick)/1000));
+ const secondsToNext=60-(Math.floor(now/1000)%60);
+ const feedLabel=age===null?"Letzter Tick: noch keiner":age>20?"Tick veraltet: "+age+"s":"Letzter Tick: "+age+"s";
+ const heartbeat=w<530?"Kerze "+secondsToNext+"s · Tick "+(age===null?"—":age+"s"):"Nächste Minute in "+secondsToNext+"s  ·  "+feedLabel;
+ ctx.font="11px system-ui";const tw=ctx.measureText(heartbeat).width;
+ ctx.fillStyle=age!==null&&age<=20?"#40dfa3":"#f2be73";
+ ctx.fillText(heartbeat,Math.max(L+6,w-R-tw-5),T+16);
  ctx.fillStyle="#8ea5c5";ctx.font="11px system-ui";ctx.fillText("▲ Kauf   ▼ Verkauf (virtuell)",L+8,h-11);
 }
 window.CryptoPilotChart={select,tick,trades,draw,get selected(){return state.selected}};
 window.addEventListener("resize",()=>{state.pending=true});
+// Tick-driven canvas refresh: up to five visible frames per second.
 setInterval(()=>{if(state.pending&&!document.hidden){state.pending=false;draw()}},200);
+// Independent one-second heartbeat so countdown and feed age keep moving
+// even when Kraken sends no price change. Never alter candle prices here.
+setInterval(()=>{if(!document.hidden)draw()},1000);
 })();
