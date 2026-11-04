@@ -50,7 +50,7 @@ class DashboardChecks(unittest.TestCase):
         self.assertIn('tickerKey', self.html)
         self.assertIn('refreshTicker()', self.html)
         self.assertIn('item.price.textContent=', self.html)
-        self.assertIn('distance/175', self.html)
+        self.assertIn('distance/85', self.html)
         self.assertNotIn('lastTickerRender', self.html)
         self.assertNotIn('ticker").innerHTML=items+items', self.html)
 
@@ -75,9 +75,22 @@ class DashboardChecks(unittest.TestCase):
         self.assertIn('const now=Date.now()', chart)
 
     def test_ticker_speed_is_smooth(self):
-        self.assertIn('distance/175', self.html)
+        self.assertIn('distance/85', self.html)
         self.assertNotIn('distance/250', self.html)
         self.assertIn('for(const coin of S.coins)', self.html)
+
+    def test_ambient_motion_is_visual_only(self):
+        self.assertIn("distance/85", self.html)
+        self.assertIn('id="tickCount"', self.html)
+        self.assertIn('id="streamAge"', self.html)
+        self.assertIn('class="ambient-orb orb-a"', self.html)
+        self.assertIn('prefers-reduced-motion:reduce', self.html)
+        self.assertIn('S.tickCount++', self.html)
+        chart = (ROOT / "docs" / "market-chart.js").read_text(encoding="utf-8")
+        self.assertIn('const progress=(Date.now()/1000%60)/60', chart)
+        self.assertIn('Visual minute progress', chart)
+        self.assertIn('price,time', chart)
+        self.assertNotIn('/private/AddOrder', self.html)
 
     def test_safe_default_for_autotrading(self):
         self.assertIn("active:false", self.html)
