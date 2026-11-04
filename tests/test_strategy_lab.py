@@ -45,7 +45,7 @@ const one=L.simulate(L.candles(bars),'hold',180,300);
 assert(one.buys===1&&one.sells===0);
 assert(one.capital<1000*(bars.at(-1)[4]/bars[180][1]));
 const untouched=L.simulate(L.candles(bars),'ema',180,240);
-const modified=bars.map(r=>r.slice());modified[240][4]*=10;
+const modified=bars.map(r=>r.slice());modified[240][4]*=10;modified[240][2]=modified[240][4]+.03;
 const again=L.simulate(L.candles(modified),'ema',180,240);
 assert.equal(untouched.capital,again.capital,'future candle changed earlier results');
 const invalid=bars.map(r=>r.slice());invalid[19][0]=invalid[18][0];
