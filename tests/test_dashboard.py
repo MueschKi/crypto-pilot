@@ -28,7 +28,7 @@ class DashboardChecks(unittest.TestCase):
             self.assertNotIn(needle, self.html)
 
     def test_live_kraken_candles_and_paper_markers(self):
-        self.assertIn('src="./market-chart.js?v=20261104-stable36"', self.html)
+        self.assertIn('src="./market-chart.js?v=20261104-chart37"', self.html)
         self.assertIn('id="marketChart"', self.html)
         self.assertIn('CryptoPilotChart.tick(id,q.last,q.time)', self.html)
         self.assertIn('CryptoPilotChart.trades(S.sim.trades)', self.html)
@@ -135,6 +135,25 @@ class DashboardChecks(unittest.TestCase):
         self.assertIn('Math.max(rest.h,c.h)', chart)
         self.assertIn('cacheEntry&&cacheEntry.pair===pair', chart)
         self.assertIn('const formatPrice=p=>', chart)
+
+    def test_chart_zoom_and_clickable_market_coins(self):
+        chart=(ROOT/"docs"/"market-chart.js").read_text(encoding="utf-8")
+        self.assertIn("function setZoom(count)", chart)
+        self.assertIn("[15,30,60,90].includes(count)", chart)
+        self.assertIn('id="chartZoom"', self.html)
+        self.assertIn('CryptoPilotChart.setZoom(Number(event.target.value))', self.html)
+        self.assertIn('className="market-select"', self.html)
+        self.assertIn('scrollIntoView({behavior:"smooth"', self.html)
+
+    def test_position_details_and_csv_export(self):
+        self.assertIn('id="positionDetails"', self.html)
+        self.assertIn('id="exportJournal"', self.html)
+        self.assertIn('p.qty*q.bid*.999*.996', self.html)
+        self.assertIn('text/csv;charset=utf-8', self.html)
+        self.assertIn('cryptopilot-paper-journal.csv', self.html)
+        self.assertIn('if(!entries.length)', self.html)
+        self.assertIn("active:false", self.html)
+        self.assertNotIn("/private/AddOrder", self.html)
 
     def test_safe_default_for_autotrading(self):
         self.assertIn("active:false", self.html)
