@@ -2,7 +2,7 @@
    Visual only; never generates trading signals or orders. */
 (function(){
 "use strict";
-const state={selected:null,pair:null,candles:[],lastTick:null,token:0,pending:false,status:"Wähle einen Coin",trades:[],lastHistoricalLoad:0,cache:new Map(),activeController:null};
+const state={selected:null,pair:null,candles:[],lastTick:null,token:0,pending:false,status:"Wähle einen Coin",trades:[],lastHistoricalLoad:0,cache:new Map(),activeController:null,recentTicks:[]};
 const canvas=()=>document.getElementById("marketChart");
 const label=()=>document.getElementById("marketChartStatus");
 const euro=new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR",maximumFractionDigits:2});
@@ -15,7 +15,7 @@ function validate(row){if(!Array.isArray(row)||row.length<7)return null;
 async function select(id,pair,symbol){
  const token=++state.token;
  if(state.activeController){state.activeController.abort();state.activeController=null}
- state.selected=id;state.pair=pair;state.lastTick=null;
+ state.selected=id;state.pair=pair;state.lastTick=null;state.recentTicks=[];
  document.getElementById("marketChartTitle").textContent=(symbol||id).toUpperCase()+" / EUR";
  const cached=state.cache.get(id);
  // Immediately show THIS coin's verified earlier candles if present.
@@ -68,7 +68,11 @@ async function select(id,pair,symbol){
  }
 }
 function tick(id,price,time){
- if(id!==state.selected||!Number.isFinite(price)||price<=0||!state.candles.length)return;
+ if(id!==state.selected||!Number.isFinite(price)||price<=0)return;
+ state.lastTick=time;state.recentTicks.push({t:time,p:price});
+ while(state.recentTicks.length>110||(state.recentTicks.length>1&&time-state.recentTicks[0].t>120000))state.recentTicks.shift();
+ state.pending=true;
+ if(!state.candles.length)return;
  const timeSec=Math.floor(time/1000),minute=Math.floor(timeSec/60)*60;
  const last=state.candles[state.candles.length-1];
  if(minute<last.t)return;
@@ -77,7 +81,7 @@ function tick(id,price,time){
   state.candles.push({t:minute,o:price,h:price,l:price,c:price,v:0});
   if(state.candles.length>180)state.candles.shift();
  }else{last.h=Math.max(last.h,price);last.l=Math.min(last.l,price);last.c=price;}
- state.lastTick=time;state.pending=true;
+ state.pending=true;
 }
 function trades(list){state.trades=Array.isArray(list)?list:[];state.pending=true}
 function draw(){
@@ -89,7 +93,19 @@ function draw(){
  ctx.fillStyle="#0a172c";ctx.fillRect(0,0,w,h);
  const visibleCount=w<500?44:w<750?65:100;
  const data=state.candles.slice(-visibleCount);
- if(!data.length){ctx.fillStyle="#99aecd";ctx.font="13px system-ui";ctx.fillText("Warte auf echte Kraken-Kerzen …",20,h/2);return}
+ if(!data.length){
+  ctx.fillStyle="#99aecd";ctx.font="13px system-ui";
+  ctx.fillText(state.recentTicks.length?"Echte Live-Ticks · OHLC-Historie wird geladen":"Warte auf echte Kraken-Kerzen …",16,25);
+  if(state.recentTicks.length>=2){
+   const ticks=state.recentTicks,low=Math.min(...ticks.map(t=>t.p)),high=Math.max(...ticks.map(t=>t.p));
+   const delta=Math.max(high-low,high*.00001);
+   ctx.strokeStyle="#50c5fb";ctx.lineWidth=2.5;ctx.beginPath();
+   ticks.forEach((item,i)=>{const x=20+i*(w-115)/Math.max(1,ticks.length-1),yy=150-(item.p-low)/delta*92;i?ctx.lineTo(x,yy):ctx.moveTo(x,yy)});
+   ctx.stroke();
+   ctx.fillStyle="#a7b9d3";ctx.font="12px system-ui";ctx.fillText("Nur echte WebSocket-Ticks – keine künstlichen Kerzen",16,187);
+  }
+  return;
+ }
  let lo=Math.min(...data.map(c=>c.l)),hi=Math.max(...data.map(c=>c.h));
  if(!Number.isFinite(lo)||!Number.isFinite(hi)||lo<=0)return;
  const pad=Math.max((hi-lo)*.1,hi*.0005);lo=Math.max(.00000001,lo-pad);hi+=pad;
@@ -130,6 +146,23 @@ function draw(){
  ctx.strokeStyle="rgba(95,174,255,.18)";ctx.lineWidth=1;ctx.setLineDash([3,7]);
  ctx.beginPath();ctx.moveTo(sweepX,T+23);ctx.lineTo(sweepX,T+ph);ctx.stroke();ctx.setLineDash([]);
  ctx.fillStyle="#76baff";ctx.beginPath();ctx.arc(sweepX,T+ph+7.5,3,0,Math.PI*2);ctx.fill();
+ // Highlight the last genuine candle with a clock-driven halo, not an invented price.
+ const lastVisible=data[data.length-1],endX=L+step*(data.length-.5),endY=y(lastVisible.c);
+ const active=state.lastTick!==null&&Date.now()-state.lastTick<20000;
+ const glow=active?5+3*(1+Math.sin(Date.now()/220)):4;
+ ctx.fillStyle=active?"rgba(68,232,167,.14)":"rgba(168,184,207,.08)";
+ ctx.beginPath();ctx.arc(endX,endY,glow+5,0,Math.PI*2);ctx.fill();
+ ctx.fillStyle=active?"#4cf3b1":"#8aa0be";ctx.beginPath();ctx.arc(endX,endY,3.5,0,Math.PI*2);ctx.fill();
+ // This inset displays only genuine, individually received Kraken WebSocket ticks.
+ const ticks=state.recentTicks;
+ if(ticks.length>=2){
+  const boxX=Math.max(19,w-165),boxY=38,boxW=132,boxH=58;
+  ctx.fillStyle="rgba(9,20,39,.88)";ctx.fillRect(boxX-8,boxY-16,boxW+16,boxH+29);
+  const low=Math.min(...ticks.map(v=>v.p)),high=Math.max(...ticks.map(v=>v.p)),range=Math.max(high-low,high*.00001);
+  ctx.strokeStyle="#6de1bd";ctx.lineWidth=1.8;ctx.beginPath();
+  ticks.forEach((v,i)=>{const x=boxX+i*boxW/Math.max(1,ticks.length-1),yy=boxY+boxH-(v.p-low)/range*boxH;i?ctx.lineTo(x,yy):ctx.moveTo(x,yy)});
+  ctx.stroke();ctx.font="10px system-ui";ctx.fillStyle="#9ebbd1";ctx.fillText("ECHTE LIVE-TICKS",boxX,boxY-4);
+ }
  const lastC=data[data.length-1];ctx.fillStyle="#dceaff";ctx.font="bold 13px system-ui";ctx.fillText(euro.format(lastC.c),L+8,T+16);
  // Visible heartbeat based only on the clock. Prices move ONLY on genuine Kraken ticks.
  const now=Date.now();
@@ -145,8 +178,8 @@ function draw(){
 window.CryptoPilotChart={select,tick,trades,draw,get selected(){return state.selected}};
 window.addEventListener("resize",()=>{state.pending=true});
 // Tick-driven canvas refresh: up to five visible frames per second.
-setInterval(()=>{if(state.pending&&!document.hidden){state.pending=false;draw()}},200);
+setInterval(()=>{if(!document.hidden){state.pending=false;draw();const el=document.getElementById("chartLiveStatus");if(el){const age=state.lastTick===null?null:Math.floor((Date.now()-state.lastTick)/1000);el.textContent="Chart 5×/Sek. · "+(age===null?"Noch keine echten Live-Ticks":age<=20?"Letzter echter Kraken-Tick vor "+age+"s":"Warte auf neue Kraken-Kurse · letzter Tick vor "+age+"s")}}},200);
 // Independent one-second heartbeat so countdown and feed age keep moving
 // even when Kraken sends no price change. Never alter candle prices here.
-setInterval(()=>{if(!document.hidden)draw()},1000);
+setInterval(()=>{if(!document.hidden)state.pending=true},1000);
 })();

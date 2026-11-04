@@ -28,7 +28,7 @@ class DashboardChecks(unittest.TestCase):
             self.assertNotIn(needle, self.html)
 
     def test_live_kraken_candles_and_paper_markers(self):
-        self.assertIn('src="./market-chart.js"', self.html)
+        self.assertIn('src="./market-chart.js?v=20261104-live5"', self.html)
         self.assertIn('id="marketChart"', self.html)
         self.assertIn('CryptoPilotChart.tick(id,q.last,q.time)', self.html)
         self.assertIn('CryptoPilotChart.trades(S.sim.trades)', self.html)
@@ -65,9 +65,9 @@ class DashboardChecks(unittest.TestCase):
 
     def test_chart_has_tick_refresh_and_independent_heartbeat(self):
         chart = (ROOT / "docs" / "market-chart.js").read_text(encoding="utf-8")
-        self.assertIn('if(state.pending&&!document.hidden)', chart)
+        self.assertIn('if(!document.hidden){state.pending=false;draw()', chart)
         self.assertIn('},200);', chart)
-        self.assertIn('if(!document.hidden)draw()', chart)
+        self.assertIn('if(!document.hidden)state.pending=true', chart)
         self.assertIn('},1000);', chart)
         self.assertIn('const secondsToNext=60-', chart)
         self.assertIn('age>20?', chart)
@@ -91,6 +91,23 @@ class DashboardChecks(unittest.TestCase):
         self.assertIn('Visual minute progress', chart)
         self.assertIn('price,time', chart)
         self.assertNotIn('/private/AddOrder', self.html)
+
+    def test_stable_live_market_rows_and_price_precision(self):
+        self.assertIn('marketRows:new Map()', self.html)
+        self.assertIn('S.marketRows.set(c.id', self.html)
+        self.assertIn('if(S.marketKey!==key)', self.html)
+        self.assertIn('setInterval(()=>{if(!document.hidden)renderMarket()},1000)', self.html)
+        self.assertIn('function priceEUR(value)', self.html)
+        self.assertIn('cells.age.textContent=age', self.html)
+        self.assertIn('Kraken · ', self.html)
+
+    def test_chart_microline_uses_only_genuine_ticks(self):
+        chart = (ROOT / "docs" / "market-chart.js").read_text(encoding="utf-8")
+        self.assertIn('state.recentTicks.push({t:time,p:price})', chart)
+        self.assertIn('ECHTE LIVE-TICKS', chart)
+        self.assertIn('if(!state.candles.length)return', chart)
+        self.assertIn('if(!document.hidden){state.pending=false;draw()', chart)
+        self.assertIn('chartLiveStatus', chart)
 
     def test_safe_default_for_autotrading(self):
         self.assertIn("active:false", self.html)
