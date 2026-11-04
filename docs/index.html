@@ -57,7 +57,7 @@ main{position:relative;z-index:1}.panel{position:relative;overflow:hidden;transi
 </div>
 <p id="labStatus" class="small" role="status">Starte den Vergleich bei Bedarf. Es wird nichts gekauft oder verkauft.</p>
 <div id="labResults" hidden>
-<div class="lab-summary" id="labSummary"></div>
+<div class="lab-summary" id="labSummary"></div><div class="small" id="labFolds"></div>
 <div class="tablewrap"><table><thead><tr><th>Strategie</th><th>Test-Rendite</th><th>Max. Rückgang</th><th>Käufe</th><th>Kosten*</th></tr></thead><tbody id="labRows"></tbody></table></div>
 <svg id="labChart" class="lab-chart" viewBox="0 0 340 150" role="img" aria-label="Vergleich der virtuellen Depotwerte im Testzeitraum"></svg>
 <p class="small">* Geschätzte Kosten tatsächlich ausgeführter Trades. Alle Simulationen starten separat mit 1.000 € und nutzen 0,4 % Gebühr plus 0,1 % Slippage je Seite. Offene Positionen werden netto bewertet. Ergebnisse sind rückblickend und kein Nachweis künftiger Gewinne.</p>
@@ -279,6 +279,8 @@ async function runStrategyLab(){
   const end=new Date(result.to*1000).toLocaleDateString("de-DE");
   const duration=interval===60?"1 Stunde":"4 Stunden";
   text("labSummary",result.bars+" abgeschlossene "+duration+"-Kerzen · Entwicklung: erste 60 % · Test: letzte 40 % ("+start+"–"+end+"). Feste Parameter, keine Optimierung auf Testdaten.");
+  const foldInfo=result.walkForward.map(x=>labels[x.name]+": "+x.positiveWindows+"/3 positive Prüfintervalle").join(" · ");
+  text("labFolds","Zeitlich gestaffelte Robustheitsprüfung (3 Fenster, mit festen Parametern): "+foldInfo+". Eine positive Periode ist kein Qualitätsnachweis.");
   drawLabCurve(result.holdout);
   $("labResults").hidden=false;
   text("labStatus","Vergleich abgeschlossen · ausschließlich historische Simulation.");
