@@ -28,7 +28,7 @@ class DashboardChecks(unittest.TestCase):
             self.assertNotIn(needle, self.html)
 
     def test_live_kraken_candles_and_paper_markers(self):
-        self.assertIn('src="./market-chart.js?v=20261104-live5"', self.html)
+        self.assertIn('src="./market-chart.js?v=20261104-mobile35"', self.html)
         self.assertIn('id="marketChart"', self.html)
         self.assertIn('CryptoPilotChart.tick(id,q.last,q.time)', self.html)
         self.assertIn('CryptoPilotChart.trades(S.sim.trades)', self.html)
@@ -60,19 +60,19 @@ class DashboardChecks(unittest.TestCase):
         self.assertIn('state.cache.get(id)', chart)
         self.assertIn('for(let attempt=0;attempt<2;attempt++)', chart)
         self.assertIn('if(token!==state.token)return;', chart)
-        self.assertIn('const visibleCount=w<500?44', chart)
+        self.assertIn('const visibleCount=w<500?28', chart)
         self.assertIn('raw.map(validate).filter(Boolean)', chart)
 
     def test_chart_has_tick_refresh_and_independent_heartbeat(self):
         chart = (ROOT / "docs" / "market-chart.js").read_text(encoding="utf-8")
-        self.assertIn('if(!document.hidden){state.pending=false;draw()', chart)
-        self.assertIn('},200);', chart)
-        self.assertIn('if(!document.hidden)state.pending=true', chart)
+        self.assertIn('if(!document.hidden&&state.visible&&state.pending)', chart)
+        self.assertIn('},450);', chart)
+        self.assertIn('state.pending=true', chart)
         self.assertIn('},1000);', chart)
-        self.assertIn('const secondsToNext=60-', chart)
-        self.assertIn('age>20?', chart)
-        self.assertIn('w<530?', chart)
-        self.assertIn('const now=Date.now()', chart)
+        self.assertIn('const progress=(Date.now()/1000%60)/60', chart)
+        self.assertIn('IntersectionObserver', chart)
+        self.assertIn('w<500?28', chart)
+        self.assertIn('state.visible', chart)
 
     def test_ticker_speed_is_smooth(self):
         self.assertIn('distance/85', self.html)
@@ -81,8 +81,8 @@ class DashboardChecks(unittest.TestCase):
 
     def test_ambient_motion_is_visual_only(self):
         self.assertIn("distance/85", self.html)
-        self.assertIn('id="tickCount"', self.html)
-        self.assertIn('id="streamAge"', self.html)
+        self.assertNotIn('id="tickCount"', self.html)
+        self.assertNotIn('id="streamAge"', self.html)
         self.assertIn('class="ambient-orb orb-a"', self.html)
         self.assertIn('prefers-reduced-motion:reduce', self.html)
         self.assertIn('S.tickCount++', self.html)
@@ -96,18 +96,30 @@ class DashboardChecks(unittest.TestCase):
         self.assertIn('marketRows:new Map()', self.html)
         self.assertIn('S.marketRows.set(c.id', self.html)
         self.assertIn('if(S.marketKey!==key)', self.html)
-        self.assertIn('setInterval(()=>{if(!document.hidden)renderMarket()},1000)', self.html)
+        self.assertIn('setInterval(()=>{if(!document.hidden&&S.coins.length)renderMarket()},2000)', self.html)
         self.assertIn('function priceEUR(value)', self.html)
         self.assertIn('cells.age.textContent=age', self.html)
-        self.assertIn('Kraken · ', self.html)
+        self.assertIn('Kraken live', self.html)
 
     def test_chart_microline_uses_only_genuine_ticks(self):
         chart = (ROOT / "docs" / "market-chart.js").read_text(encoding="utf-8")
         self.assertIn('state.recentTicks.push({t:time,p:price})', chart)
-        self.assertIn('ECHTE LIVE-TICKS', chart)
+        self.assertIn('Echte Live-Ticks', chart)
         self.assertIn('if(!state.candles.length)return', chart)
-        self.assertIn('if(!document.hidden){state.pending=false;draw()', chart)
-        self.assertIn('chartLiveStatus', chart)
+        self.assertIn('if(!document.hidden&&state.visible&&state.pending)', chart)
+        self.assertNotIn('chartLiveStatus', chart)
+
+    def test_mobile_performance_and_clean_chart(self):
+        chart=(ROOT/"docs"/"market-chart.js").read_text(encoding="utf-8")
+        self.assertIn("IntersectionObserver", chart)
+        self.assertIn("Math.min(1.5,window.devicePixelRatio||1)", chart)
+        self.assertIn("w<500?28", chart)
+        self.assertNotIn("ECHTE LIVE-TICKS", chart)
+        self.assertNotIn("chartLiveStatus", self.html)
+        self.assertNotIn("LIVE / 1s", self.html)
+        self.assertNotIn("streamAge", self.html)
+        self.assertNotIn("offsetWidth", self.html)
+        self.assertIn("if(!document.hidden&&S.pendingRender)", self.html)
 
     def test_safe_default_for_autotrading(self):
         self.assertIn("active:false", self.html)
