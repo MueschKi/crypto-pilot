@@ -94,7 +94,33 @@ function text(id,v){$(id).textContent=v}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function setNotice(message,ok){text("notice",message);$("notice").style.borderColor=ok?"#2e896a":"#5e4a33";text("connection",ok?"● KRAKEN LIVE":"● KEINE LIVE-VERBINDUNG");$("connection").style.color=ok?"#40dfa3":"#f6d5aa";text("streamState",ok?"Echte Ticks fließen":"Warte auf bestätigten Datenfeed");$("feedFlow").classList.toggle("offline",!ok)}
 function save(){try{localStorage.setItem("cryptopilot-v3-paper",JSON.stringify({...S.sim,active:false}));}catch(_){}}
-function load(){try{const d=JSON.parse(localStorage.getItem("cryptopilot-v3-paper")||"null");if(d&&Number.isFinite(d.cash)&&d.cash>=0&&d.cash<=100000&&d.holdings&&typeof d.holdings==="object"&&!Array.isArray(d.holdings)&&Array.isArray(d.trades)&&Array.isArray(d.series)){S.sim={...S.sim,...d,armed:d.armed===true&&!d.stopped,active:false};}}catch(_){}}
+function load(){
+ try{
+  const d=JSON.parse(localStorage.getItem("cryptopilot-v3-paper")||"null");
+  if(!d)return;
+  const validHoldings=d.holdings&&typeof d.holdings==="object"&&!Array.isArray(d.holdings)
+   &&Object.keys(d.holdings).length<=3&&Object.entries(d.holdings).every(([id,p])=>
+      Object.prototype.hasOwnProperty.call(BASE,id)&&!STABLE.has(id)
+      &&p&&typeof p==="object"&&Number.isFinite(p.qty)&&p.qty>0
+      &&Number.isFinite(p.cost)&&p.cost>0&&p.cost<=150.01
+      &&Number.isFinite(p.entry)&&p.entry>0
+      &&(!("peakBid" in p)||Number.isFinite(p.peakBid)&&p.peakBid>0)
+      &&(!("openedAt" in p)||Number.isFinite(p.openedAt)&&p.openedAt>0));
+  const validTrades=Array.isArray(d.trades)&&d.trades.length<=150&&d.trades.every(t=>
+      t&&typeof t==="object"&&["KAUF","VERKAUF"].includes(t.type)
+      &&Number.isFinite(t.eur)&&t.eur>=0&&Number.isFinite(t.time));
+  const validSeries=Array.isArray(d.series)&&d.series.length>0&&d.series.length<=110&&d.series.every(v=>Number.isFinite(v)&&v>=0);
+  const validCash=Number.isFinite(d.cash)&&d.cash>=0&&d.cash<=1000;
+  const validLastTrade=d.lastTrade&&typeof d.lastTrade==="object"&&!Array.isArray(d.lastTrade)
+   &&Object.values(d.lastTrade).every(v=>Number.isFinite(v)&&v>=0);
+  if(validHoldings&&validTrades&&validSeries&&validCash&&validLastTrade){
+   S.sim={...S.sim,...d,armed:d.armed===true&&!d.stopped,active:false};
+  }else{
+   S.sim.armed=false;S.sim.active=false;
+   text("diagnostic","Gespeicherter Paper-Zustand ist unplausibel. Kein automatischer Handel. Bitte Daten prüfen, bevor du das Depot zurücksetzt.");
+  }
+ }catch(_){S.sim.armed=false;S.sim.active=false}
+}
 function quoteFresh(q){return q&&Date.now()-q.time<20000&&Number.isFinite(q.bid)&&Number.isFinite(q.ask)&&Number.isFinite(q.last)&&q.bid>0&&q.ask>=q.bid&&q.last>0&&(q.ask-q.bid)/q.ask<0.008}
 function value(){let v=S.sim.cash;for(const [id,pos] of Object.entries(S.sim.holdings)){const q=S.quotes.get(id);if(!quoteFresh(q))return null;v+=pos.qty*q.bid*(1-0.001)*(1-0.004);}return v}
 function exposure(){let v=0;for(const [id,pos] of Object.entries(S.sim.holdings)){const q=S.quotes.get(id);if(!quoteFresh(q))return null;v+=pos.qty*q.bid}return v}
@@ -146,7 +172,8 @@ function maybeResumePaper(){
  // Persist intent, not fake background execution. Resume only after a new valid tick
  // while the browser tab is visible and no safety stop is latched.
  if(S.sim.armed&&!S.sim.stopped&&!document.hidden&&S.connection&&S.rankingOk
-    &&Date.now()-S.lastTick<20000)S.sim.active=true;
+    &&Date.now()-S.lastTick<20000
+    &&Object.keys(S.sim.holdings).every(id=>S.byPair.has(S.pairs.get(BASE[id])?.wsname)))S.sim.active=true;
 }
 function evaluate(id,q){
  if(!S.sim.active||!S.sim.armed||S.sim.stopped||document.hidden||!S.connection||!quoteFresh(q))return;
@@ -259,7 +286,13 @@ function renderMarket(){
 async function getJson(url){const c=new AbortController(),timer=setTimeout(()=>c.abort(),14000);try{const r=await fetch(url,{signal:c.signal,cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);return await r.json()}finally{clearTimeout(timer)}}
 async function loadRanking(){if(S.loading)return;S.loading=true;try{const u="https://api.coingecko.com/api/v3/coins/markets?vs_currency=eur&order=market_cap_desc&per_page=20&page=1&sparkline=false&price_change_percentage=24h";const data=await getJson(u);if(!Array.isArray(data)||data.length!==20)throw Error("Top 20 unvollständig");S.coins=data.filter(c=>typeof c.id==="string"&&typeof c.symbol==="string"&&Number.isFinite(c.current_price)&&c.current_price>0);if(S.coins.length!==20)throw Error("Top 20 ungültig");S.rankingOk=true;text("rankingTime","Rangliste · CoinGecko");text("diagnostic","Top-20-Ranking geladen. Kraken-Verfügbarkeit und Live-Ticker werden separat geprüft.");renderMarket();await loadPairsAndConnect()}catch(e){text("diagnostic","Top-20-Abfrage fehlgeschlagen: "+String(e.message)+". "+(S.coins.length?"Vorherige Rangliste bleibt erhalten.":"Noch keine Rangliste geladen."));if(!S.coins.length){S.rankingOk=false;setNotice("KEINE LIVE-ORDERS · Top-20-Ranking ist nicht verfügbar.",false)}}finally{S.loading=false}}
 async function loadPairsAndConnect(){try{const data=await getJson("https://api.kraken.com/0/public/AssetPairs");if(!data||data.error?.length||!data.result)throw Error("Kraken AssetPairs");const candidates=new Map(),duplicates=new Set();for(const [key,info] of Object.entries(data.result)){if(info.status&&info.status!=="online"||typeof info.wsname!=="string"||!info.wsname.endsWith("/EUR"))continue;const base=info.wsname.split("/")[0];if(candidates.has(base))duplicates.add(base);else candidates.set(base,{pair:key,wsname:info.wsname})}for(const base of duplicates)candidates.delete(base);S.pairs=candidates;updateChartOptions();labMarkets();connect();renderMarket()}catch(e){text("diagnostic","Kraken-Zuordnung fehlgeschlagen: "+String(e.message));setNotice("KEIN LIVE-STREAM · Kraken konnte nicht geladen werden.",false)}}
-function connect(){const byPair=new Map();for(const c of S.coins){if(STABLE.has(c.id))continue;const mapped=S.pairs.get(BASE[c.id]);if(mapped)byPair.set(mapped.wsname,c.id)}if(!byPair.size){setNotice("KEIN STREAM · Kein zuordenbarer Top-20-EUR-Markt",false);return}
+function connect(){const byPair=new Map();
+ // Holdings MUST continue receiving quotes even if CoinGecko no longer ranks them in Top 20.
+ const required=new Set([...S.coins.map(c=>c.id),...Object.keys(S.sim.holdings)]);
+ for(const id of required){if(STABLE.has(id))continue;const mapped=S.pairs.get(BASE[id]);if(mapped)byPair.set(mapped.wsname,id)}
+ const missing=Object.keys(S.sim.holdings).filter(id=>!S.pairs.get(BASE[id]));
+ if(missing.length){S.sim.active=false;setNotice("POSITION OHNE KRAKEN-MARKT · Kein neuer Paper-Kauf; offene Position prüfen.",false)}
+if(!byPair.size){setNotice("KEIN STREAM · Kein zuordenbarer Top-20-EUR-Markt",false);return}
 const key=[...byPair.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([pair,id])=>pair+":"+id).join("|");
 // Periodic top-20 updates must not close an active WebSocket or clear working quotes.
 if(S.livePairKey===key&&S.ws&&(S.ws.readyState===WebSocket.OPEN||S.ws.readyState===WebSocket.CONNECTING))return;
