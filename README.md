@@ -15,8 +15,8 @@
 
 1. Repository öffnen: https://github.com/MueschKi/crypto-pilot
 2. **Actions → Offline-Tests → Run workflow**: synthetische Tests und Demolauf.
-3. **Actions → CryptoPilot Top-20-Marktbericht → Run workflow**: öffentliche aktuelle Top-20-Daten abrufen.
-4. Die Ergebnisse unter dem jeweiligen Lauf als Artifact `crypto-pilot-market-report` herunterladen (JSON-Datei, 7 Tage verfügbar). Der Job zeigt zusätzlich eine kurze Coin-Übersicht.
+3. **Automatisch täglich**: CryptoPilot führt den Top-20-Marktbericht gegen 06:17 UTC über GitHub Actions aus (bei GitHub sind Verzögerungen möglich). Du kannst **Actions → CryptoPilot Top-20-Marktbericht → Run workflow** zusätzlich jederzeit manuell starten.
+4. Die Ergebnisse im jeweiligen Actions-Lauf direkt unter **Summary** ansehen oder als Artifact `crypto-pilot-market-report` herunterladen (JSON-Datei, 7 Tage verfügbar).
 
 GitHub Actions kann bei öffentlichen API-Anbietern auf Rate-Limits treffen. Fehlende Daten werden als solche berichtet, nicht als Kauf- oder Verkaufsempfehlung interpretiert.
 
