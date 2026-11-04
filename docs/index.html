@@ -80,8 +80,8 @@ function refreshTicker(){
        track.appendChild(el);tickerNodes.push({id:coin.id,price,pctEl});
      }
    }
-   // Speed scales with the amount of text; keep motion ~250px/second on phones.
-   requestAnimationFrame(()=>{const distance=track.scrollWidth/2;if(distance>0)track.style.setProperty("--ticker-duration",Math.max(4,distance/250).toFixed(2)+"s")});
+   // Speed scales with the amount of text; keep motion ~175px/second on phones.
+   requestAnimationFrame(()=>{const distance=track.scrollWidth/2;if(distance>0)track.style.setProperty("--ticker-duration",Math.max(4,distance/175).toFixed(2)+"s")});
  }
  for(const item of tickerNodes){const c=S.coins.find(c=>c.id===item.id);if(!c)continue;const q=S.quotes.get(c.id);const n=Number(c.price_change_percentage_24h||0);item.price.textContent=EUR.format(quoteFresh(q)&&S.connection?q.last:c.current_price);item.pctEl.textContent=(n>=0?"+":"")+PCT.format(n)+"%";item.pctEl.className="ticker-change "+(n>=0?"green":"red")}
 }
