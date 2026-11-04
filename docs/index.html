@@ -27,7 +27,7 @@ main{position:relative;z-index:1}.panel{position:relative;overflow:hidden;transi
 </style>
 </head>
 <body><div class="ambient-orb orb-a" aria-hidden="true"></div><div class="ambient-orb orb-b" aria-hidden="true"></div><main>
-<div class="top"><div class="brand">◈ Crypto<i>Pilot</i></div><div class="flex"><div class="stream-orbs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><div class="tag" id="connection">● VERBINDUNG WIRD AUFGEBAUT</div><span class="small">v4.1</span></div></div>
+<div class="top"><div class="brand">◈ Crypto<i>Pilot</i></div><div class="flex"><div class="stream-orbs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><div class="tag" id="connection">● VERBINDUNG WIRD AUFGEBAUT</div><span class="small">v4.2</span></div></div>
 <div class="hero"><h1>Markt. Depot. Strategie.</h1><p>Kraken-Livekurse, Top-20-Marktübersicht und virtuelles Trading. Keine echten Orders.</p>
 <div class="notice" id="notice">VERBINDUNGSAUFBAU · Warte auf bestätigte öffentliche Kursdaten. Kein Echtgeldhandel; das Paper-Depot ist standardmäßig aus.</div></div>
 <div class="grid">
@@ -49,6 +49,27 @@ main{position:relative;z-index:1}.panel{position:relative;overflow:hidden;transi
 <div><div class="label">Kraken-Spread</div><strong id="signalSpread">—</strong></div>
 <div><div class="label">Datenqualität</div><strong id="signalQuality">—</strong></div>
 </div><p class="small" id="signalReason">Warte auf echte Kursdaten.</p></details>
+<details class="panel lab-panel collapsible" id="forecastSection">
+<summary>Prognose-Labor <span class="summary-hint">Mögliche Tiefs, Hochs und Prognosefehler prüfen</span></summary>
+<p class="small">Empirischer Szenariovergleich mit ähnlichen historischen Marktphasen. Schätzt den Bereich der nächsten sechs abgeschlossenen Kerzen – keine garantierten Kauf-/Verkaufspreise und keine kalibrierten Wahrscheinlichkeiten.</p>
+<div class="lab-controls">
+<label>Coin <select id="forecastCoin" aria-label="Coin für die Prognose"><option value="">Markt wird geladen …</option></select></label>
+<label>Prognosehorizont <select id="forecastPeriod" aria-label="Zeithorizont der Prognose"><option value="60">6 Stunden (1h-Kerzen)</option><option value="240">24 Stunden (4h-Kerzen)</option></select></label>
+<button class="button" id="runForecast" type="button">Prognose berechnen</button>
+</div>
+<p class="small" id="forecastStatus" role="status">Prognosen werden auf Wunsch erstellt und später mit echten abgeschlossenen Kerzen verglichen.</p>
+<div id="forecastResult" hidden>
+<div class="signal-grid">
+<div><div class="label">Prognostizierter Schlusskurs</div><strong id="forecastMedian">—</strong></div>
+<div><div class="label">Mögliches Kurstief</div><strong id="forecastLow">—</strong></div>
+<div><div class="label">Mögliches Kurshoch</div><strong id="forecastHigh">—</strong></div>
+<div><div class="label">Kursband historischer Analogfälle</div><strong id="forecastBand">—</strong></div>
+</div>
+<p class="small" id="forecastQuality">—</p>
+<p class="small" id="forecastScore">—</p>
+</div>
+<div class="small" id="forecastJournal">Noch keine protokollierten Prognosen.</div>
+</details>
 <details class="panel lab-panel collapsible" id="labSection">
 <summary><span id="labTitle">Strategy Lab <span class="tag">Backtest</span></span><span class="summary-hint">Strategien vergleichen</span></summary>
 <p class="small">Drei feste Strategien mit denselben historischen Kraken-Kerzen und getrenntem Testzeitraum. Nur Simulation.</p>
@@ -77,6 +98,7 @@ main{position:relative;z-index:1}.panel{position:relative;overflow:hidden;transi
 <script src="./signal-monitor.js?v=20261104-signal38"></script>
 <script src="./strategy-lab.js?v=20261104-lab39"></script>
 <script src="./paper-rules.js?v=20261104-paper40"></script>
+<script src="./forecast-engine.js?v=20261104-forecast42"></script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
