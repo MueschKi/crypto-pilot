@@ -81,7 +81,7 @@ class DashboardChecks(unittest.TestCase):
 
     def test_ambient_motion_is_visual_only(self):
         self.assertIn("distance/85", self.html)
-        self.assertIn('id="tickCount"', self.html)
+        self.assertNotIn('id="tickCount"', self.html)
         self.assertNotIn('id="streamAge"', self.html)
         self.assertIn('class="ambient-orb orb-a"', self.html)
         self.assertIn('prefers-reduced-motion:reduce', self.html)
