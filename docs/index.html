@@ -579,7 +579,7 @@ $("exportForecasts").addEventListener("click",()=>{
    "Fehler %","Basisfehler %","Band getroffen"];
  const quoted=value=>{
   let v=String(value??"");
-  if(/^[=+\\-@]/.test(v))v="'"+v;
+  if(/^[=+@-]/.test(v))v="'"+v;
   return '"'+v.replaceAll('"','""')+'"';
  };
  const rows=[header,...records.map(r=>[r.coin,r.period,new Date(r.at*1000).toISOString(),
