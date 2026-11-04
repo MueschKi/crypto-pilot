@@ -63,6 +63,22 @@ class DashboardChecks(unittest.TestCase):
         self.assertIn('const visibleCount=w<500?44', chart)
         self.assertIn('raw.map(validate).filter(Boolean)', chart)
 
+    def test_chart_has_tick_refresh_and_independent_heartbeat(self):
+        chart = (ROOT / "docs" / "market-chart.js").read_text(encoding="utf-8")
+        self.assertIn('if(state.pending&&!document.hidden)', chart)
+        self.assertIn('},200);', chart)
+        self.assertIn('if(!document.hidden)draw()', chart)
+        self.assertIn('},1000);', chart)
+        self.assertIn('const secondsToNext=60-', chart)
+        self.assertIn('age>20?', chart)
+        self.assertIn('w<530?', chart)
+        self.assertIn('const now=Date.now()', chart)
+
+    def test_ticker_speed_is_smooth(self):
+        self.assertIn('distance/175', self.html)
+        self.assertNotIn('distance/250', self.html)
+        self.assertIn('for(const coin of S.coins)', self.html)
+
     def test_safe_default_for_autotrading(self):
         self.assertIn("active:false", self.html)
         self.assertIn("S.sim.active=false", self.html)
