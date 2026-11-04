@@ -342,7 +342,7 @@ function renderMarket(){
 }
 async function getJson(url){const c=new AbortController(),timer=setTimeout(()=>c.abort(),14000);try{const r=await fetch(url,{signal:c.signal,cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);return await r.json()}finally{clearTimeout(timer)}}
 async function loadRanking(){if(S.loading)return;S.loading=true;try{const u="https://api.coingecko.com/api/v3/coins/markets?vs_currency=eur&order=market_cap_desc&per_page=20&page=1&sparkline=false&price_change_percentage=24h";const data=await getJson(u);if(!Array.isArray(data)||data.length!==20)throw Error("Top 20 unvollständig");S.coins=data.filter(c=>typeof c.id==="string"&&typeof c.symbol==="string"&&Number.isFinite(c.current_price)&&c.current_price>0);if(S.coins.length!==20)throw Error("Top 20 ungültig");S.rankingOk=true;text("rankingTime","Rangliste · CoinGecko");text("diagnostic","Top-20-Ranking geladen. Kraken-Verfügbarkeit und Live-Ticker werden separat geprüft.");renderMarket();await loadPairsAndConnect()}catch(e){text("diagnostic","Top-20-Abfrage fehlgeschlagen: "+String(e.message)+". "+(S.coins.length?"Vorherige Rangliste bleibt erhalten.":"Noch keine Rangliste geladen."));if(!S.coins.length){S.rankingOk=false;setNotice("KEINE LIVE-ORDERS · Top-20-Ranking ist nicht verfügbar.",false)}}finally{S.loading=false}}
-async function loadPairsAndConnect(){try{const data=await getJson("https://api.kraken.com/0/public/AssetPairs");if(!data||data.error?.length||!data.result)throw Error("Kraken AssetPairs");const candidates=new Map(),duplicates=new Set();for(const [key,info] of Object.entries(data.result)){if(info.status&&info.status!=="online"||typeof info.wsname!=="string"||!info.wsname.endsWith("/EUR"))continue;const base=info.wsname.split("/")[0];if(candidates.has(base))duplicates.add(base);else candidates.set(base,{pair:key,wsname:info.wsname})}for(const base of duplicates)candidates.delete(base);S.pairs=candidates;updateChartOptions();labMarkets();connect();renderMarket()}catch(e){text("diagnostic","Kraken-Zuordnung fehlgeschlagen: "+String(e.message));setNotice("KEIN LIVE-STREAM · Kraken konnte nicht geladen werden.",false)}}
+async function loadPairsAndConnect(){try{const data=await getJson("https://api.kraken.com/0/public/AssetPairs");if(!data||data.error?.length||!data.result)throw Error("Kraken AssetPairs");const candidates=new Map(),duplicates=new Set();for(const [key,info] of Object.entries(data.result)){if(info.status&&info.status!=="online"||typeof info.wsname!=="string"||!info.wsname.endsWith("/EUR"))continue;const base=info.wsname.split("/")[0];if(candidates.has(base))duplicates.add(base);else candidates.set(base,{pair:key,wsname:info.wsname})}for(const base of duplicates)candidates.delete(base);S.pairs=candidates;updateChartOptions();labMarkets();connect();renderMarket();if(forecastAutoEnabled)observeForecasts()}catch(e){text("diagnostic","Kraken-Zuordnung fehlgeschlagen: "+String(e.message));setNotice("KEIN LIVE-STREAM · Kraken konnte nicht geladen werden.",false)}}
 function connect(){const byPair=new Map();
  // Holdings MUST continue receiving quotes even if CoinGecko no longer ranks them in Top 20.
  const required=new Set([...S.coins.map(c=>c.id),...Object.keys(S.sim.holdings)]);
@@ -504,6 +504,93 @@ async function runForecast(){
  finally{forecastBusy=false;$("runForecast").disabled=false}
 }
 $("runForecast").addEventListener("click",runForecast);
+// Optional, rate-limited forward observation. No private API and no trade execution.
+async function observeForecasts(){
+ if(!forecastAutoEnabled||forecastAutoWorking||forecastBusy||document.hidden)return;
+ const id=$("forecastCoin").value,coin=S.coins.find(c=>c.id===id),market=coin&&S.pairs.get(BASE[id]);
+ if(!coin||!market)return;
+ const period=60,now=Date.now();
+ if(now-forecastLastAttempt<15*60000)return;
+ let records;
+ try{records=readForecastLog()}catch(e){text("forecastAutoStatus",String(e.message));return}
+ const matching=records.filter(r=>r.coin===id&&r.pair===market.pair&&r.period===period);
+ const latest=matching.at(-1);
+ const needNew=!latest||now-latest.at*1000>=6*3600000;
+ const due=matching.some(r=>!r.actual&&now>=(r.until+period*60)*1000);
+ if(!needNew&&!due)return;
+ forecastLastAttempt=now;forecastAutoWorking=true;
+ text("forecastAutoStatus","Prüfe fällige Prognosen anhand abgeschlossener Kraken-Kerzen …");
+ try{
+  const body=await getJson("https://api.kraken.com/0/public/OHLC?"+new URLSearchParams({pair:market.pair,interval:"60"}));
+  if(!body||!Array.isArray(body.error)||body.error.length||!body.result)throw Error("Kraken-Historie ist gerade nicht verfügbar.");
+  const keys=Object.keys(body.result).filter(k=>k!=="last");
+  if(keys.length!==1||!Array.isArray(body.result[keys[0]]))throw Error("Ungültige Kraken-Historie.");
+  const closed=body.result[keys[0]].slice(0,-1);
+  CryptoPilotForecast.ensure(closed,period);
+  let changed=false,settled=0,newPrediction=false;
+  for(const record of records){
+   if(record.coin===id&&record.pair===market.pair&&record.period===period&&!record.actual){
+    const actual=CryptoPilotForecast.settle(record,closed);
+    if(actual){record.actual=actual;settled++;changed=true}
+   }
+  }
+  if(needNew&&forecastAutoEnabled&&!document.hidden){
+   const p=CryptoPilotForecast.forecast({rows:closed,period});
+   if(!records.some(r=>r.coin===id&&r.pair===market.pair&&r.period===period&&r.at===p.at)){
+    records.push({coin:id,pair:market.pair,at:p.at,until:p.until,price:p.price,period,
+      expectedReturnPct:p.expectedReturnPct,closeBand:p.closeBand});
+    newPrediction=true;changed=true;
+   }
+  }
+  if(changed){
+   if(!writeForecastLog(records))throw Error("Prognosejournal nicht gespeichert. Bitte Safari-Speicher prüfen.");
+   showForecastJournal(records.slice(-100));
+  }
+  text("forecastAutoStatus",(newPrediction?"Neue 6h-Prognose protokolliert. ":"")+
+    (settled?settled+" Prognose(n) mit echten Kursen überprüft. ":"")+
+    "Beobachtung "+(forecastAutoEnabled?"eingeschaltet":"pausiert")+
+    " · nur bei sichtbarem Safari-Tab.");
+ }catch(e){text("forecastAutoStatus","Beobachtung pausiert: "+String(e.message)+". Keine Ersatzkurse gespeichert.")}
+ finally{forecastAutoWorking=false}
+}
+$("forecastAutoToggle").addEventListener("click",()=>{
+ const next=!forecastAutoEnabled;
+ try{localStorage.setItem(FORECAST_AUTO_KEY,next?"1":"0")}
+ catch(_){text("forecastAutoStatus","Safari-Speicherung nicht verfügbar. Aktivierung nicht geändert.");return}
+ forecastAutoEnabled=next;
+ forecastLastAttempt=0;
+ updateForecastObserverLabel();
+ if(next)observeForecasts();
+});
+$("forecastCoin").addEventListener("change",()=>{
+ forecastLastAttempt=0;
+ try{showForecastJournal(readForecastLog())}catch(e){text("forecastJournal",String(e.message))}
+ if(forecastAutoEnabled)observeForecasts();
+});
+$("forecastPeriod").addEventListener("change",()=>{
+ try{showForecastJournal(readForecastLog())}catch(e){text("forecastJournal",String(e.message))}
+});
+$("exportForecasts").addEventListener("click",()=>{
+ let records;
+ try{records=readForecastLog()}catch(e){alert(String(e.message));return}
+ if(!records.length){alert("Noch keine Prognosen gespeichert.");return}
+ const header=["Coin","Zeitraum min","Erstellte Kerze UTC","Erwartetes Ende UTC","Ausgang EUR",
+   "Median Veränderung %","Unteres Kursband EUR","Oberes Kursband EUR","Tatsächlicher Kurs EUR",
+   "Fehler %","Basisfehler %","Band getroffen"];
+ const quoted=value=>{
+  let v=String(value??"");
+  if(/^[=+\\-@]/.test(v))v="'"+v;
+  return '"'+v.replaceAll('"','""')+'"';
+ };
+ const rows=[header,...records.map(r=>[r.coin,r.period,new Date(r.at*1000).toISOString(),
+  new Date((r.until+r.period*60)*1000).toISOString(),r.price,r.expectedReturnPct,
+  r.closeBand[0],r.closeBand[1],r.actual?.actual,r.actual?.errorPct,
+  r.actual?.baselinePct,r.actual?String(r.actual.covered):""])];
+ const blob=new Blob(["\\uFEFF"+rows.map(row=>row.map(quoted).join(";")).join("\\r\\n")],{type:"text/csv;charset=utf-8"});
+ const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download="cryptopilot-forecast-journal.csv";link.click();
+ setTimeout(()=>URL.revokeObjectURL(link.href),1000);
+});
+
 
 let labBusy=false;
 async function runStrategyLab(){
@@ -565,6 +652,7 @@ load();if(S.paperStorageFault)setNotice("Paper-Daten unplausibel.",false);Crypto
 setInterval(()=>{if(!document.hidden&&S.coins.length)renderMarket();if(!document.hidden)renderSignal()},2000);
 setInterval(()=>{text("clock",new Date().toLocaleTimeString("de-DE"));text("age",S.lastTick?Math.floor((Date.now()-S.lastTick)/1000)+"s":"—");if(S.connection&&Date.now()-S.lastTick>20000){S.connection=false;S.sim.active=false;save();setNotice("KURSE VERALTET · Paper-Trading bis zu frischen Daten pausiert.",false)}if(!document.hidden){mark();if(Object.keys(S.sim.holdings).length)renderDepot()}},1500);
 setInterval(()=>{if(!document.hidden)loadRanking()},900000);
+setInterval(()=>{if(!document.hidden&&forecastAutoEnabled)observeForecasts()},60000);
 window.addEventListener("pageshow",()=>{if(S.rankingOk&&(!S.ws||S.ws.readyState===WebSocket.CLOSED))connect()});
 window.addEventListener("pagehide",()=>{S.sim.active=false;releasePaperLease()});
 window.addEventListener("storage",event=>{if(event.key===PAPER_LEASE_KEY&&S.sim.active){
