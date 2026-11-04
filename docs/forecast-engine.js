@@ -90,5 +90,28 @@ function settle(record,rows){
   baselinePct:100*Math.abs(record.price-actual)/actual,
   covered:actual>=record.closeBand[0]&&actual<=record.closeBand[1]};
 }
-root.CryptoPilotForecast={forecast,ensure,estimate,backcheck,settle,roundTripPct:ROUND_TRIP_PCT};
+function scoreJournal(records){
+ // Strictly completed forecasts only. Each result is paired with an immutable original issue.
+ const checked=(Array.isArray(records)?records:[]).filter(r=>
+  r&&r.actual&&Number.isFinite(r.actual.actual)&&r.actual.actual>0
+  &&Number.isFinite(r.actual.errorPct)&&r.actual.errorPct>=0
+  &&Number.isFinite(r.actual.baselinePct)&&r.actual.baselinePct>=0
+  &&Number.isFinite(r.price)&&r.price>0&&Number.isFinite(r.expectedReturnPct)
+  &&Array.isArray(r.closeBand)&&r.closeBand.length===2
+  &&r.closeBand.every(Number.isFinite));
+ const count=checked.length;
+ if(!count)return {count:0,meaningful:false,maePct:null,baselineMaePct:null,
+  directionPct:null,coveragePct:null,betterPct:null,meanRealizedPct:null};
+ const avg=f=>checked.reduce((sum,r)=>sum+f(r),0)/count;
+ const directionPct=100*avg(r=>{
+  const predicted=Math.sign(r.expectedReturnPct),observed=Math.sign(r.actual.actual/r.price-1);
+  return predicted===observed?1:0;
+ });
+ return {count,meaningful:count>=30,maePct:avg(r=>r.actual.errorPct),
+  baselineMaePct:avg(r=>r.actual.baselinePct),directionPct,
+  coveragePct:100*avg(r=>r.actual.actual>=r.closeBand[0]&&r.actual.actual<=r.closeBand[1]?1:0),
+  betterPct:100*avg(r=>r.actual.errorPct<r.actual.baselinePct?1:0),
+  meanRealizedPct:avg(r=>100*(r.actual.actual/r.price-1))};
+}
+root.CryptoPilotForecast={forecast,ensure,estimate,backcheck,settle,scoreJournal,roundTripPct:ROUND_TRIP_PCT};
 })(typeof window!=="undefined"?window:globalThis);
