@@ -9,7 +9,7 @@ ROOT=pathlib.Path(__file__).resolve().parents[1]
 class ForecastChecks(unittest.TestCase):
     def test_forecast_panel_is_research_only(self):
         html=(ROOT/"docs"/"index.html").read_text(encoding="utf-8")
-        self.assertIn('src="./forecast-engine.js?v=20261104-forecast42"',html)
+        self.assertIn('src="./forecast-engine.js?v=20261104-forecast43"',html)
         self.assertIn('id="forecastSection"',html)
         for field in ("forecastCoin","forecastPeriod","runForecast","forecastMedian",
                       "forecastLow","forecastHigh","forecastBand","forecastScore",
@@ -24,6 +24,48 @@ class ForecastChecks(unittest.TestCase):
         self.assertNotIn("WebSocket(",engine)
         self.assertNotIn("order(",engine)
         self.assertNotIn("/private/AddOrder",engine)
+
+    def test_forward_observer_opt_in_and_forecast_export(self):
+        html=(ROOT/"docs"/"index.html").read_text(encoding="utf-8")
+        for widget in ("forecastAutoToggle","forecastAutoStatus","forecastForwardScore","exportForecasts"):
+            self.assertIn('id="'+widget+'"',html)
+        self.assertIn('cryptopilot-v43-forecast-observer-enabled',html)
+        self.assertIn('if(!forecastAutoEnabled||forecastAutoWorking||forecastBusy||document.hidden)return',html)
+        self.assertIn('now-forecastLastAttempt<15*60000',html)
+        self.assertIn('now-latest.at*1000>=6*3600000',html)
+        self.assertIn('CryptoPilotForecast.settle(record,closed)',html)
+        self.assertIn('CryptoPilotForecast.scoreJournal(subset)',html)
+        self.assertIn('cryptopilot-forecast-journal.csv',html)
+        self.assertIn('if(!document.hidden&&forecastAutoEnabled)observeForecasts()',html)
+        self.assertNotIn('/private/AddOrder',html)
+
+    def test_forward_scorecard_excludes_pending_and_does_not_claim_validation(self):
+        node=shutil.which("node")
+        if not node:self.skipTest("Requires Node")
+        script=r"""
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const ctx={};vm.runInNewContext(fs.readFileSync('docs/forecast-engine.js','utf8'),ctx);
+const F=ctx.CryptoPilotForecast;
+const base={price:100,expectedReturnPct:2,closeBand:[99,104]};
+const pending=[base];
+assert.equal(F.scoreJournal(pending).count,0);
+const success={...base,actual:{actual:102,errorPct:0,baselinePct:100*(2/102)}};
+const poor={...base,actual:{actual:99,errorPct:100*(3/99),baselinePct:100*(1/99)}};
+const result=F.scoreJournal([success,poor,base,null]);
+assert.equal(result.count,2);
+assert.equal(result.meaningful,false);
+assert.equal(result.directionPct,50);
+assert.equal(result.coveragePct,100);
+assert.equal(result.betterPct,50);
+assert(result.maePct>0&&result.baselineMaePct>0);
+const enough=F.scoreJournal(Array.from({length:30},()=>success));
+assert.equal(enough.count,30);
+assert.equal(enough.meaningful,true);
+assert.equal(enough.directionPct,100);
+assert.equal(enough.betterPct,100);
+"""
+        result=subprocess.run([node,"-e",script],cwd=ROOT,text=True,capture_output=True)
+        self.assertEqual(result.returncode,0,result.stderr)
 
     def test_forecast_validation_and_subsequent_realized_evaluation(self):
         node=shutil.which("node")
