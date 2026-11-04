@@ -586,7 +586,7 @@ $("exportForecasts").addEventListener("click",()=>{
   new Date((r.until+r.period*60)*1000).toISOString(),r.price,r.expectedReturnPct,
   r.closeBand[0],r.closeBand[1],r.actual?.actual,r.actual?.errorPct,
   r.actual?.baselinePct,r.actual?String(r.actual.covered):""])];
- const blob=new Blob(["\\uFEFF"+rows.map(row=>row.map(quoted).join(";")).join("\\r\\n")],{type:"text/csv;charset=utf-8"});
+ const blob=new Blob(["\uFEFF"+rows.map(row=>row.map(quoted).join(";")).join("\r\n")],{type:"text/csv;charset=utf-8"});
  const link=document.createElement("a");link.href=URL.createObjectURL(blob);link.download="cryptopilot-forecast-journal.csv";link.click();
  setTimeout(()=>URL.revokeObjectURL(link.href),1000);
 });
