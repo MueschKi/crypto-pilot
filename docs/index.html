@@ -403,7 +403,19 @@ function drawLabCurve(results){
  }
 }
 const FORECAST_KEY="cryptopilot-v42-prediction-journal";
-let forecastBusy=false;
+const FORECAST_AUTO_KEY="cryptopilot-v43-forecast-observer-enabled";
+let forecastBusy=false,forecastAutoWorking=false,forecastLastAttempt=0;
+let forecastAutoEnabled=false;
+try{forecastAutoEnabled=localStorage.getItem(FORECAST_AUTO_KEY)==="1"}catch(_){}
+function updateForecastObserverLabel(){
+ $("forecastAutoToggle").textContent="Prognosen automatisch beobachten: "+(forecastAutoEnabled?"Ein":"Aus");
+ $("forecastAutoToggle").setAttribute("aria-pressed",forecastAutoEnabled?"true":"false");
+ if(!forecastAutoEnabled)text("forecastAutoStatus","Ausgeschaltet. Bereits gespeicherte Prognosen bleiben erhalten.");
+ else if(document.hidden)text("forecastAutoStatus","Aktivierung gespeichert; Safari pausiert Beobachtung im Hintergrund.");
+ else text("forecastAutoStatus","Beobachtung aktiviert: nur im sichtbaren Tab, maximal alle 6 Stunden neue 6h-Prognosen; fällige Ergebnisse werden geprüft.");
+}
+updateForecastObserverLabel();
+
 function readForecastLog(){
  try{
   const raw=localStorage.getItem(FORECAST_KEY);
@@ -424,6 +436,17 @@ function writeForecastLog(records){
 }
 function showForecastJournal(items){
  const matured=items.filter(x=>x.actual&&Number.isFinite(x.actual.errorPct));
+ const subset=items.filter(x=>x.coin===$("forecastCoin").value&&x.period===Number($("forecastPeriod").value));
+ const score=CryptoPilotForecast.scoreJournal(subset);
+ let message=score.count+" abgeschlossene Prognosen für diesen Coin und Zeithorizont.";
+ if(score.count){
+  message+=" Ø Prognosefehler "+PCT.format(score.maePct)+" % gegenüber "+PCT.format(score.baselineMaePct)+" % beim unveränderten Kurs. "+
+   "Richtung korrekt: "+PCT.format(score.directionPct)+" %. Bandabdeckung: "+PCT.format(score.coveragePct)+" %. "+
+   "Fehler kleiner als die Basisprognose in "+PCT.format(score.betterPct)+" % der Fälle.";
+ }
+ message+=score.meaningful?" Mindestens 30 Beobachtungen vorhanden, aber noch keine gesicherte Handelsgüte.":" Noch zu wenige abgeschlossene Beobachtungen für eine belastbare Einschätzung.";
+ text("forecastForwardScore",message);
+
  const pending=items.length-matured.length;
  let line=items.length+" gespeicherte Prognosen · "+matured.length+" überprüft · "+pending+" ausstehend.";
  if(matured.length){
@@ -434,7 +457,7 @@ function showForecastJournal(items){
 }
 try{showForecastJournal(readForecastLog())}catch(e){text("forecastJournal",String(e.message))}
 async function runForecast(){
- if(forecastBusy)return;
+ if(forecastBusy||forecastAutoWorking)return;
  const coinId=$("forecastCoin").value,coin=S.coins.find(c=>c.id===coinId);
  const market=coin&&S.pairs.get(BASE[coinId]);
  if(!coin||!market){text("forecastStatus","Kein gültiger Kraken-EUR-Markt ausgewählt.");return}
