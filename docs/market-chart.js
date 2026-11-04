@@ -121,6 +121,15 @@ function draw(){
   else{ctx.moveTo(x,yy+7);ctx.lineTo(x-7,yy-5);ctx.lineTo(x+7,yy-5)}
   ctx.closePath();ctx.fill();
  }
+ // Visual minute progress uses wall-clock time; never modifies a real OHLC value.
+ const progress=(Date.now()/1000%60)/60;
+ const progressWidth=pw*progress;
+ ctx.fillStyle="#1e3556";ctx.fillRect(L,T+ph+6,pw,3);
+ ctx.fillStyle="#489bf0";ctx.fillRect(L,T+ph+6,progressWidth,3);
+ const sweepX=L+pw*progress;
+ ctx.strokeStyle="rgba(95,174,255,.18)";ctx.lineWidth=1;ctx.setLineDash([3,7]);
+ ctx.beginPath();ctx.moveTo(sweepX,T+23);ctx.lineTo(sweepX,T+ph);ctx.stroke();ctx.setLineDash([]);
+ ctx.fillStyle="#76baff";ctx.beginPath();ctx.arc(sweepX,T+ph+7.5,3,0,Math.PI*2);ctx.fill();
  const lastC=data[data.length-1];ctx.fillStyle="#dceaff";ctx.font="bold 13px system-ui";ctx.fillText(euro.format(lastC.c),L+8,T+16);
  // Visible heartbeat based only on the clock. Prices move ONLY on genuine Kraken ticks.
  const now=Date.now();
