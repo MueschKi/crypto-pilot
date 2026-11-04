@@ -50,7 +50,7 @@ class DashboardChecks(unittest.TestCase):
         self.assertIn('tickerKey', self.html)
         self.assertIn('refreshTicker()', self.html)
         self.assertIn('item.price.textContent=', self.html)
-        self.assertIn('distance/250', self.html)
+        self.assertIn('distance/175', self.html)
         self.assertNotIn('lastTickerRender', self.html)
         self.assertNotIn('ticker").innerHTML=items+items', self.html)
 
