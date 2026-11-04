@@ -6,6 +6,8 @@ const state={selected:null,pair:null,candles:[],lastTick:null,token:0,pending:fa
 const canvas=()=>document.getElementById("marketChart");
 const label=()=>document.getElementById("marketChartStatus");
 const euro=new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR",maximumFractionDigits:2});
+const smallEuro=new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR",maximumFractionDigits:6});
+const formatPrice=p=>p<1?smallEuro.format(p):euro.format(p);
 const clock=t=>new Date(t*1000).toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
 function status(s){state.status=s;if(label())label().textContent=s}
 function validate(row){if(!Array.isArray(row)||row.length<7)return null;
@@ -17,7 +19,8 @@ async function select(id,pair,symbol){
  if(state.activeController){state.activeController.abort();state.activeController=null}
  state.selected=id;state.pair=pair;state.lastTick=null;state.recentTicks=[];
  document.getElementById("marketChartTitle").textContent=(symbol||id).toUpperCase()+" / EUR";
- const cached=state.cache.get(id);
+ const cacheEntry=state.cache.get(id);
+ const cached=cacheEntry&&cacheEntry.pair===pair?cacheEntry:null;
  // Immediately show THIS coin's verified earlier candles if present.
  state.candles=cached?cached.candles.map(x=>({...x})):[];
  status(cached?"Zeige gespeicherte echte Kraken-Kerzen · aktualisiere …":"Lade echte Kraken-1-Minuten-Kerzen …");
@@ -47,9 +50,17 @@ async function select(id,pair,symbol){
    const ordered=[...unique.values()].sort((a,b)=>a.t-b.t);
    if(ordered.length<2)throw Error("Zu wenige gültige Kerzen für diesen Markt");
    const previous=state.candles;
-   // Keep any confirmed live candle that is newer than the HTTP snapshot.
-   const live=previous.filter(c=>c.t>ordered[ordered.length-1].t);
-   state.candles=[...ordered.slice(-180),...live].slice(-180);
+   // Preserve already received live OHLC observations while the REST request was pending.
+   const merged=new Map(ordered.map(bar=>[bar.t,bar]));
+   for(const c of previous){
+    const rest=merged.get(c.t);
+    if(!rest){merged.set(c.t,c);continue}
+    // Only merge current-minute live price if it came from Kraken since this fetch began.
+    if(state.lastTick!==null&&Math.floor(state.lastTick/60000)*60===c.t){
+     merged.set(c.t,{...rest,h:Math.max(rest.h,c.h),l:Math.min(rest.l,c.l),c:c.c});
+    }
+   }
+   state.candles=[...merged.values()].sort((a,b)=>a.t-b.t).slice(-180);
    state.cache.set(id,{pair,time:Date.now(),candles:state.candles.map(x=>({...x}))});
    state.lastHistoricalLoad=Date.now();
    status("Kraken-Historie · "+state.candles.length+" echte 1-Minuten-Kerzen · Live-Ticks aktiv");
@@ -150,7 +161,7 @@ function draw(){
  ctx.fillStyle=active?"rgba(68,232,167,.14)":"rgba(168,184,207,.08)";
  ctx.beginPath();ctx.arc(endX,endY,glow+5,0,Math.PI*2);ctx.fill();
  ctx.fillStyle=active?"#4cf3b1":"#8aa0be";ctx.beginPath();ctx.arc(endX,endY,3.5,0,Math.PI*2);ctx.fill();
- const lastC=data[data.length-1];ctx.fillStyle="#dceaff";ctx.font="bold 13px system-ui";ctx.fillText(euro.format(lastC.c),L+5,17);
+ const lastC=data[data.length-1];ctx.fillStyle="#dceaff";ctx.font="bold 13px system-ui";ctx.fillText(formatPrice(lastC.c),L+5,17);
  ctx.fillStyle="#8ea5c5";ctx.font="11px system-ui";ctx.fillText("▲ Kauf   ▼ Verkauf (virtuell)",L+8,h-11);
 }
 window.CryptoPilotChart={select,tick,trades,draw,get selected(){return state.selected}};
