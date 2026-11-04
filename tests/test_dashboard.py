@@ -96,7 +96,7 @@ class DashboardChecks(unittest.TestCase):
         self.assertIn('marketRows:new Map()', self.html)
         self.assertIn('S.marketRows.set(c.id', self.html)
         self.assertIn('if(S.marketKey!==key)', self.html)
-        self.assertIn('setInterval(()=>{if(!document.hidden&&S.coins.length)renderMarket()},2000)', self.html)
+        self.assertIn('if(!document.hidden&&S.coins.length)renderMarket();if(!document.hidden)renderSignal()', self.html)
         self.assertIn('function priceEUR(value)', self.html)
         self.assertIn('cells.age.textContent=age', self.html)
         self.assertIn('Kraken live', self.html)
@@ -154,6 +154,38 @@ class DashboardChecks(unittest.TestCase):
         self.assertIn('if(!entries.length)', self.html)
         self.assertIn("active:false", self.html)
         self.assertNotIn("/private/AddOrder", self.html)
+
+    def test_live_signal_observability_is_not_an_order_engine(self):
+        self.assertIn('src="./signal-monitor.js?v=20261104-signal38"', self.html)
+        self.assertIn('id="signalDirection"', self.html)
+        self.assertIn('id="signalMomentum"', self.html)
+        self.assertIn('id="signalSpread"', self.html)
+        self.assertIn('id="signalReason"', self.html)
+        self.assertIn('observeTick(id,q)', self.html)
+        self.assertIn('CryptoPilotSignals.summarize(', self.html)
+        self.assertIn('S.tape.get(id)', self.html)
+        monitor = (ROOT / "docs" / "signal-monitor.js").read_text(encoding="utf-8")
+        self.assertNotIn("/private/AddOrder", monitor)
+        self.assertNotIn("fetch(", monitor)
+        self.assertNotIn("WebSocket(", monitor)
+        import shutil
+        node = shutil.which("node")
+        if node:
+            script = """
+            const fs=require('fs'),vm=require('vm'),assert=require('assert');
+            const ctx={};vm.runInNewContext(fs.readFileSync('docs/signal-monitor.js','utf8'),ctx);
+            const f=ctx.CryptoPilotSignals.summarize;
+            const now=1000000,q={last:101,ask:101.02,bid:101,time:now};
+            const ticks=Array.from({length:13},(_,i)=>({price:100+i/12,time:now-13000+i*1000}));
+            assert.equal(f(ticks,q,now).state,'AUFWÄRTS');
+            assert.equal(f(ticks,q,now).eligible,true);
+            assert.equal(f(ticks,{...q,time:now-21000},now).eligible,false);
+            assert.equal(f(ticks,{...q,ask:104},now).eligible,false);
+            assert.equal(f([],q,now).count,0);
+            assert.equal(f([{price:1,time:now+1000}],q,now).count,0);
+            """
+            result=subprocess.run([node, "-e", script],capture_output=True,text=True,cwd=ROOT)
+            self.assertEqual(result.returncode,0,result.stderr)
 
     def test_safe_default_for_autotrading(self):
         self.assertIn("active:false", self.html)

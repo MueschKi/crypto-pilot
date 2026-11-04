@@ -9,7 +9,18 @@
 - **Einfache Trendstrategie:** SMA20 über SMA50, Signale nur aus abgeschlossenen Kerzen, hypothetische Ausführung zur nächsten Tageseröffnung.
 - **Kosten in Simulationen:** 0,4 % Gebühren und 0,1 % Slippage je Handelsseite; 40 % maximale Einzelcoin-Exposition.
 - **Keine falsche Abdeckung:** Stablecoins bleiben in der Übersicht, werden aber nicht als spekulativer Trendtrade betrachtet. Unbekannte Coin-IDs oder nicht verfügbare EUR-Handelspaare werden klar ausgewiesen; keine Ersatzcoins von Platz 21+.
-- **Wichtig:** Jeder Backtest simuliert für sich 1.000 EUR. **Noch kein gemeinsames virtuelles Portfolio**, kein kontinuierliches Paper-Trading, keine KI mit nachgewiesenem Prognosevorteil.
+- **Wichtig:** Jeder Python-Backtest simuliert für sich 1.000 EUR. Das separate Safari-Dashboard besitzt inzwischen ein browserlokales virtuelles Depot; es ist kein dauerhaft laufendes Cloud-Depot. Keine KI mit nachgewiesenem Prognosevorteil.
+
+## Safari-Dashboard (aktuell: v3.8)
+
+Die öffentliche GitHub-Pages-Website ist unter **https://mueschki.github.io/crypto-pilot/** erreichbar. Das browserbasierte Dashboard zeigt:
+
+- Top-20-Marktkapitalisierungs-Rangliste (CoinGecko), sofern die öffentliche API verfügbar ist; EUR-Ticker von Kraken per öffentlichem WebSocket, soweit passende Handelspaare vorhanden sind.
+- Echte Kraken-1-Minuten-Kerzen für den ausgewählten Coin, Zoom (15/30/60/90 Kerzen), Tippen auf einen Coin in der Marktübersicht und Markierungen virtueller Orders.
+- **Signal-Cockpit (v3.8):** rein beobachtende 60-Sekunden-Tick-Auswertung mit Richtung, Spread und Datenqualität. **Nicht** identisch mit der separaten einfachen Paper-Momentumstrategie, kein validiertes Prognosemodell und keine automatischen Empfehlungen.
+- Browserlokales simuliertes Depot (1.000 EUR Startwert), CSV-Orderjournal und simulierte Positionsbewertung. Paper-Autohandel wird bei jedem Seitenstart ausdrücklich neu eingeschaltet und bei relevanten Verbindungsabbrüchen beendet.
+
+**Wichtige Betriebsgrenzen:** Die Safari-Seite muss für neue virtuelle Trades geöffnet bleiben, und iOS kann Hintergrund-Tabs anhalten. Es gibt noch **keinen** zuverlässigen serverseitigen 24/7-Paper-Prozess. Kein realer Kraken-Kontozugriff, keine echten Orders, keine API-Schlüssel. Auch die Signalbewertung beweist keinen Gewinnvorteil.
 
 ## Bedienung am iPhone – ohne Terminal
 
@@ -37,7 +48,7 @@ Die heutige Top-20-Auswahl verursacht bei historischen Rückrechnungen einen **S
 ## Nächste Schritte
 
 1. Öffentliche Datenqualität und Kraken-Mapping verifizieren, tägliche Ranglisten historisieren.
-2. Gemeinsames virtuelles Depot über 1.000 EUR inklusive Verlustlimits, Orderjournal und nachvollziehbarer Transaktionskosten.
+2. Browserlokales Paper-Depot durch einen explizit separat freizugebenden, testbaren Cloud-Paper-Dienst ersetzen – mit persistentem Journal, Verlustlimits und konsistentem Status.
 3. Strategien reproduzierbar gegen Buy-and-Hold mit Walk-Forward-Prüfungen vergleichen; KI nur bei messbarem Mehrwert.
 4. Echte Orders ausschließlich nach neuer ausdrücklicher Freigabe und mit Not-Aus/Orderabgleich. **Standardmäßig gesperrt.**
 
