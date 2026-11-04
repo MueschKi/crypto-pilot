@@ -18,7 +18,7 @@ class PaperStrategyChecks(unittest.TestCase):
         self.assertIn('maybeResumePaper();if(wasOffline)',html)
         self.assertIn('S.sim.stopped=true;S.sim.armed=false;S.sim.active=false',html)
         self.assertIn('S.sim.active=false;save();renderDepot()',html)
-        self.assertIn('if(!S.sim.active||!S.sim.armed||S.sim.stopped||document.hidden',html)
+        self.assertIn('if(!S.sim.active||!S.sim.armed||S.sim.stopped||S.paperStorageFault||document.hidden',html)
         self.assertIn('CryptoPilotPaperRules.inspectEntry(',html)
         self.assertIn('CryptoPilotPaperRules.inspectExit(',html)
         self.assertNotIn('/private/AddOrder',html)
