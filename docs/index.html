@@ -377,6 +377,10 @@ function labMarkets(){
  const ids=[...select.options].map(x=>x.value);
  if(ids.includes(previous))select.value=previous;
  else if(ids.includes("bitcoin"))select.value="bitcoin";
+ const fc=$("forecastCoin"),before=fc.value;
+ fc.replaceChildren(...[...select.options].map(option=>option.cloneNode(true)));
+ if([...fc.options].some(option=>option.value===before))fc.value=before;
+ else fc.value=select.value;
 }
 function drawLabCurve(results){
  const svg=$("labChart"),ns="http://www.w3.org/2000/svg";
@@ -394,6 +398,86 @@ function drawLabCurve(results){
   svg.appendChild(line);
  }
 }
+const FORECAST_KEY="cryptopilot-v42-prediction-journal";
+let forecastBusy=false;
+function readForecastLog(){
+ try{
+  const raw=localStorage.getItem(FORECAST_KEY);
+  if(raw===null)return [];
+  const items=JSON.parse(raw);
+  if(!Array.isArray(items)||items.length>120||items.some(x=>
+    !x||typeof x.coin!=="string"||typeof x.pair!=="string"
+    ||![60,240].includes(x.period)||!Number.isFinite(x.at)
+    ||!Number.isFinite(x.until)||!Number.isFinite(x.price)||x.price<=0
+    ||!Number.isFinite(x.expectedReturnPct)||!Array.isArray(x.closeBand)||x.closeBand.length!==2
+    ||!x.closeBand.every(v=>Number.isFinite(v)&&v>0)))throw Error("Prognosejournal ist nicht plausibel.");
+  return items;
+ }catch(e){throw Error("Gespeicherte Prognosen können nicht gelesen werden; Originaldaten bleiben unangetastet. "+String(e.message))}
+}
+function writeForecastLog(records){
+ try{localStorage.setItem(FORECAST_KEY,JSON.stringify(records.slice(-100)));return true}
+ catch(_){return false}
+}
+function showForecastJournal(items){
+ const matured=items.filter(x=>x.actual&&Number.isFinite(x.actual.errorPct));
+ const pending=items.length-matured.length;
+ let line=items.length+" gespeicherte Prognosen · "+matured.length+" überprüft · "+pending+" ausstehend.";
+ if(matured.length){
+  const avg=key=>matured.reduce((sum,x)=>sum+x.actual[key],0)/matured.length;
+  line+=" Laufende echte Nachprüfung: mittlerer Prognosefehler "+PCT.format(avg("errorPct"))+" % vs. unveränderter Kurs "+PCT.format(avg("baselinePct"))+" %.";
+ }
+ text("forecastJournal",line);
+}
+try{showForecastJournal(readForecastLog())}catch(e){text("forecastJournal",String(e.message))}
+async function runForecast(){
+ if(forecastBusy)return;
+ const coinId=$("forecastCoin").value,coin=S.coins.find(c=>c.id===coinId);
+ const market=coin&&S.pairs.get(BASE[coinId]);
+ if(!coin||!market){text("forecastStatus","Kein gültiger Kraken-EUR-Markt ausgewählt.");return}
+ const period=Number($("forecastPeriod").value);
+ if(![60,240].includes(period))return;
+ forecastBusy=true;$("runForecast").disabled=true;
+ $("forecastResult").hidden=true;
+ text("forecastStatus","Lade abgeschlossene Kraken-Kerzen für die Prognose …");
+ try{
+  // Open interval is excluded. No future bars enter the current forecast.
+  const body=await getJson("https://api.kraken.com/0/public/OHLC?"+new URLSearchParams({pair:market.pair,interval:String(period)}));
+  if(!body||!Array.isArray(body.error)||body.error.length||!body.result)throw Error("Kraken-Historie nicht verfügbar.");
+  const keys=Object.keys(body.result).filter(key=>key!=="last");
+  if(keys.length!==1||!Array.isArray(body.result[keys[0]]))throw Error("Kerzenantwort ist unvollständig.");
+  const raw=body.result[keys[0]],closed=raw.slice(0,-1);
+  const predicted=CryptoPilotForecast.forecast({rows:closed,period});
+  const score=predicted.checked,stamp=new Date(predicted.until*1000).toLocaleString("de-DE");
+  text("forecastMedian",priceEUR(predicted.price*(1+predicted.expectedReturnPct/100)));
+  text("forecastLow",priceEUR(predicted.lowScenario));
+  text("forecastHigh",priceEUR(predicted.highScenario));
+  text("forecastBand",priceEUR(predicted.closeBand[0])+" – "+priceEUR(predicted.closeBand[1]));
+  const verdict=predicted.stance;
+  text("forecastQuality",verdict+" · "+predicted.samples+" ähnliche historische Situationen · Betrachtungsende "+stamp+". Szenario-Tief und -Hoch sind historische Vergleichswerte, keine garantierten Kursziele. Geschätzte Rundlauf-Kosten: "+PCT.format(predicted.costPct)+" %.");
+  text("forecastScore",score.count>=8?
+    "Rückwirkende Zeitreihenprüfung ("+score.count+" Prüfungen): Ø Absolutfehler "+PCT.format(score.maePct)+" % vs. einfacher unveränderter Kurs "+PCT.format(score.baselineMaePct)+" %; beobachtete Bandabdeckung "+PCT.format(score.coveragePct)+" %. Keine verlässlich kalibrierte Wahrscheinlichkeit.":
+    "Noch zu wenige zeitlich getrennte Rückprüfungen ("+score.count+"). Keine belastbare Prognosegüte.");
+  $("forecastResult").hidden=false;
+  const records=readForecastLog();
+  // Earlier forecasts settle only against subsequently completed REAL OHLC candles.
+  for(const record of records){
+   if(record.coin===coinId&&record.pair===market.pair&&record.period===period&&!record.actual){
+    const actual=CryptoPilotForecast.settle(record,closed);
+    if(actual)record.actual=actual;
+   }
+  }
+  if(!records.some(record=>record.coin===coinId&&record.pair===market.pair&&record.period===period&&record.at===predicted.at)){
+   records.push({coin:coinId,pair:market.pair,at:predicted.at,until:predicted.until,price:predicted.price,period,
+     expectedReturnPct:predicted.expectedReturnPct,closeBand:predicted.closeBand});
+  }
+  const saved=writeForecastLog(records);
+  showForecastJournal(records.slice(-100));
+  text("forecastStatus",saved?"Szenario aus echten abgeschlossenen Kerzen erstellt und zur späteren Überprüfung gespeichert.":"Szenario berechnet, aber Prognosejournal konnte nicht gespeichert werden. Nicht als protokolliert betrachten.");
+ }catch(e){text("forecastStatus","Prognose nicht verfügbar: "+String(e.message)+". Es werden keine geschätzten Ersatzdaten angezeigt.")}
+ finally{forecastBusy=false;$("runForecast").disabled=false}
+}
+$("runForecast").addEventListener("click",runForecast);
+
 let labBusy=false;
 async function runStrategyLab(){
  if(labBusy)return;
