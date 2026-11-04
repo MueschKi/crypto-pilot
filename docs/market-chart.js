@@ -2,7 +2,7 @@
    Visual only; never generates trading signals or orders. */
 (function(){
 "use strict";
-const state={selected:null,pair:null,candles:[],lastTick:null,token:0,pending:false,status:"Wähle einen Coin",trades:[],lastHistoricalLoad:0};
+const state={selected:null,pair:null,candles:[],lastTick:null,token:0,pending:false,status:"Wähle einen Coin",trades:[],lastHistoricalLoad:0,cache:new Map(),activeController:null};
 const canvas=()=>document.getElementById("marketChart");
 const label=()=>document.getElementById("marketChartStatus");
 const euro=new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR",maximumFractionDigits:2});
@@ -13,29 +13,59 @@ function validate(row){if(!Array.isArray(row)||row.length<7)return null;
  if(![ts,o,h,l,c,v].every(Number.isFinite)||ts<1||Math.min(o,h,l,c)<=0||v<0||l>Math.min(o,c)||h<Math.max(o,c))return null;
  return {t:Math.floor(ts/60)*60,o,h,l,c,v};}
 async function select(id,pair,symbol){
- const token=++state.token;state.selected=id;state.pair=pair;state.candles=[];state.lastTick=null;
+ const token=++state.token;
+ if(state.activeController){state.activeController.abort();state.activeController=null}
+ state.selected=id;state.pair=pair;state.lastTick=null;
  document.getElementById("marketChartTitle").textContent=(symbol||id).toUpperCase()+" / EUR";
- status("Lade echte Kraken-1-Minuten-Kerzen …");draw();
+ const cached=state.cache.get(id);
+ // Immediately show THIS coin's verified earlier candles if present.
+ state.candles=cached?cached.candles.map(x=>({...x})):[];
+ status(cached?"Zeige gespeicherte echte Kraken-Kerzen · aktualisiere …":"Lade echte Kraken-1-Minuten-Kerzen …");
+ draw();
  if(!pair){status("Für diesen Coin ist kein Kraken-EUR-Markt zugeordnet.");return}
- try{
-  const ctrl=new AbortController(),kill=setTimeout(()=>ctrl.abort(),12000);
-  let response;
-  try{response=await fetch("https://api.kraken.com/0/public/OHLC?"+new URLSearchParams({pair,interval:"1"}),{signal:ctrl.signal,cache:"no-store"})}
-  finally{clearTimeout(kill)}
-  if(!response.ok)throw Error("HTTP "+response.status);
-  const body=await response.json();
-  if(token!==state.token)return;
-  if(!body||!Array.isArray(body.error)||body.error.length||!body.result)throw Error("Kraken hat keine OHLC-Kerzen geliefert");
-  const keys=Object.keys(body.result).filter(k=>k!=="last");
-  if(keys.length!==1||!Array.isArray(body.result[keys[0]]))throw Error("Kerzenantwort unbekannt");
-  const rows=body.result[keys[0]].map(validate);
-  if(rows.some(r=>!r))throw Error("Ungültige OHLC-Kerze");
-  const ordered=rows.filter((r,i)=>i===0||r.t>rows[i-1].t);
-  state.candles=ordered.slice(-120);
-  state.lastHistoricalLoad=Date.now();
+ // 1m REST data is not pushed at each tick; only reload the snapshot when stale.
+ if(cached&&cached.pair===pair&&Date.now()-cached.time<20000){
   status("Kraken-Historie · 1-Minuten-Kerzen · Live-Ticks erscheinen automatisch");
-  draw();
- }catch(err){if(token!==state.token)return;status("Kerzen aktuell nicht verfügbar ("+String(err.message)+").");draw()}
+  return;
+ }
+ for(let attempt=0;attempt<2;attempt++){
+  const ctrl=new AbortController();state.activeController=ctrl;
+  const kill=setTimeout(()=>ctrl.abort(),12000);
+  try{
+   const response=await fetch("https://api.kraken.com/0/public/OHLC?"+new URLSearchParams({pair,interval:"1"}),{signal:ctrl.signal,cache:"no-store"});
+   if(!response.ok)throw Error("HTTP "+response.status);
+   const body=await response.json();
+   if(token!==state.token)return;
+   if(!body||!Array.isArray(body.error)||body.error.length||!body.result)throw Error("Kraken hat keine OHLC-Kerzen geliefert");
+   const keys=Object.keys(body.result).filter(k=>k!=="last");
+   if(keys.length!==1||!Array.isArray(body.result[keys[0]]))throw Error("Kerzenantwort unbekannt");
+   const raw=body.result[keys[0]];
+   // A single corrupt interval must not empty an otherwise valid chart.
+   const valid=raw.map(validate).filter(Boolean);
+   const unique=new Map();
+   for(const bar of valid)unique.set(bar.t,bar);
+   const ordered=[...unique.values()].sort((a,b)=>a.t-b.t);
+   if(ordered.length<2)throw Error("Zu wenige gültige Kerzen für diesen Markt");
+   const previous=state.candles;
+   // Keep any confirmed live candle that is newer than the HTTP snapshot.
+   const live=previous.filter(c=>c.t>ordered[ordered.length-1].t);
+   state.candles=[...ordered.slice(-180),...live].slice(-180);
+   state.cache.set(id,{pair,time:Date.now(),candles:state.candles.map(x=>({...x}))});
+   state.lastHistoricalLoad=Date.now();
+   status("Kraken-Historie · "+state.candles.length+" echte 1-Minuten-Kerzen · Live-Ticks aktiv");
+   draw();
+   return;
+  }catch(err){
+   if(token!==state.token)return;
+   if(attempt===1){
+    status(state.candles.length
+      ?"Historie vorübergehend nicht aktualisierbar; zeige zuletzt geladene echte Kerzen."
+      :"Kraken-Kerzen nicht verfügbar ("+String(err.message)+"). Erneut Coin wählen oder neu laden.");
+    draw();
+   }
+  }finally{clearTimeout(kill);if(state.activeController===ctrl)state.activeController=null}
+  if(token===state.token)await new Promise(resolve=>setTimeout(resolve,500));
+ }
 }
 function tick(id,price,time){
  if(id!==state.selected||!Number.isFinite(price)||price<=0||!state.candles.length)return;
@@ -45,7 +75,7 @@ function tick(id,price,time){
  if(minute>last.t){
   // No synthetic missing-minute candles. The first tick opens a real observed bar.
   state.candles.push({t:minute,o:price,h:price,l:price,c:price,v:0});
-  if(state.candles.length>120)state.candles.shift();
+  if(state.candles.length>180)state.candles.shift();
  }else{last.h=Math.max(last.h,price);last.l=Math.min(last.l,price);last.c=price;}
  state.lastTick=time;state.pending=true;
 }
@@ -57,7 +87,8 @@ function draw(){
  const ctx=el.getContext("2d");if(!ctx)return;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
  const L=14,R=76,T=20,B=32,pw=w-L-R,ph=h-T-B;
  ctx.fillStyle="#0a172c";ctx.fillRect(0,0,w,h);
- const data=state.candles.slice(-90);
+ const visibleCount=w<500?44:w<750?65:100;
+ const data=state.candles.slice(-visibleCount);
  if(!data.length){ctx.fillStyle="#99aecd";ctx.font="13px system-ui";ctx.fillText("Warte auf echte Kraken-Kerzen …",20,h/2);return}
  let lo=Math.min(...data.map(c=>c.l)),hi=Math.max(...data.map(c=>c.h));
  if(!Number.isFinite(lo)||!Number.isFinite(hi)||lo<=0)return;

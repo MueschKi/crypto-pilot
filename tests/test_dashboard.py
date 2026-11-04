@@ -45,6 +45,24 @@ class DashboardChecks(unittest.TestCase):
                                     capture_output=True,text=True)
             self.assertEqual(result.returncode,0,result.stderr)
 
+    def test_ticker_does_not_restart_on_live_updates(self):
+        self.assertIn('for(const coin of S.coins)', self.html)
+        self.assertIn('tickerKey', self.html)
+        self.assertIn('refreshTicker()', self.html)
+        self.assertIn('item.price.textContent=', self.html)
+        self.assertIn('distance/250', self.html)
+        self.assertNotIn('lastTickerRender', self.html)
+        self.assertNotIn('ticker").innerHTML=items+items', self.html)
+
+    def test_chart_coin_switching_preserves_valid_candles(self):
+        chart = (ROOT / "docs" / "market-chart.js").read_text(encoding="utf-8")
+        self.assertIn('activeController.abort()', chart)
+        self.assertIn('state.cache.get(id)', chart)
+        self.assertIn('for(let attempt=0;attempt<2;attempt++)', chart)
+        self.assertIn('if(token!==state.token)return;', chart)
+        self.assertIn('const visibleCount=w<500?44', chart)
+        self.assertIn('raw.map(validate).filter(Boolean)', chart)
+
     def test_safe_default_for_autotrading(self):
         self.assertIn("active:false", self.html)
         self.assertIn("S.sim.active=false", self.html)
