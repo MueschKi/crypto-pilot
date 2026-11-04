@@ -60,7 +60,7 @@ class DashboardChecks(unittest.TestCase):
         self.assertIn('state.cache.get(id)', chart)
         self.assertIn('for(let attempt=0;attempt<2;attempt++)', chart)
         self.assertIn('if(token!==state.token)return;', chart)
-        self.assertIn('const visibleCount=w<500?28', chart)
+        self.assertIn('const visibleCount=state.visibleBars|| (w<500?28', chart)
         self.assertIn('raw.map(validate).filter(Boolean)', chart)
 
     def test_chart_has_tick_refresh_and_independent_heartbeat(self):
