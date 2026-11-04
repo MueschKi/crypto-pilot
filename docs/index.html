@@ -110,10 +110,10 @@ function load(){
       t&&typeof t==="object"&&["KAUF","VERKAUF"].includes(t.type)
       &&Number.isFinite(t.eur)&&t.eur>=0&&Number.isFinite(t.time));
   const validSeries=Array.isArray(d.series)&&d.series.length>0&&d.series.length<=110&&d.series.every(v=>Number.isFinite(v)&&v>=0);
-  const validCash=Number.isFinite(d.cash)&&d.cash>=0&&d.cash<=1000;
+  const validCash=Number.isFinite(d.cash)&&d.cash>=0&&d.cash<=100000;
   const validLastTrade=d.lastTrade&&typeof d.lastTrade==="object"&&!Array.isArray(d.lastTrade)
    &&Object.values(d.lastTrade).every(v=>Number.isFinite(v)&&v>=0);
-  if(validHoldings&&validTrades&&validSeries&&validCash&&validLastTrade){
+  if(validHoldings&&validTrades&&validSeries&&validCash&&validLastTrade&&typeof d.stopped==="boolean"){
    S.sim={...S.sim,...d,armed:d.armed===true&&!d.stopped,active:false};
   }else{
    S.sim.armed=false;S.sim.active=false;
