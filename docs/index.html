@@ -21,13 +21,13 @@ main{position:relative;z-index:1}.panel{position:relative;overflow:hidden;transi
 .activity-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#38db9e;margin:0 6px 1px 0;animation:activity 2.4s ease-in-out infinite}.pulse-flash{animation:priceFlash .7s ease-out}.tickerbox{position:relative}.tickerbox:before,.tickerbox:after{content:"";position:absolute;inset-block:0;width:35px;z-index:2;pointer-events:none}.tickerbox:before{left:0;background:linear-gradient(90deg,#0e1a31,transparent)}.tickerbox:after{right:0;background:linear-gradient(270deg,#0e1a31,transparent)}
 .statusStrip{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:9px 12px;margin:10px 0 0;border:1px solid #283e5d;border-radius:12px;background:#0e1b30}.statusStrip strong{font-variant-numeric:tabular-nums}
 @keyframes orbDrift{0%{transform:translate(0,0) scale(.85)}100%{transform:translate(70px,-80px) scale(1.25)}}@keyframes panelSheen{to{background-position:-250% 0}}@keyframes metricFlash{0%{text-shadow:0 0 17px #49e2b3;color:#52eeb8}100%{text-shadow:none}}@keyframes priceFlash{0%{color:#60ffc1;text-shadow:0 0 12px #40dfa3}100%{color:inherit;text-shadow:none}}@keyframes barWave{50%{height:20px;opacity:.5}}@keyframes flow{from{transform:translateX(-100%)}to{transform:translateX(420%)}}@keyframes activity{50%{opacity:.25;box-shadow:0 0 12px #40dfa3}}
-.market-chart{width:100%;height:280px;display:block;border-radius:12px;margin-top:12px;background:#0a172c}.chart-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.chart-controls select{min-width:130px;max-width:230px;border-radius:9px;border:1px solid #455d84;background:#182944;color:#fff;padding:9px 11px}.chart-help{color:#9aabc9;font-size:12px;margin-top:10px}.signal-panel{margin-top:14px}.signal-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:13px}.signal-grid>div{padding:12px;border:1px solid #2b4160;border-radius:10px;background:#101e35}.signal-grid strong{font-size:clamp(14px,2.2vw,18px);font-variant-numeric:tabular-nums}@media(max-width:700px){.signal-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}.zoomLabel{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px}.zoomLabel select{min-width:105px}.market-select{color:var(--blue);background:none;border:0;padding:0;font:inherit;text-align:left;cursor:pointer;font-weight:750}.market-select:focus-visible{outline:2px solid var(--blue);border-radius:4px}.position-item{padding:10px 0;border-bottom:1px solid var(--line)}.position-item:last-child{border:0}.position-item .small{margin-top:3px}
+.market-chart{width:100%;height:280px;display:block;border-radius:12px;margin-top:12px;background:#0a172c}.chart-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.chart-controls select{min-width:130px;max-width:230px;border-radius:9px;border:1px solid #455d84;background:#182944;color:#fff;padding:9px 11px}.chart-help{color:#9aabc9;font-size:12px;margin-top:10px}.signal-panel{margin-top:14px}.signal-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:13px}.signal-grid>div{padding:12px;border:1px solid #2b4160;border-radius:10px;background:#101e35}.signal-grid strong{font-size:clamp(14px,2.2vw,18px);font-variant-numeric:tabular-nums}@media(max-width:700px){.signal-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}.lab-panel{margin-top:14px}.lab-controls{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-top:12px}.lab-controls label{display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)}.lab-controls select{background:#182944;color:#fff;border:1px solid #455d84;border-radius:9px;padding:10px;max-width:260px}.lab-summary{padding:10px 0;font-size:12px;color:var(--muted);line-height:1.55}.lab-chart{display:block;width:100%;height:190px;margin-top:10px;background:#0c192c;border-radius:11px}.lab-panel th:first-child,.lab-panel td:first-child{text-align:left}@media(max-width:500px){.lab-controls label{flex:1 1 100px}.lab-controls select{max-width:100%}.lab-controls button{width:100%}}.zoomLabel{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:12px}.zoomLabel select{min-width:105px}.market-select{color:var(--blue);background:none;border:0;padding:0;font:inherit;text-align:left;cursor:pointer;font-weight:750}.market-select:focus-visible{outline:2px solid var(--blue);border-radius:4px}.position-item{padding:10px 0;border-bottom:1px solid var(--line)}.position-item:last-child{border:0}.position-item .small{margin-top:3px}
 @media(max-width:940px){.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.layout{grid-template-columns:1fr}}@media(max-width:500px){.market-chart{height:260px}.chart-controls{width:100%;justify-content:space-between}.chart-controls select{max-width:70%;min-width:0}.grid{gap:8px}.panel{padding:13px}td,th{padding:9px 4px}.hideMobile{display:none}.brand{font-size:25px}}
 @media(prefers-reduced-motion:reduce){.ticker,.live,.ambient-orb,.panel:before,.stream-orbs i,.flowbar i,.activity-dot,.metric.changed,.pulse-flash{animation:none!important}}
 </style>
 </head>
 <body><div class="ambient-orb orb-a" aria-hidden="true"></div><div class="ambient-orb orb-b" aria-hidden="true"></div><main>
-<div class="top"><div class="brand">◈ Crypto<i>Pilot</i></div><div class="flex"><div class="stream-orbs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><div class="tag" id="connection">● VERBINDUNG WIRD AUFGEBAUT</div><span class="small">v3.8</span></div></div>
+<div class="top"><div class="brand">◈ Crypto<i>Pilot</i></div><div class="flex"><div class="stream-orbs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><div class="tag" id="connection">● VERBINDUNG WIRD AUFGEBAUT</div><span class="small">v3.9</span></div></div>
 <div class="hero"><h1>Markt beobachten.<br><span style="color:#7eb4ff">Intelligent simulieren.</span></h1><p>Die jeweils 20 größten Kryptowährungen nach Marktkapitalisierung. Echtzeit-Ticks von Kraken, ein virtuelles 1.000-€-Depot und automatische Paper-Orders nur nach ausdrücklichem Einschalten.</p>
 <div class="notice" id="notice">VERBINDUNGSAUFBAU · Warte auf bestätigte öffentliche Kursdaten. Kein Echtgeldhandel; das Paper-Depot ist standardmäßig aus.</div></div>
 <div class="grid">
@@ -48,6 +48,20 @@ main{position:relative;z-index:1}.panel{position:relative;overflow:hidden;transi
 <div><div class="label">Kraken-Spread</div><strong id="signalSpread">—</strong></div>
 <div><div class="label">Datenqualität</div><strong id="signalQuality">—</strong></div>
 </div><p class="small" id="signalReason">Warte auf echte Kursdaten.</p></section>
+<section class="panel lab-panel" aria-labelledby="labTitle">
+<div class="flex"><div><h2 id="labTitle">Strategy Lab <span class="tag">Backtest</span></h2><p class="small">Drei feste Strategien auf denselben historischen Kraken-Kerzen – mit Gebühren, Slippage und zeitlicher Trennung. Keine echten Orders.</p></div></div>
+<div class="lab-controls">
+<label>Historischer Markt <select id="labCoin" aria-label="Coin für den Backtest"><option value="">Markt wird geladen …</option></select></label>
+<label>Kerzenintervall <select id="labInterval" aria-label="Intervall des Backtests"><option value="60">1 Stunde</option><option value="240">4 Stunden</option></select></label>
+<button type="button" class="button" id="runLab">Strategien vergleichen</button>
+</div>
+<p id="labStatus" class="small" role="status">Starte den Vergleich bei Bedarf. Es wird nichts gekauft oder verkauft.</p>
+<div id="labResults" hidden>
+<div class="lab-summary" id="labSummary"></div><div class="small" id="labFolds"></div>
+<div class="tablewrap"><table><thead><tr><th>Strategie</th><th>Test-Rendite</th><th>Max. Rückgang</th><th>Käufe</th><th>Kosten*</th></tr></thead><tbody id="labRows"></tbody></table></div>
+<svg id="labChart" class="lab-chart" viewBox="0 0 340 150" role="img" aria-label="Vergleich der virtuellen Depotwerte im Testzeitraum"></svg>
+<p class="small">* Geschätzte Kosten tatsächlich ausgeführter Trades. Alle Simulationen starten separat mit 1.000 € und nutzen 0,4 % Gebühr plus 0,1 % Slippage je Seite. Offene Positionen werden netto bewertet. Ergebnisse sind rückblickend und kein Nachweis künftiger Gewinne.</p>
+</div></section>
 <div class="layout">
 <div class="panel"><div class="flex"><h2>Top-20-Marktübersicht</h2><span class="small" id="rankingTime">Noch kein Ranking</span></div><div class="tablewrap"><table><thead><tr><th>#</th><th>Coin</th><th>Preis / EUR</th><th>24h</th><th class="hideMobile">Kraken</th></tr></thead><tbody id="rows"><tr><td colspan="5" class="muted">Lade die größten Kryptowährungen …</td></tr></tbody></table></div></div>
 <div class="stack">
@@ -59,6 +73,7 @@ main{position:relative;z-index:1}.panel{position:relative;overflow:hidden;transi
 </main>
 <script src="./market-chart.js?v=20261104-chart37"></script>
 <script src="./signal-monitor.js?v=20261104-signal38"></script>
+<script src="./strategy-lab.js?v=20261104-lab39"></script>
 <script>
 "use strict";
 const $=id=>document.getElementById(id);
@@ -188,7 +203,7 @@ function renderMarket(){
 }
 async function getJson(url){const c=new AbortController(),timer=setTimeout(()=>c.abort(),14000);try{const r=await fetch(url,{signal:c.signal,cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);return await r.json()}finally{clearTimeout(timer)}}
 async function loadRanking(){if(S.loading)return;S.loading=true;try{const u="https://api.coingecko.com/api/v3/coins/markets?vs_currency=eur&order=market_cap_desc&per_page=20&page=1&sparkline=false&price_change_percentage=24h";const data=await getJson(u);if(!Array.isArray(data)||data.length!==20)throw Error("Top 20 unvollständig");S.coins=data.filter(c=>typeof c.id==="string"&&typeof c.symbol==="string"&&Number.isFinite(c.current_price)&&c.current_price>0);if(S.coins.length!==20)throw Error("Top 20 ungültig");S.rankingOk=true;text("rankingTime","Rangliste · CoinGecko");text("diagnostic","Top-20-Ranking geladen. Kraken-Verfügbarkeit und Live-Ticker werden separat geprüft.");renderMarket();await loadPairsAndConnect()}catch(e){text("diagnostic","Top-20-Abfrage fehlgeschlagen: "+String(e.message)+". "+(S.coins.length?"Vorherige Rangliste bleibt erhalten.":"Noch keine Rangliste geladen."));if(!S.coins.length){S.rankingOk=false;setNotice("KEINE LIVE-ORDERS · Top-20-Ranking ist nicht verfügbar.",false)}}finally{S.loading=false}}
-async function loadPairsAndConnect(){try{const data=await getJson("https://api.kraken.com/0/public/AssetPairs");if(!data||data.error?.length||!data.result)throw Error("Kraken AssetPairs");const candidates=new Map(),duplicates=new Set();for(const [key,info] of Object.entries(data.result)){if(info.status&&info.status!=="online"||typeof info.wsname!=="string"||!info.wsname.endsWith("/EUR"))continue;const base=info.wsname.split("/")[0];if(candidates.has(base))duplicates.add(base);else candidates.set(base,{pair:key,wsname:info.wsname})}for(const base of duplicates)candidates.delete(base);S.pairs=candidates;updateChartOptions();connect();renderMarket()}catch(e){text("diagnostic","Kraken-Zuordnung fehlgeschlagen: "+String(e.message));setNotice("KEIN LIVE-STREAM · Kraken konnte nicht geladen werden.",false)}}
+async function loadPairsAndConnect(){try{const data=await getJson("https://api.kraken.com/0/public/AssetPairs");if(!data||data.error?.length||!data.result)throw Error("Kraken AssetPairs");const candidates=new Map(),duplicates=new Set();for(const [key,info] of Object.entries(data.result)){if(info.status&&info.status!=="online"||typeof info.wsname!=="string"||!info.wsname.endsWith("/EUR"))continue;const base=info.wsname.split("/")[0];if(candidates.has(base))duplicates.add(base);else candidates.set(base,{pair:key,wsname:info.wsname})}for(const base of duplicates)candidates.delete(base);S.pairs=candidates;updateChartOptions();labMarkets();connect();renderMarket()}catch(e){text("diagnostic","Kraken-Zuordnung fehlgeschlagen: "+String(e.message));setNotice("KEIN LIVE-STREAM · Kraken konnte nicht geladen werden.",false)}}
 function connect(){const byPair=new Map();for(const c of S.coins){if(STABLE.has(c.id))continue;const mapped=S.pairs.get(BASE[c.id]);if(mapped)byPair.set(mapped.wsname,c.id)}if(!byPair.size){setNotice("KEIN STREAM · Kein zuordenbarer Top-20-EUR-Markt",false);return}
 const key=[...byPair.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([pair,id])=>pair+":"+id).join("|");
 // Periodic top-20 updates must not close an active WebSocket or clear working quotes.
@@ -201,6 +216,79 @@ $("reset").addEventListener("click",()=>{if(!confirm("Virtuelles Depot und gesam
 $("refresh").addEventListener("click",loadRanking);
 document.addEventListener("visibilitychange",()=>{if(document.hidden&&S.sim.active){S.sim.active=false;save();renderDepot()}});
 function updateChartOptions(){const sel=$("chartCoin");const candidates=S.coins.filter(c=>!STABLE.has(c.id)&&S.pairs.get(BASE[c.id]));const previous=sel.value;sel.replaceChildren();for(const coin of candidates){const option=document.createElement("option");option.value=coin.id;option.textContent=coin.symbol.toUpperCase()+" · "+coin.name;sel.appendChild(option)}const preferred=candidates.some(c=>c.id===previous)?previous:candidates.some(c=>c.id==="bitcoin")?"bitcoin":candidates[0]?.id||"";if(!preferred){CryptoPilotChart.draw();return}sel.value=preferred;if(CryptoPilotChart.selected!==preferred){const coin=candidates.find(c=>c.id===preferred);CryptoPilotChart.select(preferred,S.pairs.get(BASE[preferred]).pair,coin.symbol)}}
+
+function labMarkets(){
+ const select=$("labCoin"),previous=select.value||$("chartCoin").value;
+ select.replaceChildren();
+ for(const coin of S.coins){
+  const market=S.pairs.get(BASE[coin.id]);
+  if(!market||STABLE.has(coin.id))continue;
+  const option=document.createElement("option");option.value=coin.id;
+  option.textContent=coin.symbol.toUpperCase()+" · "+coin.name;select.appendChild(option);
+ }
+ const ids=[...select.options].map(x=>x.value);
+ if(ids.includes(previous))select.value=previous;
+ else if(ids.includes("bitcoin"))select.value="bitcoin";
+}
+function drawLabCurve(results){
+ const svg=$("labChart"),ns="http://www.w3.org/2000/svg";
+ svg.replaceChildren();
+ const all=results.map(r=>r.curve),values=all.flat().map(p=>p.value);
+ if(!values.length)return;
+ const lo=Math.min(...values,1000),hi=Math.max(...values,1000),span=Math.max(1,hi-lo);
+ const colors=["#6aa8ff","#40dfa3","#f5ac68"];
+ for(let index=0;index<results.length;index++){
+  const curve=results[index].curve;
+  const line=document.createElementNS(ns,"polyline");
+  const points=curve.map((p,i)=>(14+i*310/Math.max(1,curve.length-1)).toFixed(1)+","+(130-(p.value-lo)/span*112).toFixed(1)).join(" ");
+  line.setAttribute("points",points);line.setAttribute("fill","none");line.setAttribute("stroke",colors[index]);
+  line.setAttribute("stroke-width","2");line.setAttribute("stroke-linecap","round");
+  svg.appendChild(line);
+ }
+}
+let labBusy=false;
+async function runStrategyLab(){
+ if(labBusy)return;
+ const id=$("labCoin").value,coin=S.coins.find(c=>c.id===id),market=coin&&S.pairs.get(BASE[id]);
+ if(!coin||!market){text("labStatus","Für diesen Coin ist kein gültiger Kraken-EUR-Markt vorhanden.");return}
+ labBusy=true;$("runLab").disabled=true;
+ $("labResults").hidden=true;
+ text("labStatus","Lade echte, abgeschlossene Kraken-Kerzen für "+coin.symbol.toUpperCase()+" …");
+ try{
+  const interval=Number($("labInterval").value);
+  if(![60,240].includes(interval))throw Error("Intervall nicht unterstützt.");
+  const data=await getJson("https://api.kraken.com/0/public/OHLC?"+new URLSearchParams({pair:market.pair,interval:String(interval)}));
+  if(!data||!Array.isArray(data.error)||data.error.length||!data.result)throw Error("Kraken-Daten derzeit nicht verfügbar.");
+  const keys=Object.keys(data.result).filter(k=>k!=="last");
+  if(keys.length!==1||!Array.isArray(data.result[keys[0]]))throw Error("Kraken-Antwort unvollständig.");
+  const raw=data.result[keys[0]];
+  if(raw.length<181)throw Error("Zu wenige historische Kerzen.");
+  // Kraken: last OHLC is the current not-yet-committed candle. Strictly exclude it.
+  const completed=raw.slice(0,-1);
+  const result=CryptoPilotStrategyLab.compare({rows:completed,period:interval});
+  const labels={hold:"Kaufen & Halten",ema:"EMA 8/21",breakout:"20-Kerzen-Ausbruch"};
+  const fmt=x=>(x>=0?"+":"")+PCT.format(x)+" %";
+  const rows=$("labRows");rows.replaceChildren();
+  for(const r of result.holdout){
+   const tr=document.createElement("tr");
+   const fields=[labels[r.name],fmt(r.returnPct),fmt(r.drawdownPct),String(r.buys),EUR.format(r.estimatedCosts)];
+   fields.forEach((v,i)=>{const td=document.createElement("td");td.textContent=v;if(i===1)td.className=r.returnPct>=0?"green":"red";tr.appendChild(td)});
+   rows.appendChild(tr);
+  }
+  const start=new Date(result.holdoutStart*1000).toLocaleDateString("de-DE");
+  const end=new Date(result.to*1000).toLocaleDateString("de-DE");
+  const duration=interval===60?"1 Stunde":"4 Stunden";
+  text("labSummary",result.bars+" abgeschlossene "+duration+"-Kerzen · Entwicklung: erste 60 % · Test: letzte 40 % ("+start+"–"+end+"). Feste Parameter, keine Optimierung auf Testdaten.");
+  const foldInfo=result.walkForward.map(x=>labels[x.name]+": "+x.positiveWindows+"/3 positive Prüfintervalle").join(" · ");
+  text("labFolds","Zeitlich gestaffelte Robustheitsprüfung (3 Fenster, mit festen Parametern): "+foldInfo+". Eine positive Periode ist kein Qualitätsnachweis.");
+  drawLabCurve(result.holdout);
+  $("labResults").hidden=false;
+  text("labStatus","Vergleich abgeschlossen · ausschließlich historische Simulation.");
+ }catch(e){text("labStatus","Backtest nicht möglich: "+String(e.message)+". Keine Ersatzdaten oder geschätzten Ergebnisse.");}
+ finally{labBusy=false;$("runLab").disabled=false}
+}
+$("runLab").addEventListener("click",runStrategyLab);
+
 $("chartZoom").addEventListener("change",event=>CryptoPilotChart.setZoom(Number(event.target.value)));
 CryptoPilotChart.setZoom(30);
 $("chartCoin").addEventListener("change",event=>{renderSignal();const id=event.target.value,coin=S.coins.find(c=>c.id===id),pair=coin&&S.pairs.get(BASE[id]);if(coin&&pair)CryptoPilotChart.select(id,pair.pair,coin.symbol)});
