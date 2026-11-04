@@ -55,6 +55,11 @@ main{position:relative;z-index:1}.panel{position:relative;overflow:hidden;transi
 const $=id=>document.getElementById(id);
 const EUR=new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR",maximumFractionDigits:2});
 const PCT=new Intl.NumberFormat("de-DE",{minimumFractionDigits:2,maximumFractionDigits:2});
+function priceEUR(value){
+ if(!Number.isFinite(value)||value<=0)return "—";
+ const digits=value>=10?2:value>=.1?4:value>=.001?6:8;
+ return new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR",minimumFractionDigits:2,maximumFractionDigits:digits}).format(value);
+}
 const BASE={"bitcoin":"XBT","ethereum":"ETH","solana":"SOL","ripple":"XRP","dogecoin":"XDG","cardano":"ADA","tron":"TRX","chainlink":"LINK","avalanche-2":"AVAX","stellar":"XLM","sui":"SUI","toncoin":"TON","polkadot":"DOT","bitcoin-cash":"BCH","litecoin":"LTC","uniswap":"UNI","near":"NEAR","pepe":"PEPE","aptos":"APT","hedera-hashgraph":"HBAR","hedera":"HBAR","hyperliquid":"HYPE","shiba-inu":"SHIB","monero":"XMR","bittensor":"TAO","aave":"AAVE","binancecoin":"BNB","tether":"USDT","usd-coin":"USDC"};
 const STABLE=new Set(["tether","usd-coin","dai","ethena-usde","first-digital-usd","paypal-usd","usdd"]);
 const S={pendingRender:false,marketRows:new Map(),marketKey:"",tickCount:0,coins:[],ws:null,byPair:new Map(),quotes:new Map(),history:new Map(),lastTick:0,pairs:new Map(),rankingOk:false,connection:false,loading:false,sim:{cash:1000,holdings:{},trades:[],stopped:false,lastTrade:{},active:false,series:[1000]}};
@@ -92,7 +97,7 @@ function refreshTicker(){
    // Speed scales with the amount of text; keep motion ~85px/second on phones.
    requestAnimationFrame(()=>{const distance=track.scrollWidth/2;if(distance>0)track.style.setProperty("--ticker-duration",Math.max(4,distance/85).toFixed(2)+"s")});
  }
- for(const item of tickerNodes){const c=S.coins.find(c=>c.id===item.id);if(!c)continue;const q=S.quotes.get(c.id);const n=Number(c.price_change_percentage_24h||0);const latest=EUR.format(quoteFresh(q)&&S.connection?q.last:c.current_price);if(item.price.textContent!==latest){item.price.textContent=latest;if(q&&quoteFresh(q)){item.price.classList.remove("pulse-flash");void item.price.offsetWidth;item.price.classList.add("pulse-flash")}}item.pctEl.textContent=(n>=0?"+":"")+PCT.format(n)+"%";item.pctEl.className="ticker-change "+(n>=0?"green":"red")}
+ for(const item of tickerNodes){const c=S.coins.find(c=>c.id===item.id);if(!c)continue;const q=S.quotes.get(c.id);const n=Number(c.price_change_percentage_24h||0);const latest=priceEUR(quoteFresh(q)&&S.connection?q.last:c.current_price);if(item.price.textContent!==latest){item.price.textContent=latest;if(q&&quoteFresh(q)){item.price.classList.remove("pulse-flash");void item.price.offsetWidth;item.price.classList.add("pulse-flash")}}item.pctEl.textContent=(n>=0?"+":"")+PCT.format(n)+"%";item.pctEl.className="ticker-change "+(n>=0?"green":"red")}
 }
 function renderMarket(){
  if(!S.coins.length)return;
@@ -117,7 +122,7 @@ function renderMarket(){
  for(const c of S.coins){
   const cells=S.marketRows.get(c.id);if(!cells)continue;
   const q=S.quotes.get(c.id),live=!!(S.connection&&quoteFresh(q));
-  const current=EUR.format(live?q.last:c.current_price);
+  const current=priceEUR(live?q.last:c.current_price);
   if(cells.price.textContent!==current){
    cells.price.textContent=current;
    if(live&&!window.matchMedia("(prefers-reduced-motion: reduce)").matches){
@@ -149,6 +154,6 @@ $("chartCoin").addEventListener("change",event=>{const id=event.target.value,coi
 load();CryptoPilotChart.trades(S.sim.trades);renderDepot();loadRanking();setInterval(()=>{if(!document.hidden){if(S.pendingRender){S.pendingRender=false;renderMarket();renderDepot()}}},200);
 // Age, data-source and connection indicators refresh every second even without fresh prices.
 setInterval(()=>{if(!document.hidden)renderMarket()},1000);
-setInterval(()=>{text("clock",new Date().toLocaleTimeString("de-DE"));text("streamAge",S.lastTick?Math.floor((Date.now()-S.lastTick)/1000)+"s":"—");text("age",S.lastTick?Math.floor((Date.now()-S.lastTick)/1000)+"s":"—");if(S.connection&&Date.now()-S.lastTick>20000){S.connection=false;S.sim.active=false;save();setNotice("KURSE VERALTET · Paper Trading automatisch gestoppt.",false)}mark();renderDepot()},1500);
+setInterval(()=>{text("clock",new Date().toLocaleTimeString("de-DE"));text("streamAge",S.lastTick?Math.floor((Date.now()-S.lastTick)/1000)+"s":"—");text("age",S.lastTick?Math.floor((Date.now()-S.lastTick)/1000)+"s":"—");if(S.connection&&Date.now()-S.lastTick>20000){S.connection=false;S.sim.active=false;save();setNotice("KURSE VERALTET · Paper Trading automatisch gestoppt.",false)}mark();renderDepot()},1000);
 setInterval(loadRanking,300000);
 </script></body></html>
