@@ -28,7 +28,7 @@ class DashboardChecks(unittest.TestCase):
             self.assertNotIn(needle, self.html)
 
     def test_live_kraken_candles_and_paper_markers(self):
-        self.assertIn('src="./market-chart.js?v=20261104-mobile35"', self.html)
+        self.assertIn('src="./market-chart.js?v=20261104-stable36"', self.html)
         self.assertIn('id="marketChart"', self.html)
         self.assertIn('CryptoPilotChart.tick(id,q.last,q.time)', self.html)
         self.assertIn('CryptoPilotChart.trades(S.sim.trades)', self.html)
