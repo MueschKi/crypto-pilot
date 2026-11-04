@@ -99,7 +99,11 @@ def validate(candles: list[Candle], training_fraction: float = 0.7) -> dict:
         (holdout["strategy"]["return_pct"] > holdout["benchmark_40pct_buy_hold"]["return_pct"]),
         (holdout["strategy"]["sharpe_zero_cash_rate"] > holdout["benchmark_40pct_buy_hold"]["sharpe_zero_cash_rate"]),
     ]
-    label = "DATA_VALIDATED_PRELIMINARY" if all(comparisons) else ("TRADE_OFF" if any(comparisons) else "NO_EDGE")
+    label = ("DATA_VALIDATED_PRELIMINARY" if all(comparisons)
+             and train["strategy"]["return_pct"] > 0
+             and holdout["strategy"]["return_pct"] > 0
+             and train["executions"] > 0 and holdout["executions"] > 0
+             else ("TRADE_OFF" if any(comparisons) else "NO_EDGE"))
     return {
         "status": label, "training": train, "holdout": holdout,
         "split_rule": "chronological, 70pct default, no re-optimization",
