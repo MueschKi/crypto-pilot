@@ -2,7 +2,7 @@
    Visual only; never generates trading signals or orders. */
 (function(){
 "use strict";
-const state={selected:null,pair:null,candles:[],lastTick:null,token:0,pending:false,status:"Wähle einen Coin",trades:[],lastHistoricalLoad:0,cache:new Map(),activeController:null,recentTicks:[]};
+const state={selected:null,pair:null,candles:[],lastTick:null,token:0,pending:false,status:"Wähle einen Coin",trades:[],lastHistoricalLoad:0,cache:new Map(),activeController:null,recentTicks:[],visible:true};
 const canvas=()=>document.getElementById("marketChart");
 const label=()=>document.getElementById("marketChartStatus");
 const euro=new Intl.NumberFormat("de-DE",{style:"currency",currency:"EUR",maximumFractionDigits:2});
@@ -86,12 +86,12 @@ function tick(id,price,time){
 function trades(list){state.trades=Array.isArray(list)?list:[];state.pending=true}
 function draw(){
  const el=canvas();if(!el)return;
- const rect=el.getBoundingClientRect(),w=Math.max(280,Math.floor(rect.width||600)),h=Math.max(220,Math.floor(rect.height||330)),dpr=Math.min(2,window.devicePixelRatio||1);
+ const rect=el.getBoundingClientRect(),w=Math.max(240,Math.floor(rect.width||600)),h=Math.max(210,Math.floor(rect.height||260)),dpr=Math.min(1.5,window.devicePixelRatio||1);
  if(el.width!==Math.round(w*dpr)||el.height!==Math.round(h*dpr)){el.width=Math.round(w*dpr);el.height=Math.round(h*dpr)}
  const ctx=el.getContext("2d");if(!ctx)return;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
- const L=14,R=76,T=20,B=32,pw=w-L-R,ph=h-T-B;
+ const L=12,R=w<440?55:70,T=28,B=31,pw=Math.max(150,w-L-R),ph=h-T-B;
  ctx.fillStyle="#0a172c";ctx.fillRect(0,0,w,h);
- const visibleCount=w<500?44:w<750?65:100;
+ const visibleCount=w<500?28:w<750?48:90;
  const data=state.candles.slice(-visibleCount);
  if(!data.length){
   ctx.fillStyle="#99aecd";ctx.font="13px system-ui";
@@ -142,44 +142,23 @@ function draw(){
  const progressWidth=pw*progress;
  ctx.fillStyle="#1e3556";ctx.fillRect(L,T+ph+6,pw,3);
  ctx.fillStyle="#489bf0";ctx.fillRect(L,T+ph+6,progressWidth,3);
- const sweepX=L+pw*progress;
- ctx.strokeStyle="rgba(95,174,255,.18)";ctx.lineWidth=1;ctx.setLineDash([3,7]);
- ctx.beginPath();ctx.moveTo(sweepX,T+23);ctx.lineTo(sweepX,T+ph);ctx.stroke();ctx.setLineDash([]);
- ctx.fillStyle="#76baff";ctx.beginPath();ctx.arc(sweepX,T+ph+7.5,3,0,Math.PI*2);ctx.fill();
+
  // Highlight the last genuine candle with a clock-driven halo, not an invented price.
  const lastVisible=data[data.length-1],endX=L+step*(data.length-.5),endY=y(lastVisible.c);
  const active=state.lastTick!==null&&Date.now()-state.lastTick<20000;
- const glow=active?5+3*(1+Math.sin(Date.now()/220)):4;
+ const glow=active?5:4;
  ctx.fillStyle=active?"rgba(68,232,167,.14)":"rgba(168,184,207,.08)";
  ctx.beginPath();ctx.arc(endX,endY,glow+5,0,Math.PI*2);ctx.fill();
  ctx.fillStyle=active?"#4cf3b1":"#8aa0be";ctx.beginPath();ctx.arc(endX,endY,3.5,0,Math.PI*2);ctx.fill();
- // This inset displays only genuine, individually received Kraken WebSocket ticks.
- const ticks=state.recentTicks;
- if(ticks.length>=2){
-  const boxX=Math.max(19,w-165),boxY=38,boxW=132,boxH=58;
-  ctx.fillStyle="rgba(9,20,39,.88)";ctx.fillRect(boxX-8,boxY-16,boxW+16,boxH+29);
-  const low=Math.min(...ticks.map(v=>v.p)),high=Math.max(...ticks.map(v=>v.p)),range=Math.max(high-low,high*.00001);
-  ctx.strokeStyle="#6de1bd";ctx.lineWidth=1.8;ctx.beginPath();
-  ticks.forEach((v,i)=>{const x=boxX+i*boxW/Math.max(1,ticks.length-1),yy=boxY+boxH-(v.p-low)/range*boxH;i?ctx.lineTo(x,yy):ctx.moveTo(x,yy)});
-  ctx.stroke();ctx.font="10px system-ui";ctx.fillStyle="#9ebbd1";ctx.fillText("ECHTE LIVE-TICKS",boxX,boxY-4);
- }
- const lastC=data[data.length-1];ctx.fillStyle="#dceaff";ctx.font="bold 13px system-ui";ctx.fillText(euro.format(lastC.c),L+8,T+16);
- // Visible heartbeat based only on the clock. Prices move ONLY on genuine Kraken ticks.
- const now=Date.now();
- const age=state.lastTick===null?null:Math.max(0,Math.floor((now-state.lastTick)/1000));
- const secondsToNext=60-(Math.floor(now/1000)%60);
- const feedLabel=age===null?"Letzter Tick: noch keiner":age>20?"Tick veraltet: "+age+"s":"Letzter Tick: "+age+"s";
- const heartbeat=w<530?"Kerze "+secondsToNext+"s · Tick "+(age===null?"—":age+"s"):"Nächste Minute in "+secondsToNext+"s  ·  "+feedLabel;
- ctx.font="11px system-ui";const tw=ctx.measureText(heartbeat).width;
- ctx.fillStyle=age!==null&&age<=20?"#40dfa3":"#f2be73";
- ctx.fillText(heartbeat,Math.max(L+6,w-R-tw-5),T+16);
+ const lastC=data[data.length-1];ctx.fillStyle="#dceaff";ctx.font="bold 13px system-ui";ctx.fillText(euro.format(lastC.c),L+5,17);
  ctx.fillStyle="#8ea5c5";ctx.font="11px system-ui";ctx.fillText("▲ Kauf   ▼ Verkauf (virtuell)",L+8,h-11);
 }
 window.CryptoPilotChart={select,tick,trades,draw,get selected(){return state.selected}};
 window.addEventListener("resize",()=>{state.pending=true});
-// Tick-driven canvas refresh: up to five visible frames per second.
-setInterval(()=>{if(!document.hidden){state.pending=false;draw();const el=document.getElementById("chartLiveStatus");if(el){const age=state.lastTick===null?null:Math.floor((Date.now()-state.lastTick)/1000);el.textContent="Chart 5×/Sek. · "+(age===null?"Noch keine echten Live-Ticks":age<=20?"Letzter echter Kraken-Tick vor "+age+"s":"Warte auf neue Kraken-Kurse · letzter Tick vor "+age+"s")}}},200);
-// Independent one-second heartbeat so countdown and feed age keep moving
-// even when Kraken sends no price change. Never alter candle prices here.
-setInterval(()=>{if(!document.hidden)state.pending=true},1000);
+// Only repaint on real events, and at most once every 450ms on iPhone.
+// A one-second lightweight heartbeat advances the minute bar when visible.
+const chartObserver=typeof IntersectionObserver==="function"?new IntersectionObserver(entries=>{state.visible=entries.some(e=>e.isIntersecting);if(state.visible)state.pending=true},{threshold:0}):null;
+if(chartObserver&&canvas())chartObserver.observe(canvas());
+setInterval(()=>{if(!document.hidden&&state.visible&&state.pending){state.pending=false;draw()}},450);
+setInterval(()=>{if(!document.hidden&&state.visible&&state.candles.length){state.pending=true}},1000);
 })();
