@@ -19,7 +19,7 @@ class DashboardChecks(unittest.TestCase):
         self.assertIn("api.coingecko.com", self.html)
         self.assertIn("S.connection", self.html)
         self.assertIn("quoteFresh", self.html)
-        self.assertIn("keine echten Order", self.html.lower())
+        self.assertIn("keine echten orders", self.html.lower())
 
     def test_no_private_order_api_and_no_credentials(self):
         banned = ("/private/AddOrder", "/private/Balance",
