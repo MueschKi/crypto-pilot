@@ -96,7 +96,7 @@ class DashboardChecks(unittest.TestCase):
         self.assertIn('marketRows:new Map()', self.html)
         self.assertIn('S.marketRows.set(c.id', self.html)
         self.assertIn('if(S.marketKey!==key)', self.html)
-        self.assertIn('setInterval(()=>{if(!document.hidden&&S.coins.length)renderMarket()},2000)', self.html)
+        self.assertIn('if(!document.hidden&&S.coins.length)renderMarket();if(!document.hidden)renderSignal()', self.html)
         self.assertIn('function priceEUR(value)', self.html)
         self.assertIn('cells.age.textContent=age', self.html)
         self.assertIn('Kraken live', self.html)
