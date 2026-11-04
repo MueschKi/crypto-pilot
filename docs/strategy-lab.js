@@ -80,7 +80,14 @@ function compare(input){
  const split=Math.floor(data.length*.6),models=["hold","ema","breakout"];
  const development=models.map(name=>simulate(data,name,25,split));
  const holdout=models.map(name=>simulate(data,name,split,data.length));
- return {bars:data.length,period,split,from:data[0].t,to:data.at(-1).t,feePct:FEE*100,slippagePct:SLIP*100,development,holdout,holdoutStart:data[split].t};
+ // Three chronologically ordered expanding-history evaluation windows.
+ // Parameters are fixed, NOT optimized in-sample: no claim of ML validation.
+ const foldStarts=[.4,.6,.8].map(f=>Math.floor(data.length*f));
+ const walkForward=models.map(name=>{
+  const windows=foldStarts.map((start,i)=>simulate(data,name,start,i<2?foldStarts[i+1]:data.length));
+  return {name,windows,positiveWindows:windows.filter(w=>w.returnPct>0).length};
+ });
+ return {bars:data.length,period,split,from:data[0].t,to:data.at(-1).t,feePct:FEE*100,slippagePct:SLIP*100,development,holdout,holdoutStart:data[split].t,walkForward};
 }
 root.CryptoPilotStrategyLab={candles,compare,simulate,strategySignal};
 })(typeof window!=="undefined"?window:globalThis);
