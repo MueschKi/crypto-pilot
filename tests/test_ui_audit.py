@@ -39,6 +39,37 @@ class UIChecks(unittest.TestCase):
         self.assertIn('id="paperState"',HTML)
         self.assertIn("distance/85",HTML)
 
+    def test_held_coin_keeps_kraken_subscription_after_ranking_rotation(self):
+        node=shutil.which("node")
+        if not node:self.skipTest("Requires Node")
+        code=r"""
+const fs=require('fs'),vm=require('vm'),assert=require('assert');
+const html=fs.readFileSync('docs/index.html','utf8');
+const begin=html.indexOf('function connect(){');
+const end=html.indexOf('$("toggle").addEventListener',begin);
+assert(begin>=0&&end>begin);
+const code=html.slice(begin,end);
+class FakeWS{
+ constructor(){this.readyState=FakeWS.CONNECTING;this.closed=false}
+ close(){this.closed=true}
+ send(){}
+}
+FakeWS.CONNECTING=0;FakeWS.OPEN=1;FakeWS.CLOSED=3;
+const S={coins:[{id:'bitcoin'}],sim:{holdings:{near:{qty:1,cost:100}},active:true},pairs:new Map([
+ ['XBT',{wsname:'XBT/EUR'}],['NEAR',{wsname:'NEAR/EUR'}]]),ws:null,quotes:new Map(),byPair:new Map(),livePairKey:'',connection:false};
+const ctx={S,BASE:{bitcoin:'XBT',near:'NEAR'},STABLE:new Set(),WebSocket:FakeWS,setNotice:()=>{},text:()=>{},Date};
+vm.runInNewContext(code+';connect()',ctx);
+assert.equal(S.byPair.get('XBT/EUR'),'bitcoin');
+assert.equal(S.byPair.get('NEAR/EUR'),'near','Existing positions must not leave Kraken feed');
+const original=S.ws;vm.runInNewContext('connect()',ctx);
+assert.strictEqual(S.ws,original,'Unchanged healthy connection must not be restarted');
+S.pairs.delete('NEAR');
+vm.runInNewContext('connect()',ctx);
+assert.equal(S.sim.active,false,'Unmapped position blocks new paper trading');
+"""
+        p=subprocess.run([node,"-e",code],cwd=ROOT,text=True,capture_output=True)
+        self.assertEqual(p.returncode,0,p.stderr)
+
     def test_saved_wallet_validation_and_tab_lease(self):
         node=shutil.which("node")
         if not node:self.skipTest("Requires Node")
