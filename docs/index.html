@@ -73,7 +73,7 @@ main{position:relative;z-index:1}.panel{position:relative;overflow:hidden;transi
 <div class="small" id="forecastJournal">Noch keine protokollierten Prognosen.</div>
 <div class="forecast-summary" id="forecastForwardScore" aria-live="polite">Ergebnisse aus echten späteren Kursverläufen erscheinen nach der ersten vollständigen Beobachtung.</div>
 <div class="forecast-audit">
- <button class="button secondary" type="button" id="checkForecastOutcomes">Alle fälligen Prognosen prüfen</button>
+ <button class="button secondary" type="button" id="checkForecastOutcomes">Fällige Prognosen prüfen</button>
  <span class="small" id="forecastAuditStatus" role="status">Noch keine Prüfung durchgeführt.</span>
 </div>
 <button class="button secondary" type="button" id="exportForecasts">Prognosejournal als CSV sichern</button>
@@ -441,6 +441,9 @@ function writeForecastLog(records){
 }
 function showForecastJournal(items){
  const matured=items.filter(x=>x.actual&&Number.isFinite(x.actual.errorPct));
+ const audits=CryptoPilotForecastJournal.status(items,Date.now());
+ const auditText=audits.due+" fällige, noch ungeprüfte Prognosen aus "+audits.markets+" Markt-/Zeitraumgruppen.";
+ text("forecastAuditStatus",auditText+" Pro Prüfung höchstens 4 Gruppen, ausschließlich abgeschlossene Kraken-Kerzen.");
  const subset=items.filter(x=>x.coin===$("forecastCoin").value&&x.period===Number($("forecastPeriod").value));
  const score=CryptoPilotForecast.scoreJournal(subset);
  let message=score.count+" abgeschlossene Prognosen für diesen Coin und Zeithorizont.";
@@ -509,6 +512,51 @@ async function runForecast(){
  finally{forecastBusy=false;$("runForecast").disabled=false}
 }
 $("runForecast").addEventListener("click",runForecast);
+// Review settled forecasts independently from the selected coin and horizon.
+// Requests are capped; not all pairs may still have a valid Kraken mapping.
+async function checkForecastOutcomes(manual=false){
+ if(forecastAuditWorking||forecastBusy||forecastAutoWorking||document.hidden)return;
+ if(!manual&&!forecastAutoEnabled)return;
+ const now=Date.now();
+ if(!manual&&now-forecastLastAuditAttempt<15*60000)return;
+ let records;
+ try{records=readForecastLog()}
+ catch(e){text("forecastAuditStatus",String(e.message));return}
+ const groups=CryptoPilotForecastJournal.dueGroups(records,now,4);
+ if(!groups.length){showForecastJournal(records);return}
+ forecastAuditWorking=true;forecastLastAuditAttempt=now;
+ $("checkForecastOutcomes").disabled=true;
+ let settled=0,attempts=0,unavailable=0,failures=[];
+ try{
+  for(const group of groups){
+   if(document.hidden)break;
+   const mapped=S.pairs.get(BASE[group.coin]);
+   if(!mapped||mapped.pair!==group.pair){unavailable++;continue}
+   attempts++;
+   try{
+    const body=await getJson("https://api.kraken.com/0/public/OHLC?"+new URLSearchParams({pair:group.pair,interval:String(group.period)}));
+    if(!body||!Array.isArray(body.error)||body.error.length||!body.result)throw Error("Kraken-Historie fehlt.");
+    const keys=Object.keys(body.result).filter(k=>k!=="last");
+    if(keys.length!==1||!Array.isArray(body.result[keys[0]]))throw Error("Ungültige Kerzenantwort.");
+    const completed=body.result[keys[0]].slice(0,-1);
+    CryptoPilotForecast.ensure(completed,group.period);
+    const merged=CryptoPilotForecastJournal.mergeOutcomes(records,group,completed,CryptoPilotForecast);
+    records=merged.records;
+    settled+=merged.settled;
+    if(merged.settled===0)unavailable++;
+   }catch(e){failures.push(group.coin+" ("+group.period+"m): "+String(e.message))}
+  }
+  if(settled&&!writeForecastLog(records))throw Error("Ergebnisse konnten nicht gespeichert werden; Originaldaten bleiben erhalten.");
+  showForecastJournal(records);
+  text("forecastAuditStatus",settled+" Prognosen abgeschlossen · "+attempts+" Kraken-Abfragen · "+
+    unavailable+" Gruppen nicht zuordenbar/ohne ausreichende Historie"+
+    (failures.length?" · Fehler: "+failures.slice(0,2).join("; "):"")+
+    ". Nicht verifizierbare Prognosen zählen nicht als Treffer.");
+ }catch(e){text("forecastAuditStatus","Prüfung unvollständig: "+String(e.message)+".")}
+ finally{forecastAuditWorking=false;$("checkForecastOutcomes").disabled=false}
+}
+$("checkForecastOutcomes").addEventListener("click",()=>checkForecastOutcomes(true));
+
 // Optional, rate-limited forward observation. No private API and no trade execution.
 async function observeForecasts(){
  if(!forecastAutoEnabled||forecastAutoWorking||forecastBusy||forecastAuditWorking||document.hidden)return;
@@ -658,6 +706,7 @@ setInterval(()=>{if(!document.hidden&&S.coins.length)renderMarket();if(!document
 setInterval(()=>{text("clock",new Date().toLocaleTimeString("de-DE"));text("age",S.lastTick?Math.floor((Date.now()-S.lastTick)/1000)+"s":"—");if(S.connection&&Date.now()-S.lastTick>20000){S.connection=false;S.sim.active=false;save();setNotice("KURSE VERALTET · Paper-Trading bis zu frischen Daten pausiert.",false)}if(!document.hidden){mark();if(Object.keys(S.sim.holdings).length)renderDepot()}},1500);
 setInterval(()=>{if(!document.hidden)loadRanking()},900000);
 setInterval(()=>{if(!document.hidden&&forecastAutoEnabled)observeForecasts()},60000);
+setInterval(()=>{if(!document.hidden&&forecastAutoEnabled)checkForecastOutcomes(false)},15*60000);
 window.addEventListener("pageshow",()=>{if(S.rankingOk&&(!S.ws||S.ws.readyState===WebSocket.CLOSED))connect()});
 window.addEventListener("pagehide",()=>{S.sim.active=false;releasePaperLease()});
 window.addEventListener("storage",event=>{if(event.key===PAPER_LEASE_KEY&&S.sim.active){
