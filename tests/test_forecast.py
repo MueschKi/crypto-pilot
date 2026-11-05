@@ -30,7 +30,7 @@ class ForecastChecks(unittest.TestCase):
         for widget in ("forecastAutoToggle","forecastAutoStatus","forecastForwardScore","exportForecasts"):
             self.assertIn('id="'+widget+'"',html)
         self.assertIn('cryptopilot-v43-forecast-observer-enabled',html)
-        self.assertIn('if(!forecastAutoEnabled||forecastAutoWorking||forecastBusy||document.hidden)return',html)
+        self.assertIn('if(!forecastAutoEnabled||forecastAutoWorking||forecastBusy||forecastAuditWorking||document.hidden)return',html)
         self.assertIn('now-forecastLastAttempt<15*60000',html)
         self.assertIn('now-latest.at*1000>=6*3600000',html)
         self.assertIn('CryptoPilotForecast.settle(record,closed)',html)

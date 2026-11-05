@@ -11,7 +11,7 @@
 - **Keine falsche Abdeckung:** Stablecoins bleiben in der Übersicht, werden aber nicht als spekulativer Trendtrade betrachtet. Unbekannte Coin-IDs oder nicht verfügbare EUR-Handelspaare werden klar ausgewiesen; keine Ersatzcoins von Platz 21+.
 - **Wichtig:** Jeder Python-Backtest simuliert für sich 1.000 EUR. Das separate Safari-Dashboard besitzt inzwischen ein browserlokales virtuelles Depot; es ist kein dauerhaft laufendes Cloud-Depot. Keine KI mit nachgewiesenem Prognosevorteil.
 
-## Safari-Dashboard (aktuell: v4.3)
+## Safari-Dashboard (aktuell: v4.4)
 
 Die öffentliche GitHub-Pages-Website ist unter **https://mueschki.github.io/crypto-pilot/** erreichbar. Das browserbasierte Dashboard zeigt:
 
@@ -34,6 +34,16 @@ Die öffentliche GitHub-Pages-Website ist unter **https://mueschki.github.io/cry
 - Jede auf Anfrage generierte Prognose wird mit Zeitstempel, Markt, Horizont, Ausgangspreis und den vorab ermittelten Grenzen **lokal in Safari** gespeichert. Wenn später ausreichend tatsächlich abgeschlossene Kraken-Kerzen verfügbar sind, wird die ursprüngliche Schätzung gegen den realen Schlusskurs geprüft. Die Speicherung umfasst höchstens 100 Einträge; ältere Daten können durch die beschränkte Kraken-Historie später nicht mehr zugeordnet werden.
 - **Keine automatische Orderfreigabe:** Prognose und Protokollierung sind von der bestehenden Paper-Strategie getrennt. Das Modell optimiert noch keine Kauf-/Verkaufsschwellen; es empfiehlt keine garantierten Tiefs/Hochs. Vor einer Integration in die Paper-Handelslogik sind echte, zeitlich unabhängige Forward-Ergebnisse und eine Bewertung nach Handelskosten erforderlich.
 - **Kein Cloud-Journal:** Die Daten verbleiben im lokalen Browser und können durch Löschen der Website-Daten verloren gehen. Ein stabiler Cloud-Prozess ist ein gesondertes Zukunftsprojekt.
+
+## Prognose-Audit v4.4: fällige Prognosen und geschätzte Kauf-/Verkaufszonen
+
+Die historische Prognoseauswertung kann nun unabhängig vom aktuell gewählten Coin **fällige gespeicherte Prognosen** auf 1h- und 4h-Kerzen prüfen. Der Button **„Fällige Prognosen prüfen“** startet die Prüfung gezielt; bei eingeschalteter optionaler Beobachtung läuft sie auch in Intervallen, **nur im sichtbaren Safari-Tab**.
+
+- Es werden höchstens **vier verschiedene Coin-/Intervallgruppen pro Durchgang** anhand der öffentlichen Kraken-OHLC-Historie abgerufen. Nur echte **abgeschlossene** Kerzen werden bewertet. Datenlücken, fehlende Zuordnung oder inzwischen verfallene Kursintervalle bleiben als **nicht verifizierbar** offen; keine Prognosen werden nachträglich erfunden oder als Treffer gewertet.
+- Die ursprünglichen Prognosedaten bleiben beim nachträglichen Hinzufügen realisierter Ergebnisse erhalten. Bestehende v4.2/v4.3-Prognosen sind kompatibel.
+- Neue Prognoseeinträge enthalten zusätzlich die ursprünglich erwartete Tief- und Hochzone. Bei fällig gewordenen Prognosen können die **mittleren prozentualen Abstände der Schätzungen von tatsächlichen späteren Tiefs und Hochs** berechnet werden. Frühere Einträge ohne gespeicherte Zonen werden aus diesen zwei Kennzahlen ausgeschlossen.
+- Eine **hypothetische Long-Kostenprüfung** zeigt, wie oft Prognosen, deren erwarteter Schlusskursanstieg über den modellierten Rundlaufkosten liegt, später rechnerisch positive Nettoergebnisse gehabt hätten. Grundlage sind **historische Schlusskurse**, keine ausführbaren Ask-/Bid-Fills. Diese Kennzahlen sind **keine Kauf-/Verkaufssignale, keine realen Paper-Trades und kein belastbarer Gewinnnachweis**. Das exakte Tief bzw. Hoch einer Kerze lässt sich rückblickend feststellen, nicht im Voraus zum garantierten Preis handeln.
+- Gespeicherte Forecast-Aktivierung und Paper-Trading bleiben voneinander getrennt; die vorhandenen v4.0-Kauf- und Verkaufsregeln bleiben unverändert.
 
 ## Prognose-Beobachtung v4.3: Prospektive Messung
 
