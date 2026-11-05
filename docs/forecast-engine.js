@@ -101,17 +101,32 @@ function scoreJournal(records){
   &&r.closeBand.every(Number.isFinite));
  const count=checked.length;
  if(!count)return {count:0,meaningful:false,maePct:null,baselineMaePct:null,
-  directionPct:null,coveragePct:null,betterPct:null,meanRealizedPct:null};
+  directionPct:null,coveragePct:null,betterPct:null,meanRealizedPct:null,
+  longCandidates:0,longNetHitPct:null,longMeanNetPct:null,lowCases:0,highCases:0,lowMaePct:null,highMaePct:null};
  const avg=f=>checked.reduce((sum,r)=>sum+f(r),0)/count;
  const directionPct=100*avg(r=>{
   const predicted=Math.sign(r.expectedReturnPct),observed=Math.sign(r.actual.actual/r.price-1);
   return predicted===observed?1:0;
  });
+ // Illustrative close-to-close long scenarios are NOT executable trades:
+ // price is a historical candle close, and the real bid/ask fill is unknown.
+ const closeFactor=(.999*.996)/(1.001*1.004);
+ const candidates=checked.filter(r=>r.expectedReturnPct>ROUND_TRIP_PCT);
+ const netPct=r=>100*((r.actual.actual/r.price)*closeFactor-1);
+ const longMeanNetPct=candidates.length?candidates.reduce((sum,r)=>sum+netPct(r),0)/candidates.length:null;
+ const longNetHitPct=candidates.length?100*candidates.filter(r=>netPct(r)>0).length/candidates.length:null;
+ const lowCases=checked.filter(r=>Number.isFinite(r.lowScenario)&&r.lowScenario>0&&Number.isFinite(r.actual.actualLow)&&r.actual.actualLow>0);
+ const highCases=checked.filter(r=>Number.isFinite(r.highScenario)&&r.highScenario>0&&Number.isFinite(r.actual.actualHigh)&&r.actual.actualHigh>0);
+ const meanError=(arr,pred,actual)=>arr.length?arr.reduce((sum,r)=>sum+100*Math.abs(r[pred]-r.actual[actual])/r.actual[actual],0)/arr.length:null;
  return {count,meaningful:count>=30,maePct:avg(r=>r.actual.errorPct),
   baselineMaePct:avg(r=>r.actual.baselinePct),directionPct,
   coveragePct:100*avg(r=>r.actual.actual>=r.closeBand[0]&&r.actual.actual<=r.closeBand[1]?1:0),
   betterPct:100*avg(r=>r.actual.errorPct<r.actual.baselinePct?1:0),
-  meanRealizedPct:avg(r=>100*(r.actual.actual/r.price-1))};
+  meanRealizedPct:avg(r=>100*(r.actual.actual/r.price-1)),
+  longCandidates:candidates.length,longMeanNetPct,longNetHitPct,
+  lowCases:lowCases.length,highCases:highCases.length,
+  lowMaePct:meanError(lowCases,"lowScenario","actualLow"),
+  highMaePct:meanError(highCases,"highScenario","actualHigh")};
 }
 root.CryptoPilotForecast={forecast,ensure,estimate,backcheck,settle,scoreJournal,roundTripPct:ROUND_TRIP_PCT};
 })(typeof window!=="undefined"?window:globalThis);
