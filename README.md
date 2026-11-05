@@ -11,7 +11,7 @@
 - **Keine falsche Abdeckung:** Stablecoins bleiben in der Übersicht, werden aber nicht als spekulativer Trendtrade betrachtet. Unbekannte Coin-IDs oder nicht verfügbare EUR-Handelspaare werden klar ausgewiesen; keine Ersatzcoins von Platz 21+.
 - **Wichtig:** Jeder Python-Backtest simuliert für sich 1.000 EUR. Das separate Safari-Dashboard besitzt inzwischen ein browserlokales virtuelles Depot; es ist kein dauerhaft laufendes Cloud-Depot. Keine KI mit nachgewiesenem Prognosevorteil.
 
-## Safari-Dashboard (aktuell: v4.4)
+## Safari-Dashboard (aktuell: v4.5)
 
 Die öffentliche GitHub-Pages-Website ist unter **https://mueschki.github.io/crypto-pilot/** erreichbar. Das browserbasierte Dashboard zeigt:
 
@@ -34,6 +34,18 @@ Die öffentliche GitHub-Pages-Website ist unter **https://mueschki.github.io/cry
 - Jede auf Anfrage generierte Prognose wird mit Zeitstempel, Markt, Horizont, Ausgangspreis und den vorab ermittelten Grenzen **lokal in Safari** gespeichert. Wenn später ausreichend tatsächlich abgeschlossene Kraken-Kerzen verfügbar sind, wird die ursprüngliche Schätzung gegen den realen Schlusskurs geprüft. Die Speicherung umfasst höchstens 100 Einträge; ältere Daten können durch die beschränkte Kraken-Historie später nicht mehr zugeordnet werden.
 - **Keine automatische Orderfreigabe:** Prognose und Protokollierung sind von der bestehenden Paper-Strategie getrennt. Das Modell optimiert noch keine Kauf-/Verkaufsschwellen; es empfiehlt keine garantierten Tiefs/Hochs. Vor einer Integration in die Paper-Handelslogik sind echte, zeitlich unabhängige Forward-Ergebnisse und eine Bewertung nach Handelskosten erforderlich.
 - **Kein Cloud-Journal:** Die Daten verbleiben im lokalen Browser und können durch Löschen der Website-Daten verloren gehen. Ein stabiler Cloud-Prozess ist ein gesondertes Zukunftsprojekt.
+
+## Schattenstrategie v4.5 (historischer Forschungsmodus)
+
+Im eingeklappten **Strategy Lab** kann ein separates Prognose-Schattenmodell mit einer Kaufen-und-Halten-Benchmark auf dem **gleichen chronologischen Testabschnitt** und denselben Kraken-EUR-Kerzen verglichen werden. Der Test wird ausschließlich auf Anfrage durchgeführt, löst keine Orders aus und verändert das lokale Paper-Depot nicht.
+
+- Identische Anfangswerte: je **1.000 €**. Gebühren 0,4 % plus Slippage 0,1 % pro Seite; kein Leverage, keine Short-Positionen.
+- Die Prognose wird nur aus **vor dem simulierten Kauf abgeschlossenen** Stunden-/Vierstundenkerzen geschätzt; Ausführung hypothetisch zur nächsten Kerzeneröffnung. Ein Einstieg erfolgt nur, wenn der historische Prognose-Median über modellierten Hin-/Rückkosten und einer vorab festgelegten Puffergrenze liegt. Ein Verkauf erfolgt nach sechs Kerzen. Die Strategie ist **nicht optimiert oder validiert**, sondern ein deterministischer Kandidat.
+- Erst die ersten 60 % der Kerzen dienen als vorausliegende Historie. Auf den restlichen 40 % wird chronologisch mit nachlaufenden, vollständig abgeschlossenen Kerzen ausgewertet. Es werden mindestens 300 **lückenlose, abgeschlossene** Kerzen benötigt.
+- Die Anzeige umfasst Test-Nettorendite, Buy-and-Hold-Vergleich, Anzahl historischer Signale, geschlossene virtuelle Trades und Drawdown. Mögliche offen gebliebene Positionen werden nur theoretisch zum Schlusskurs netto bewertet; das ist keine Garantie realer Börsenausführung.
+- **Wichtig:** Diese Schattenstrategie ist **nicht** der gegenwärtige browserlokale v4.0-Paper-Bot. Weder deren Parametersätze noch deren Positionsgrößen sind identisch. Ein belastbarer direkter Vergleich mit dem Bot erfordert in einer späteren Phase identische Risikobudgets und echte dokumentierte Tickdaten. Gewinne sind nicht garantiert.
+
+[Abnahmekriterien und Entwicklungsfahrplan](docs/PRODUCT_ROADMAP.md).
 
 ## Prognose-Audit v4.4: fällige Prognosen und geschätzte Kauf-/Verkaufszonen
 
