@@ -44,6 +44,7 @@ const ctx={Date:FakeDate,Math,JSON,Number,Array,Object,String,Map,Set,URLSearchP
  getJson:async()=>{fetches++;return {error:[],result:{XXBTZEUR:currentRows,last:123}}},
  alert:()=>{throw Error("unexpected alert")}};
 vm.runInNewContext(fs.readFileSync('docs/forecast-engine.js','utf8'),ctx);
+vm.runInNewContext(fs.readFileSync('docs/forecast-journal.js','utf8'),ctx);
 vm.runInNewContext(snippet,ctx);
 (async()=>{
  await vm.runInNewContext('observeForecasts()',ctx);
