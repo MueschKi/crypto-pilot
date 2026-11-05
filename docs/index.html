@@ -431,7 +431,9 @@ function readForecastLog(){
     ||![60,240].includes(x.period)||!Number.isFinite(x.at)
     ||!Number.isFinite(x.until)||!Number.isFinite(x.price)||x.price<=0
     ||!Number.isFinite(x.expectedReturnPct)||!Array.isArray(x.closeBand)||x.closeBand.length!==2
-    ||!x.closeBand.every(v=>Number.isFinite(v)&&v>0)))throw Error("Prognosejournal ist nicht plausibel.");
+    ||!x.closeBand.every(v=>Number.isFinite(v)&&v>0)
+    ||("lowScenario" in x&&(!Number.isFinite(x.lowScenario)||x.lowScenario<=0))
+    ||("highScenario" in x&&(!Number.isFinite(x.highScenario)||x.highScenario<=0))))throw Error("Prognosejournal ist nicht plausibel.");
   return items;
  }catch(e){throw Error("Gespeicherte Prognosen können nicht gelesen werden; Originaldaten bleiben unangetastet. "+String(e.message))}
 }
@@ -451,6 +453,17 @@ function showForecastJournal(items){
   message+=" Ø Prognosefehler "+PCT.format(score.maePct)+" % gegenüber "+PCT.format(score.baselineMaePct)+" % beim unveränderten Kurs. "+
    "Richtung korrekt: "+PCT.format(score.directionPct)+" %. Bandabdeckung: "+PCT.format(score.coveragePct)+" %. "+
    "Fehler kleiner als die Basisprognose in "+PCT.format(score.betterPct)+" % der Fälle.";
+  if(score.lowCases&&score.highCases){
+   message+=" Historische Tief-/Hochszenarien: mittlerer Abstand zum späteren Tief "+
+    PCT.format(score.lowMaePct)+" % ("+score.lowCases+" Fälle) und zum späteren Hoch "+
+    PCT.format(score.highMaePct)+" % ("+score.highCases+" Fälle).";
+  }
+  if(score.longCandidates){
+   message+=" Nur rechnerische Schlusskurs-Long-Szenarien mit Prognose über Modellkosten: "+
+    score.longCandidates+" Fälle, davon "+PCT.format(score.longNetHitPct)+" % nach Modellkosten positiv; "+
+    "mittleres rechnerisches Nettoergebnis "+PCT.format(score.longMeanNetPct)+" %. "+
+    "KEINE ausgeführten Trades und keine Aussage über erreichbare Ein-/Ausstiegskurse.";
+  }
  }
  message+=score.meaningful?" Mindestens 30 Beobachtungen vorhanden, aber noch keine gesicherte Handelsgüte.":" Noch zu wenige abgeschlossene Beobachtungen für eine belastbare Einschätzung.";
  text("forecastForwardScore",message);
@@ -503,7 +516,7 @@ async function runForecast(){
   }
   if(!records.some(record=>record.coin===coinId&&record.pair===market.pair&&record.period===period&&record.at===predicted.at)){
    records.push({coin:coinId,pair:market.pair,at:predicted.at,until:predicted.until,price:predicted.price,period,
-     expectedReturnPct:predicted.expectedReturnPct,closeBand:predicted.closeBand});
+     expectedReturnPct:predicted.expectedReturnPct,closeBand:predicted.closeBand,lowScenario:predicted.lowScenario,highScenario:predicted.highScenario});
   }
   const saved=writeForecastLog(records);
   showForecastJournal(records.slice(-100));
@@ -591,7 +604,7 @@ async function observeForecasts(){
    const p=CryptoPilotForecast.forecast({rows:closed,period});
    if(!records.some(r=>r.coin===id&&r.pair===market.pair&&r.period===period&&r.at===p.at)){
     records.push({coin:id,pair:market.pair,at:p.at,until:p.until,price:p.price,period,
-      expectedReturnPct:p.expectedReturnPct,closeBand:p.closeBand});
+      expectedReturnPct:p.expectedReturnPct,closeBand:p.closeBand,lowScenario:p.lowScenario,highScenario:p.highScenario});
     newPrediction=true;changed=true;
    }
   }
