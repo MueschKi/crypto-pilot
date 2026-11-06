@@ -12,8 +12,8 @@ CONFIG = ROOT / "cloud-paper/wrangler.toml"
 class CloudWorkerContract(unittest.TestCase):
     def test_worker_is_paper_only(self):
         source = WORKER.read_text(encoding="utf-8")
-        self.assertIn("async function authorized(request, secret)", source)
-        self.assertIn('if (!await authorized(request, env.PAPER_API_TOKEN)) return denied()', source)
+        self.assertIn("async function identity(request, secret)", source)
+        self.assertIn("const subject = await identity(request, env.PAPER_SIGNING_KEY)", source)
         self.assertIn('this.state.storage.transaction(async txn =>', source)
         self.assertIn('await txn.put("state",next)', source)
         self.assertIn('await txn.put("order:"+fill.id,{fill})', source)

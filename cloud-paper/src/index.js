@@ -5,22 +5,39 @@ const response = (data, status=200) => new Response(JSON.stringify(data), {statu
 const denied = () => response({error:"unauthorized"},401);
 const LIMIT = 16 * 1024;
 
-async function authorized(request, secret) {
-  if (!secret || typeof secret !== "string" || secret.length < 32) return false;
-  const token = request.headers.get("authorization");
-  if (!token || !token.startsWith("Bearer ")) return false;
-  const encoder = new TextEncoder();
-  const a = await crypto.subtle.digest("SHA-256", encoder.encode(token.slice(7)));
-  const b = await crypto.subtle.digest("SHA-256", encoder.encode(secret));
-  const x = new Uint8Array(a), y = new Uint8Array(b);
-  let difference = 0;
-  for (let i=0;i<x.length;i++) difference |= x[i]^y[i];
-  return difference === 0;
+// Preview identity: short-lived HMAC-SHA256 signed bearer token.
+// Production must replace token issuance with a trusted external identity provider.
+const enc = new TextEncoder();
+const hex = bytes => [...new Uint8Array(bytes)].map(b=>b.toString(16).padStart(2,"0")).join("");
+async function identity(request, secret) {
+  if (typeof secret !== "string" || secret.length < 32) return null;
+  const auth = request.headers.get("authorization") || "";
+  if (!auth.startsWith("Bearer ")) return null;
+  const token = auth.slice(7);
+  const parts = token.split(".");
+  if (parts.length !== 3 || parts[0] !== "v1") return null;
+  const [version, payload, signature] = parts;
+  if (!/^[a-zA-Z0-9_-]{1,512}$/.test(payload) || !/^[a-f0-9]{64}$/.test(signature)) return null;
+  let claims;
+  try {
+    const base64 = payload.replace(/-/g,"+").replace(/_/g,"/");
+    claims = JSON.parse(atob(base64.padEnd(Math.ceil(base64.length/4)*4,"=")));
+  } catch (_) { return null; }
+  if (!claims || !/^[a-zA-Z0-9_-]{1,64}$/.test(claims.sub||"")
+      || !Number.isSafeInteger(claims.exp) || claims.exp <= Math.floor(Date.now()/1000)
+      || claims.exp > Math.floor(Date.now()/1000)+3600
+      || claims.aud !== "cryptopilot-cloud-paper-preview") return null;
+  const key = await crypto.subtle.importKey("raw",enc.encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+  const actual = hex(await crypto.subtle.sign("HMAC",key,enc.encode(version+"."+payload)));
+  let diff = 0;
+  for (let i=0;i<64;i++) diff |= actual.charCodeAt(i)^signature.charCodeAt(i);
+  return diff===0 ? claims.sub : null;
 }
 
 export default {
   async fetch(request, env) {
-    if (!await authorized(request, env.PAPER_API_TOKEN)) return denied();
+    const subject = await identity(request, env.PAPER_SIGNING_KEY);
+    if (!subject) return denied();
     if (!env.PAPER_LEDGER) return response({error:"storage unavailable"},503);
     const url = new URL(request.url);
     if (!["/v1/paper/status","/v1/paper/halt","/v1/paper/fill"].includes(url.pathname))
@@ -32,7 +49,7 @@ export default {
       if (size > LIMIT) return response({error:"payload too large"},413);
     }
     // Single fixed preview wallet. Not a multi-user implementation.
-    const id = env.PAPER_LEDGER.idFromName("single-preview-wallet");
+    const id = env.PAPER_LEDGER.idFromName("wallet:v1:"+subject);
     return env.PAPER_LEDGER.get(id).fetch(request);
   }
 };
