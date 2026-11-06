@@ -41,7 +41,7 @@ export default {
     if (!identityClaims) return denied();
     if (!env.PAPER_LEDGER) return response({error:"storage unavailable"},503);
     const url = new URL(request.url);
-    if (!["/v1/paper/status","/v1/paper/halt","/v1/paper/fill"].includes(url.pathname))
+    if (!["/v1/paper/status","/v1/paper/halt","/v1/paper/fill","/v1/paper/revoke"].includes(url.pathname))
       return response({error:"not found"},404);
     const method = url.pathname.endsWith("/status")?"GET":"POST";
     if (request.method !== method) return response({error:"method not allowed"},405);
@@ -85,6 +85,11 @@ export class PaperLedger {
       raw = await request.text();
       if (raw.length > LIMIT) return response({error:"payload too large"},413);
     } catch (_) { return response({error:"invalid payload"},400); }
+    if (path === "/v1/paper/revoke") {
+      // Self-revocation persists for this wallet; no API to re-enable a token.
+      await this.state.storage.put("revoked:"+tokenId,true);
+      return response({revoked:true,mode:"PAPER_ONLY",realTrading:false});
+    }
     if (path === "/v1/paper/halt") {
       const state = await this.state.storage.transaction(async txn => {
         const prior = await txn.get("state") || INITIAL;
