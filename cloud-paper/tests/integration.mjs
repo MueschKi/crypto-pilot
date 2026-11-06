@@ -7,7 +7,7 @@ const source = await readFile(new URL("../src/index.js", import.meta.url), "utf8
 const {default: worker, PaperLedger} = await import("data:text/javascript;base64,"+Buffer.from(source).toString("base64"));
 const secret = "test-signing-key-not-for-production-use-123456789";
 async function token(sub) {
- const payload = Buffer.from(JSON.stringify({sub,exp:Math.floor(Date.now()/1000)+600,aud:"cryptopilot-cloud-paper-preview"})).toString("base64url");
+ const payload = Buffer.from(JSON.stringify({sub,exp:Math.floor(Date.now()/1000)+600,aud:"cryptopilot-cloud-paper-preview",jti:"token_"+sub+"_0001"})).toString("base64url");
  const {createHmac}=await import("node:crypto");
  return "v1."+payload+"."+createHmac("sha256",secret).update("v1."+payload).digest("hex");
 }
@@ -16,6 +16,7 @@ const stores = new Map();
 let store = new Map();
 const storage = {
   async get(k) { return structuredClone(store.get(k)); },
+  async put(k,v) {store.set(k,structuredClone(v));},
   async transaction(callback) {
     const before = structuredClone([...store.entries()]);
     const txn = {
@@ -54,7 +55,7 @@ assert.equal(result.data.duplicate,true);
 assert.equal((await call("/v1/paper/fill","POST",{...first,feeCents:60})).status,409);
 assert.equal((await call("/v1/paper/fill","POST",{...first,id:"buy2",sequence:3})).status,409);
 // New Durable Object instance reading same persistent storage after restart.
-assert.equal((await new PaperLedger({storage},env).fetch(request("/v1/paper/status"))).status,200);
+assert.equal((await new PaperLedger({storage},env).fetch(new Request("https://paper.invalid/v1/paper/status",{headers:{"x-internal-paper-token-id":"token_alice_0001"}}))).status,200);
 assert.equal((await call("/v1/paper/status")).data.sequence,1);
 assert.equal((await call("/v1/paper/status","GET",undefined,bob)).data.sequence,0);
 // Rejected overflows and maliciously invalid stored values must not mutate the ledger.
@@ -74,4 +75,8 @@ assert.equal((await call("/v1/paper/halt","POST",{})).data.halted,true);
 assert.equal((await call("/v1/paper/fill","POST",{...first,id:"buy3",sequence:3})).status,409);
 assert.equal((await call("/v1/paper/status")).data.halted,true);
 assert.equal((await call("/v1/paper/status","GET",undefined,bob)).data.halted,false);
+assert.equal((await call("/v1/paper/revoke","POST",{})).data.revoked,true);
+assert.equal((await call("/v1/paper/status")).status,401);
+assert.equal((await call("/v1/paper/fill","POST",{...first,id:"after_revoke",sequence:3})).status,401);
+assert.equal((await call("/v1/paper/status","GET",undefined,bob)).status,200);
 console.log("cloud paper integration harness: authentication, idempotency, limits, restart, halt OK");

@@ -26,21 +26,22 @@ async function identity(request, secret) {
   if (!claims || !/^[a-zA-Z0-9_-]{1,64}$/.test(claims.sub||"")
       || !Number.isSafeInteger(claims.exp) || claims.exp <= Math.floor(Date.now()/1000)
       || claims.exp > Math.floor(Date.now()/1000)+3600
-      || claims.aud !== "cryptopilot-cloud-paper-preview") return null;
+      || claims.aud !== "cryptopilot-cloud-paper-preview"
+      || !/^[a-zA-Z0-9_-]{8,96}$/.test(claims.jti||"")) return null;
   const key = await crypto.subtle.importKey("raw",enc.encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
   const actual = hex(await crypto.subtle.sign("HMAC",key,enc.encode(version+"."+payload)));
   let diff = 0;
   for (let i=0;i<64;i++) diff |= actual.charCodeAt(i)^signature.charCodeAt(i);
-  return diff===0 ? claims.sub : null;
+  return diff===0 ? {subject:claims.sub,tokenId:claims.jti} : null;
 }
 
 export default {
   async fetch(request, env) {
-    const subject = await identity(request, env.PAPER_SIGNING_KEY);
-    if (!subject) return denied();
+    const identityClaims = await identity(request, env.PAPER_SIGNING_KEY);
+    if (!identityClaims) return denied();
     if (!env.PAPER_LEDGER) return response({error:"storage unavailable"},503);
     const url = new URL(request.url);
-    if (!["/v1/paper/status","/v1/paper/halt","/v1/paper/fill"].includes(url.pathname))
+    if (!["/v1/paper/status","/v1/paper/halt","/v1/paper/fill","/v1/paper/revoke"].includes(url.pathname))
       return response({error:"not found"},404);
     const method = url.pathname.endsWith("/status")?"GET":"POST";
     if (request.method !== method) return response({error:"method not allowed"},405);
@@ -49,8 +50,10 @@ export default {
       if (size > LIMIT) return response({error:"payload too large"},413);
     }
     // Single fixed preview wallet. Not a multi-user implementation.
-    const id = env.PAPER_LEDGER.idFromName("wallet:v1:"+subject);
-    return env.PAPER_LEDGER.get(id).fetch(request);
+    const id = env.PAPER_LEDGER.idFromName("wallet:v1:"+identityClaims.subject);
+    const forwarded = new Request(request);
+    forwarded.headers.set("x-internal-paper-token-id",identityClaims.tokenId);
+    return env.PAPER_LEDGER.get(id).fetch(forwarded);
   }
 };
 
@@ -69,6 +72,9 @@ export class PaperLedger {
   constructor(state, env) { this.state=state; this.env=env; }
   async fetch(request) {
     const path = new URL(request.url).pathname;
+    // Per-wallet token revocation list; a revoked token cannot read or mutate.
+    const tokenId = request.headers.get("x-internal-paper-token-id");
+    if (!tokenId || await this.state.storage.get("revoked:"+tokenId)) return denied();
     if (path === "/v1/paper/status" && request.method === "GET") {
       const state = await this.state.storage.get("state") || INITIAL;
       return response({...state, mode:"PAPER_ONLY", realTrading:false});
@@ -79,6 +85,11 @@ export class PaperLedger {
       raw = await request.text();
       if (raw.length > LIMIT) return response({error:"payload too large"},413);
     } catch (_) { return response({error:"invalid payload"},400); }
+    if (path === "/v1/paper/revoke") {
+      // Self-revocation persists for this wallet; no API to re-enable a token.
+      await this.state.storage.put("revoked:"+tokenId,true);
+      return response({revoked:true,mode:"PAPER_ONLY",realTrading:false});
+    }
     if (path === "/v1/paper/halt") {
       const state = await this.state.storage.transaction(async txn => {
         const prior = await txn.get("state") || INITIAL;
