@@ -186,7 +186,7 @@ export class PaperLedger {
 }
 
 export class PaperSessions {
-  constructor(state) {this.state=state;}
+  constructor(state,env) {this.state=state;this.env=env;}
   async fetch(request) {
     // The Durable Object is reachable only through a Worker binding; no public admin route.
     const path=new URL(request.url).pathname;
@@ -204,6 +204,10 @@ export class PaperSessions {
     }
     // Privileged revocation is intentionally not exposed through the public Worker.
     // The binding is reachable only by a separately authenticated operator service.
+    if(path.startsWith("/admin/")) {
+      const key=this.env?.PAPER_ADMIN_KEY;
+      if(typeof key!=="string" || key.length<32 || request.headers.get("x-paper-admin-key")!==key)return denied();
+    }
     if(path==="/admin/revoke-token"){
       if(!/^[a-zA-Z0-9_-]{8,96}$/.test(body?.tokenId||""))return response({error:"invalid token id"},400);
       try {await this.state.storage.put("revoked:"+body.tokenId,true);}
