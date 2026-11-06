@@ -40,7 +40,7 @@ async function identity(request, keys) {
   const actual = hex(await crypto.subtle.sign("HMAC",key,enc.encode(version+"."+kid+"."+payload)));
   let diff = 0;
   for (let i=0;i<64;i++) diff |= actual.charCodeAt(i)^signature.charCodeAt(i);
-  return diff===0 ? {subject:claims.sub,tokenId:claims.jti} : null;
+  return diff===0 ? {subject:claims.sub,tokenId:claims.jti,issuedAt:claims.iat} : null;
 }
 
 export default {
@@ -50,7 +50,7 @@ export default {
     catch (_) { return denied(); }
     const identityClaims = await identity(request, signingKeys);
     if (!identityClaims) return denied();
-    if (!env.PAPER_LEDGER) return response({error:"storage unavailable"},503);
+    if (!env.PAPER_LEDGER || !env.PAPER_SESSIONS) return response({error:"storage unavailable"},503);
     const url = new URL(request.url);
     if (!["/v1/paper/status","/v1/paper/halt","/v1/paper/fill","/v1/paper/revoke"].includes(url.pathname))
       return response({error:"not found"},404);
@@ -61,6 +61,17 @@ export default {
       if (size > LIMIT) return response({error:"payload too large"},413);
     }
     // A verified subject maps to a distinct persistent preview wallet.
+    // Central per-subject session epoch is checked before every wallet operation.
+    // A failed session store must deny access rather than fall back to the wallet.
+    try {
+      const sessionId=env.PAPER_SESSIONS.idFromName("session:v1:"+identityClaims.subject);
+      const sessionRes=await env.PAPER_SESSIONS.get(sessionId).fetch(new Request("https://internal.invalid/check",{
+        method:"POST",headers:{"content-type":"application/json"},
+        body:JSON.stringify({tokenId:identityClaims.tokenId,issuedAt:identityClaims.issuedAt})
+      }));
+      if(sessionRes.status===401)return denied();
+      if(!sessionRes.ok)return response({error:"session storage unavailable",mode:"PAPER_ONLY",realTrading:false},503);
+    } catch (_) {return response({error:"session storage unavailable",mode:"PAPER_ONLY",realTrading:false},503);}
     const id = env.PAPER_LEDGER.idFromName("wallet:v1:"+identityClaims.subject);
     const forwarded = new Request(request);
     forwarded.headers.set("x-internal-paper-token-id",identityClaims.tokenId);
@@ -171,5 +182,28 @@ export class PaperLedger {
       if (e && e.name === "PaperRuleViolation") return response({error:e.message,mode:"PAPER_ONLY"},409);
       return response({error:"paper transaction unavailable",mode:"PAPER_ONLY",realTrading:false},503);
     }
+  }
+}
+
+export class PaperSessions {
+  constructor(state) {this.state=state;}
+  async fetch(request) {
+    // The Durable Object is reachable only through a Worker binding; no public admin route.
+    const path=new URL(request.url).pathname;
+    if(request.method!=="POST")return response({error:"method not allowed"},405);
+    let body;
+    try {body=await request.json();}catch(_){return response({error:"invalid request"},400);}
+    if(path==="/check"){
+      if(!/^[a-zA-Z0-9_-]{8,96}$/.test(body?.tokenId||"")
+          || !Number.isSafeInteger(body?.issuedAt))return denied();
+      try {
+        const cutoff=await this.state.storage.get("revokedBefore")||0;
+        const revoked=await this.state.storage.get("revoked:"+body.tokenId);
+        return cutoff>=body.issuedAt || revoked ? denied() : response({allowed:true});
+      } catch (_){return response({error:"session storage unavailable"},503);}
+    }
+    // Deliberately no external token/session revocation endpoint.
+    // Future trusted admin service must authenticate and authorize calls to this binding.
+    return response({error:"not found"},404);
   }
 }

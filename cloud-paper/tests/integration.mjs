@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 
 const source = await readFile(new URL("../src/index.js", import.meta.url), "utf8");
-const {default: worker, PaperLedger} = await import("data:text/javascript;base64,"+Buffer.from(source).toString("base64"));
+const {default: worker, PaperLedger, PaperSessions} = await import("data:text/javascript;base64,"+Buffer.from(source).toString("base64"));
 const secret = "test-signing-key-not-for-production-use-123456789";
 const verifyKeys=JSON.stringify({test_k1:secret});
 async function token(sub) {
@@ -28,7 +28,17 @@ const storage = {
     catch (e) {store.clear();for (const [k,v] of before)store.set(k,v);throw e;}
   }
 };
-const env = {PAPER_VERIFY_KEYS_JSON:verifyKeys,PAPER_LEDGER:{
+const sessionStores=new Map();
+const env = {PAPER_VERIFY_KEYS_JSON:verifyKeys,PAPER_SESSIONS:{
+ idFromName: name=>name,
+ get: id=>({fetch: request=>{
+   const s=sessionStores.get(id)||new Map();sessionStores.set(id,s);
+   return new PaperSessions({storage:{
+     get:async k=>s.get(k),
+     put:async (k,v)=>s.set(k,v)
+   }}).fetch(request);
+ }})
+},PAPER_LEDGER:{
   idFromName: name => name,
   get: id => ({fetch: request => {store=stores.get(id)||new Map();stores.set(id,store);return new PaperLedger({storage},env).fetch(request)}})
 }};
@@ -80,6 +90,13 @@ assert.equal((await call("/v1/paper/revoke","POST",{})).data.revoked,true);
 assert.equal((await call("/v1/paper/status")).status,401);
 assert.equal((await call("/v1/paper/fill","POST",{...first,id:"after_revoke",sequence:3})).status,401);
 assert.equal((await call("/v1/paper/status","GET",undefined,bob)).status,200);
+ // Central session epoch revokes all previously issued Alice tokens, not Bob.
+ const session=sessionStores.get("session:v1:alice");
+ session.set("revokedBefore",Math.floor(Date.now()/1000));
+ const aliceNew=await token("alice");
+ assert.equal((await call("/v1/paper/status","GET",undefined,aliceNew)).status,401);
+ assert.equal((await call("/v1/paper/status","GET",undefined,bob)).status,200);
+
 // Simulate a Durable Object storage outage: fail closed, never claim a rule conflict.
 const unavailable={get:async()=>{throw Error("disk unavailable")},put:async()=>{throw Error("disk unavailable")},transaction:async()=>{throw Error("disk unavailable")}};
 const down=new PaperLedger({storage:unavailable},env);
