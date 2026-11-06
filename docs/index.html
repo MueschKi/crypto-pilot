@@ -27,7 +27,7 @@ main{position:relative;z-index:1}.panel{position:relative;overflow:hidden;transi
 </style>
 </head>
 <body><div class="ambient-orb orb-a" aria-hidden="true"></div><div class="ambient-orb orb-b" aria-hidden="true"></div><main>
-<div class="top"><div class="brand">◈ Crypto<i>Pilot</i></div><div class="flex"><div class="stream-orbs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><div class="tag" id="connection">● VERBINDUNG WIRD AUFGEBAUT</div><span class="small" title="Weboberfläche v4.7 mit manuellem Paper-Not-Aus und Laufzeitstatus; technische Paper-Forschungsbasis v4.11 ist noch nicht im Browser aktiv">Web v4.7 · Forschungsbasis v4.11</span></div></div>
+<div class="top"><div class="brand">◈ Crypto<i>Pilot</i></div><div class="flex"><div class="stream-orbs" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div><div class="tag" id="connection">● VERBINDUNG WIRD AUFGEBAUT</div><span class="small" title="Weboberfläche v4.8 mit fehlersicherer Paper-Speicherung und Not-Aus; technische Paper-Forschungsbasis v4.11 ist noch nicht im Browser aktiv">Web v4.8 · Forschungsbasis v4.11</span></div></div>
 <div class="hero"><h1>Markt. Depot. Strategie.</h1><p>Kraken-Livekurse, Top-20-Marktübersicht und virtuelles Trading. Keine echten Orders.</p>
 <div class="notice" id="notice">VERBINDUNGSAUFBAU · Warte auf bestätigte öffentliche Kursdaten. Kein Echtgeldhandel; das Paper-Depot ist standardmäßig aus.</div></div>
 <div class="grid">
@@ -140,7 +140,13 @@ function setNotice(message,ok){if(S.paperStorageFault){message="GESPEICHERTES PA
 function save(){
  if(S.paperStorageFault)return false;
  try{localStorage.setItem("cryptopilot-v3-paper",JSON.stringify({...S.sim,active:false}));return true}
- catch(_){return false}
+ catch(_){
+  // Fail closed: a simulated fill must never continue without a durable local journal.
+  S.sim.active=false;S.sim.armed=false;S.sim.stopped=true;
+  S.paperStorageFault=true;releasePaperLease();
+  setNotice("PAPER GESPERRT · Lokales Speichern fehlgeschlagen. Keine weiteren virtuellen Orders. Daten prüfen und gegebenenfalls bewusst zurücksetzen.",false);
+  return false;
+ }
 }
 function load(){
  try{
@@ -195,7 +201,7 @@ function mark(){const v=value();if(v!==null){S.sim.series.push(v);if(S.sim.serie
 function drawChart(){const series=S.sim.series;const min=Math.min(...series),max=Math.max(...series),delta=Math.max(.01,max-min);const points=series.map((v,i)=>(10+i*300/Math.max(1,series.length-1)).toFixed(1)+","+(115-100*(v-min)/delta).toFixed(1)).join(" ");$("chart").innerHTML='<path d="M10 115 L310 115" stroke="#293951"/><polyline points="'+points+'" fill="none" stroke="#40dfa3" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'}
 function pulseMetric(id,next){const el=$(id);if(el.textContent!==next){el.textContent=next;if(!window.matchMedia("(prefers-reduced-motion: reduce)").matches){el.classList.add("changed")}}}
 let lastJournalKey=null,lastSeriesCount=-1,lastSeriesTail=null;
-function renderDepot(){text("paperExplain",S.sim.stopped?"Sicherheits-Not-Aus · bewusster Reset erforderlich":S.sim.active?"Paper-Simulation aktiv · nur solange Safari geöffnet ist":S.sim.armed?"Aktivierung gespeichert · wartet auf frische Daten im sichtbaren Tab":"Paper-Handel ausgeschaltet");const v=value();pulseMetric("equity",v===null?"Bewertung ausstehend":EUR.format(v));pulseMetric("cash",EUR.format(S.sim.cash));text("pnl",v===null?"Position ohne frischen Kurs":(v>=1000?"+":"")+EUR.format(v-1000)+" (virtuell)");$("pnl").className="small "+(v===null?"muted":v>=1000?"green":"red");pulseMetric("tradeCount",String(S.sim.trades.length));text("paperState",S.sim.stopped?"NOT-AUS":S.sim.active?"AKTIV":S.sim.armed?"PAUSIERT":"AUS");$("toggle").textContent=S.sim.armed?"Paper-Autohandel manuell stoppen":"Paper-Autohandel einschalten";$("toggle").disabled=S.sim.stopped;const open=Object.entries(S.sim.holdings);text("positions",open.length?open.map(([id,p])=>{const c=S.coins.find(c=>c.id===id);return (c?c.symbol.toUpperCase():id)+" · "+p.qty.toFixed(5)+" Stück"}).join(" | "):"Keine offenen Positionen · max. 3 × 150 €");const details=$("positionDetails");const detailNodes=[];
+function renderDepot(){text("paperExplain",S.paperStorageFault?"SPEICHERFEHLER · Paper-Ausführung gesperrt":S.sim.stopped?"Sicherheits-Not-Aus · bewusster Reset erforderlich":S.sim.active?"Paper-Simulation aktiv · nur solange Safari geöffnet ist":S.sim.armed?"Aktivierung gespeichert · wartet auf frische Daten im sichtbaren Tab":"Paper-Handel ausgeschaltet");const v=value();pulseMetric("equity",v===null?"Bewertung ausstehend":EUR.format(v));pulseMetric("cash",EUR.format(S.sim.cash));text("pnl",v===null?"Position ohne frischen Kurs":(v>=1000?"+":"")+EUR.format(v-1000)+" (virtuell)");$("pnl").className="small "+(v===null?"muted":v>=1000?"green":"red");pulseMetric("tradeCount",String(S.sim.trades.length));text("paperState",S.sim.stopped?"NOT-AUS":S.sim.active?"AKTIV":S.sim.armed?"PAUSIERT":"AUS");$("toggle").textContent=S.sim.armed?"Paper-Autohandel manuell stoppen":"Paper-Autohandel einschalten";$("toggle").disabled=S.sim.stopped;const open=Object.entries(S.sim.holdings);text("positions",open.length?open.map(([id,p])=>{const c=S.coins.find(c=>c.id===id);return (c?c.symbol.toUpperCase():id)+" · "+p.qty.toFixed(5)+" Stück"}).join(" | "):"Keine offenen Positionen · max. 3 × 150 €");const details=$("positionDetails");const detailNodes=[];
 for(const [id,p] of open){
  const c=S.coins.find(c=>c.id===id),q=S.quotes.get(id),fresh=quoteFresh(q);
  const item=document.createElement("div");item.className="position-item";
@@ -771,7 +777,7 @@ function renderRuntimeStatus(){
  const status=$("runtimeStatus");if(!status)return;
  const localStorageState=(()=>{try{const k="cryptopilot-v3-execution-lease";localStorage.getItem(k);return "verfügbar"}catch(_){return "nicht verfügbar"}})();
  const feed=S.connection&&S.lastTick&&Date.now()-S.lastTick<20000?"frisch":"nicht bestätigt / veraltet";
- const paper=S.sim.stopped?"NOT-AUS (Reset erforderlich)":S.sim.active?"aktiv (nur in diesem Tab)":S.sim.armed?"bereit, wartet auf frische Daten":"ausgeschaltet";
+ const paper=S.paperStorageFault?"SPEICHERFEHLER (gesperrt)":S.sim.stopped?"NOT-AUS (Reset erforderlich)":S.sim.active?"aktiv (nur in diesem Tab)":S.sim.armed?"bereit, wartet auf frische Daten":"ausgeschaltet";
  status.textContent="Marktfeed: "+feed+" · Paper-Ausführung: "+paper+" · Lokaler Speicher: "+localStorageState+" · Cloud-Paper: nicht verbunden · Echtgeld: gesperrt";
 }
 $("refreshRuntime").addEventListener("click",renderRuntimeStatus);
