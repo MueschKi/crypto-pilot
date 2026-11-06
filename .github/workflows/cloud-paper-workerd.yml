@@ -1,0 +1,25 @@
+name: Cloud-Paper workerd integration
+
+on:
+  pull_request:
+    paths:
+      - "cloud-paper/**"
+      - ".github/workflows/cloud-paper-workerd.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  workerd:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install isolated Miniflare test dependency
+        run: npm install --no-save --ignore-scripts --no-audit --no-fund miniflare@3
+      - name: Test real SQLite Durable Object runtime
+        run: node cloud-paper/tests/workerd.mjs
