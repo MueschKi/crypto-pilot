@@ -32,7 +32,8 @@ class UIChecks(unittest.TestCase):
         self.assertEqual(parser.depth,0,"Missing closing details tag")
         for area in ("signalSection","forecastSection","labSection","journalSection","diagnosticSection"):
             self.assertIn((area,False),parser.details,"Non-essential panel must default collapsed")
-        self.assertEqual(len(parser.summary_depths),5)
+        self.assertEqual(len(parser.summary_depths),6)
+        self.assertIn(("runtimeDetails",False),parser.details)
         self.assertTrue(all(d>0 for d in parser.summary_depths))
         self.assertIn("collapsible summary:focus-visible",HTML)
         self.assertIn('id="marketChart"',HTML)
