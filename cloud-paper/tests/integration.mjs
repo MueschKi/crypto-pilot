@@ -101,12 +101,14 @@ assert.equal((await call("/v1/paper/status","GET",undefined,bob)).status,200);
    })
  }},env);
  const adminRequest=(path,body,authorized=false)=>new Request("https://internal.invalid"+path,{
-   method:"POST",headers:{"content-type":"application/json",...(authorized?{"x-paper-admin-key":adminKey}:{})},
+   method:"POST",headers:{"content-type":"application/json",...(authorized?{"x-paper-admin-key":adminKey,"x-paper-admin-actor":"test_operator","x-paper-audit-id":"audit_test_"+path.split("/").pop()+"_001"}:{})},
    body:JSON.stringify(body)
  });
  assert.equal((await sessionDO.fetch(adminRequest("/admin/revoke-all",{revokedBefore:Math.floor(Date.now()/1000)}))).status,401);
  assert.equal((await sessionDO.fetch(adminRequest("/admin/revoke-token",{tokenId:"alice_token_0001"},true))).status,200);
  assert.equal((await sessionDO.fetch(adminRequest("/admin/revoke-all",{revokedBefore:Math.floor(Date.now()/1000)},true))).status,200);
+ assert.equal((await sessionDO.fetch(adminRequest("/admin/revoke-all",{revokedBefore:Math.floor(Date.now()/1000)},true))).status,409);
+ assert.equal(sessionStores.get("session:v1:alice").get("audit:audit_test_revoke-all_001").action,"revoke-all");
  // Central session epoch revokes all previously issued Alice tokens, not Bob.
  const session=sessionStores.get("session:v1:alice");
  session.set("revokedBefore",Math.floor(Date.now()/1000));
