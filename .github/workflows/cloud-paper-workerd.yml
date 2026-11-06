@@ -21,5 +21,7 @@ jobs:
           node-version: "22"
       - name: Install isolated Miniflare test dependency
         run: npm install --no-save --ignore-scripts --no-audit --no-fund miniflare@3
+      - name: Test server-only token issuer
+        run: node cloud-paper/tests/token-issuer.mjs
       - name: Test real SQLite Durable Object runtime
         run: node cloud-paper/tests/workerd.mjs
