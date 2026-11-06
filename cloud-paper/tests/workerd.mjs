@@ -21,7 +21,7 @@ function runtime() {
    modules:true,scriptPath:path,
    compatibilityDate:"2026-10-01",
    bindings:{PAPER_VERIFY_KEYS_JSON:verifyKeys},
-   durableObjects:{PAPER_LEDGER:{className:"PaperLedger",useSQLite:true}},
+   durableObjects:{PAPER_LEDGER:{className:"PaperLedger",useSQLite:true},PAPER_SESSIONS:{className:"PaperSessions",useSQLite:true}},
    durableObjectsPersist:join(dir,"durable"),
  });
 }
