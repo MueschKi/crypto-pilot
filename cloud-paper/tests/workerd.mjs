@@ -59,6 +59,14 @@ try {
  assert.equal((await call(mf,"/v1/paper/status","GET",bob)).status,200);
  assert.equal((await sessionStub.fetch(adminReq(true).url,adminReq(true))).status,200);
  assert.equal((await sessionStub.fetch(adminReq(true).url,adminReq(true))).status,409);
+ const auditRead=new Request("https://internal.invalid/admin/audit-entry",{
+  method:"POST",headers:{"content-type":"application/json","x-paper-admin-key":adminKey,
+   "x-paper-admin-actor":"operator_test","x-paper-audit-id":"workerd_audit_lookup_0001"},
+  body:JSON.stringify({auditId:"workerd_audit_0001"})
+ });
+ const auditResult=await sessionStub.fetch(auditRead.url,auditRead);
+ assert.equal(auditResult.status,200);
+ assert.equal((await auditResult.json()).action,"revoke-token");
  assert.equal((await call(mf,"/v1/paper/status","GET",bob)).status,401);
 
  const fill={id:"first",sequence:1,symbol:"BTC",side:"BUY",quantityUnits:1000000,priceCentsPerUnit:10000,feeCents:50};
