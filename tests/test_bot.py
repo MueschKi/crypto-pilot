@@ -43,6 +43,29 @@ class SafeResearchTests(unittest.TestCase):
         self.assertEqual(len(parsed),20)
         self.assertEqual(parsed[0]['rank'],1)
 
+    def test_provider_rank_gaps_preserved_without_filling_missing_coins(self):
+        data=leaders()
+        # The endpoint may skip rank 7 while returning exactly 20 ordered assets.
+        for row in data[6:]:
+            row['market_cap_rank'] += 1
+        parsed=parse_leaders(data)
+        self.assertEqual(len(parsed),20)
+        self.assertEqual(parsed[6]['rank'],8)
+        self.assertEqual(parsed[-1]['rank'],21)
+        self.assertEqual([row['id'] for row in parsed],
+                         [row['id'] for row in data])
+
+    def test_duplicate_or_reordered_provider_ranks_still_rejected(self):
+        data=leaders()
+        data[5]['market_cap_rank']=5
+        with self.assertRaises(ValueError):parse_leaders(data)
+        data=leaders()
+        data[5]['market_cap_rank']=True
+        with self.assertRaises(ValueError):parse_leaders(data)
+        data=leaders()
+        data[5]['market_cap_rank']=0
+        with self.assertRaises(ValueError):parse_leaders(data)
+
     def test_incomplete_or_invalid_top20_fails_closed(self):
         for values in (leaders()[:19],leaders()+leaders()[:1]):
             with self.assertRaises(ValueError):parse_leaders(values)
