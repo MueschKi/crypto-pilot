@@ -213,6 +213,16 @@ export class PaperSessions {
     if(path.startsWith("/admin/") && (!/^[a-zA-Z0-9_-]{3,64}$/.test(actor||"")
         || !/^[a-zA-Z0-9_-]{12,96}$/.test(auditId||"")))
       return response({error:"missing audit identity"},400);
+    if(path==="/admin/audit-entry"){
+      const lookupId=body?.auditId;
+      if(!/^[a-zA-Z0-9_-]{12,96}$/.test(lookupId||""))
+        return response({error:"invalid audit id"},400);
+      try {
+        const entry=await this.state.storage.get("audit:"+lookupId);
+        if(!entry)return response({error:"audit entry not found"},404);
+        return response({auditId:lookupId,...entry,mode:"PAPER_ONLY",realTrading:false});
+      } catch (_) {return response({error:"session storage unavailable"},503);}
+    }
     if(path==="/admin/revoke-token"){
       if(!/^[a-zA-Z0-9_-]{8,96}$/.test(body?.tokenId||""))return response({error:"invalid token id"},400);
       try {
