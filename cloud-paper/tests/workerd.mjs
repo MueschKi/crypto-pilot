@@ -7,6 +7,7 @@ import {join, resolve} from "node:path";
 import {Miniflare} from "miniflare";
 
 const secret = "integration-only-signing-key-0123456789abcdef";
+const adminKey="integration-admin-key-0123456789abcdef";
 const verifyKeys=JSON.stringify({test_k1:secret});
 const path = resolve("cloud-paper/src/index.js");
 const dir = await mkdtemp(join(tmpdir(),"cryptopilot-workerd-"));
@@ -20,7 +21,7 @@ function runtime() {
  return new Miniflare({
    modules:true,scriptPath:path,
    compatibilityDate:"2026-10-01",
-   bindings:{PAPER_VERIFY_KEYS_JSON:verifyKeys},
+   bindings:{PAPER_VERIFY_KEYS_JSON:verifyKeys,PAPER_ADMIN_KEY:adminKey},
    durableObjects:{PAPER_LEDGER:{className:"PaperLedger",useSQLite:true},PAPER_SESSIONS:{className:"PaperSessions",useSQLite:true}},
    durableObjectsPersist:join(dir,"durable"),
  });
@@ -45,6 +46,21 @@ try {
  assert.equal((await call(mf,"/v1/paper/status","GET",unknownKey)).status,401);
  assert.equal((await call(mf,"/v1/paper/status")).data.sequence,0);
  assert.equal((await call(mf,"/v1/paper/status","GET",bob)).data.sequence,0);
+ // Real workerd session DO: unauthorized admin requests must not change state.
+ const sessionNs=await mf.getDurableObjectNamespace("PAPER_SESSIONS");
+ const sessionStub=sessionNs.get(sessionNs.idFromName("session:v1:bob"));
+ const adminReq=(authorized)=>new Request("https://internal.invalid/admin/revoke-token",{
+  method:"POST",headers:{"content-type":"application/json",...(authorized?{
+   "x-paper-admin-key":adminKey,"x-paper-admin-actor":"operator_test",
+   "x-paper-audit-id":"workerd_audit_0001"
+  }:{})},body:JSON.stringify({tokenId:"bob_token_0001"})
+ });
+ assert.equal((await sessionStub.fetch(adminReq(false).url,adminReq(false))).status,401);
+ assert.equal((await call(mf,"/v1/paper/status","GET",bob)).status,200);
+ assert.equal((await sessionStub.fetch(adminReq(true).url,adminReq(true))).status,200);
+ assert.equal((await sessionStub.fetch(adminReq(true).url,adminReq(true))).status,409);
+ assert.equal((await call(mf,"/v1/paper/status","GET",bob)).status,401);
+
  const fill={id:"first",sequence:1,symbol:"BTC",side:"BUY",quantityUnits:1000000,priceCentsPerUnit:10000,feeCents:50};
  assert.equal((await call(mf,"/v1/paper/fill","POST",alice,fill)).status,200);
  const impossible={...fill,id:"too_expensive",sequence:2,priceCentsPerUnit:999999999};
@@ -58,13 +74,13 @@ try {
  assert.equal((await call(mf,"/v1/paper/status")).data.sequence,2);
 
  assert.equal((await call(mf,"/v1/paper/fill","POST",alice,fill)).data.duplicate,true);
- assert.equal((await call(mf,"/v1/paper/status","GET",bob)).data.sequence,0);
+ assert.equal((await call(mf,"/v1/paper/status","GET",bob)).status,401);
  assert.equal((await call(mf,"/v1/paper/revoke","POST",alice,{})).status,200);
  assert.equal((await call(mf,"/v1/paper/status","GET",alice)).status,401);
  await mf.dispose();
  mf=runtime(); // full workerd restart with persisted SQLite-backed DO state
  assert.equal((await call(mf,"/v1/paper/status","GET",alice)).status,401);
- assert.equal((await call(mf,"/v1/paper/status","GET",bob)).data.sequence,0);
+ assert.equal((await call(mf,"/v1/paper/status","GET",bob)).status,401);
  const alice2=await signed("alice","alice_token_0002");
  assert.equal((await call(mf,"/v1/paper/status","GET",alice2)).data.sequence,2);
  assert.equal((await call(mf,"/v1/paper/halt","POST",alice2,{})).data.halted,true);
