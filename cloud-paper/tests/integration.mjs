@@ -6,10 +6,11 @@ import {readFile} from "node:fs/promises";
 const source = await readFile(new URL("../src/index.js", import.meta.url), "utf8");
 const {default: worker, PaperLedger} = await import("data:text/javascript;base64,"+Buffer.from(source).toString("base64"));
 const secret = "test-signing-key-not-for-production-use-123456789";
+const verifyKeys=JSON.stringify({test_k1:secret});
 async function token(sub) {
- const payload = Buffer.from(JSON.stringify({sub,exp:Math.floor(Date.now()/1000)+600,aud:"cryptopilot-cloud-paper-preview",jti:"token_"+sub+"_0001"})).toString("base64url");
+ const payload = Buffer.from(JSON.stringify({sub,iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+600,aud:"cryptopilot-cloud-paper-preview",jti:"token_"+sub+"_0001"})).toString("base64url");
  const {createHmac}=await import("node:crypto");
- return "v1."+payload+"."+createHmac("sha256",secret).update("v1."+payload).digest("hex");
+ return "v2.test_k1."+payload+"."+createHmac("sha256",secret).update("v2.test_k1."+payload).digest("hex");
 }
 const alice=await token("alice"), bob=await token("bob");
 const stores = new Map();
@@ -27,7 +28,7 @@ const storage = {
     catch (e) {store.clear();for (const [k,v] of before)store.set(k,v);throw e;}
   }
 };
-const env = {PAPER_SIGNING_KEY:secret,PAPER_LEDGER:{
+const env = {PAPER_VERIFY_KEYS_JSON:verifyKeys,PAPER_LEDGER:{
   idFromName: name => name,
   get: id => ({fetch: request => {store=stores.get(id)||new Map();stores.set(id,store);return new PaperLedger({storage},env).fetch(request)}})
 }};
