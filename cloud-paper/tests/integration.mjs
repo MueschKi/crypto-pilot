@@ -80,4 +80,15 @@ assert.equal((await call("/v1/paper/revoke","POST",{})).data.revoked,true);
 assert.equal((await call("/v1/paper/status")).status,401);
 assert.equal((await call("/v1/paper/fill","POST",{...first,id:"after_revoke",sequence:3})).status,401);
 assert.equal((await call("/v1/paper/status","GET",undefined,bob)).status,200);
+// Simulate a Durable Object storage outage: fail closed, never claim a rule conflict.
+const unavailable={get:async()=>{throw Error("disk unavailable")},put:async()=>{throw Error("disk unavailable")},transaction:async()=>{throw Error("disk unavailable")}};
+const down=new PaperLedger({storage:unavailable},env);
+const internal=(path,method="GET",body)=>new Request("https://paper.invalid"+path,{
+ method,headers:{"x-internal-paper-token-id":"outage_test_token",...(body?{"content-type":"application/json"}:{})},
+ ...(body?{body:JSON.stringify(body)}:{})
+});
+assert.equal((await down.fetch(internal("/v1/paper/status"))).status,503);
+assert.equal((await down.fetch(internal("/v1/paper/fill","POST",{...first,id:"outage",sequence:1}))).status,503);
+assert.equal((await down.fetch(internal("/v1/paper/halt","POST",{}))).status,503);
+assert.equal((await down.fetch(internal("/v1/paper/revoke","POST",{}))).status,503);
 console.log("cloud paper integration harness: authentication, idempotency, limits, restart, halt OK");
