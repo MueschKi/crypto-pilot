@@ -1,0 +1,13 @@
+name = "cryptopilot-cloud-paper-preview"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = false
+
+# No routes or deployment credentials. Manual security review required.
+[[durable_objects.bindings]]
+name = "PAPER_LEDGER"
+class_name = "PaperLedger"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["PaperLedger"]
