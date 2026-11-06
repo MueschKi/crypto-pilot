@@ -202,8 +202,26 @@ export class PaperSessions {
         return cutoff>=body.issuedAt || revoked ? denied() : response({allowed:true});
       } catch (_){return response({error:"session storage unavailable"},503);}
     }
-    // Deliberately no external token/session revocation endpoint.
-    // Future trusted admin service must authenticate and authorize calls to this binding.
+    // Privileged revocation is intentionally not exposed through the public Worker.
+    // The binding is reachable only by a separately authenticated operator service.
+    if(path==="/admin/revoke-token"){
+      if(!/^[a-zA-Z0-9_-]{8,96}$/.test(body?.tokenId||""))return response({error:"invalid token id"},400);
+      try {await this.state.storage.put("revoked:"+body.tokenId,true);}
+      catch (_){return response({error:"session storage unavailable"},503);}
+      return response({revoked:true,mode:"PAPER_ONLY",realTrading:false});
+    }
+    if(path==="/admin/revoke-all"){
+      const cutoff=body?.revokedBefore;
+      if(!Number.isSafeInteger(cutoff)||cutoff<1||cutoff>Math.floor(Date.now()/1000)+30)
+        return response({error:"invalid cutoff"},400);
+      try {
+        await this.state.storage.transaction(async txn=>{
+          const previous=await txn.get("revokedBefore")||0;
+          await txn.put("revokedBefore",Math.max(previous,cutoff));
+        });
+      } catch (_){return response({error:"session storage unavailable"},503);}
+      return response({revoked:true,mode:"PAPER_ONLY",realTrading:false});
+    }
     return response({error:"not found"},404);
   }
 }
