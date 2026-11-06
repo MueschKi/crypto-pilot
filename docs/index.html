@@ -762,7 +762,16 @@ $("exportJournal").addEventListener("click",()=>{
  const link=document.createElement("a");link.href=URL.createObjectURL(file);link.download="cryptopilot-paper-journal.csv";link.click();
  setTimeout(()=>URL.revokeObjectURL(link.href),1000);
 });
-function renderRuntimeStatus(){\n const status=$("runtimeStatus");if(!status)return;\n const localStorageState=(()=>{try{const k="cryptopilot-v3-execution-lease";localStorage.getItem(k);return "verfügbar"}catch(_){return "nicht verfügbar"}})();\n const feed=S.connection&&S.lastTick&&Date.now()-S.lastTick<20000?"frisch":"nicht bestätigt / veraltet";\n const paper=S.sim.active?"aktiv (nur in diesem Tab)":"pausiert";\n status.textContent="Marktfeed: "+feed+" · Paper-Ausführung: "+paper+" · Lokaler Speicher: "+localStorageState+" · Cloud-Paper: nicht verbunden · Echtgeld: gesperrt";\n}\n$("refreshRuntime").addEventListener("click",renderRuntimeStatus);\n$("runtimeDetails").addEventListener("toggle",()=>{if($("runtimeDetails").open)renderRuntimeStatus()});\nload();if(S.paperStorageFault)setNotice("Paper-Daten unplausibel.",false);CryptoPilotChart.trades(S.sim.trades);renderDepot();renderSignal();loadRanking();setInterval(()=>{if(!document.hidden&&S.pendingRender){S.pendingRender=false;renderMarket();if(Object.keys(S.sim.holdings).length)renderDepot()}},400);
+function renderRuntimeStatus(){
+ const status=$("runtimeStatus");if(!status)return;
+ const localStorageState=(()=>{try{const k="cryptopilot-v3-execution-lease";localStorage.getItem(k);return "verfügbar"}catch(_){return "nicht verfügbar"}})();
+ const feed=S.connection&&S.lastTick&&Date.now()-S.lastTick<20000?"frisch":"nicht bestätigt / veraltet";
+ const paper=S.sim.active?"aktiv (nur in diesem Tab)":"pausiert";
+ status.textContent="Marktfeed: "+feed+" · Paper-Ausführung: "+paper+" · Lokaler Speicher: "+localStorageState+" · Cloud-Paper: nicht verbunden · Echtgeld: gesperrt";
+}
+$("refreshRuntime").addEventListener("click",renderRuntimeStatus);
+$("runtimeDetails").addEventListener("toggle",()=>{if($("runtimeDetails").open)renderRuntimeStatus()});
+load();if(S.paperStorageFault)setNotice("Paper-Daten unplausibel.",false);CryptoPilotChart.trades(S.sim.trades);renderDepot();renderSignal();loadRanking();setInterval(()=>{if(!document.hidden&&S.pendingRender){S.pendingRender=false;renderMarket();if(Object.keys(S.sim.holdings).length)renderDepot()}},400);
 // Age, data-source and connection indicators refresh every second even without fresh prices.
 setInterval(()=>{if(!document.hidden&&S.coins.length)renderMarket();if(!document.hidden)renderSignal()},2000);
 setInterval(()=>{text("clock",new Date().toLocaleTimeString("de-DE"));text("age",S.lastTick?Math.floor((Date.now()-S.lastTick)/1000)+"s":"—");if(S.connection&&Date.now()-S.lastTick>20000){S.connection=false;S.sim.active=false;save();setNotice("KURSE VERALTET · Paper-Trading bis zu frischen Daten pausiert.",false)}if(!document.hidden){mark();if(Object.keys(S.sim.holdings).length)renderDepot()}},1500);
