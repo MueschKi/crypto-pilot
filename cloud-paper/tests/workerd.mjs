@@ -55,10 +55,10 @@ try {
    "x-paper-audit-id":"workerd_audit_0001"
   }:{})},body:JSON.stringify({tokenId:"bob_token_0001"})
  });
- assert.equal((await sessionStub.fetch(adminReq(false))).status,401);
+ assert.equal((await sessionStub.fetch(adminReq(false).url,adminReq(false))).status,401);
  assert.equal((await call(mf,"/v1/paper/status","GET",bob)).status,200);
- assert.equal((await sessionStub.fetch(adminReq(true))).status,200);
- assert.equal((await sessionStub.fetch(adminReq(true))).status,409);
+ assert.equal((await sessionStub.fetch(adminReq(true).url,adminReq(true))).status,200);
+ assert.equal((await sessionStub.fetch(adminReq(true).url,adminReq(true))).status,409);
  assert.equal((await call(mf,"/v1/paper/status","GET",bob)).status,401);
 
  const fill={id:"first",sequence:1,symbol:"BTC",side:"BUY",quantityUnits:1000000,priceCentsPerUnit:10000,feeCents:50};
