@@ -7,6 +7,7 @@ const source = await readFile(new URL("../src/index.js", import.meta.url), "utf8
 const {default: worker, PaperLedger, PaperSessions} = await import("data:text/javascript;base64,"+Buffer.from(source).toString("base64"));
 const secret = "test-signing-key-not-for-production-use-123456789";
 const verifyKeys=JSON.stringify({test_k1:secret});
+const adminKey="test-only-administrator-key-0123456789abcdef";
 async function token(sub) {
  const payload = Buffer.from(JSON.stringify({sub,iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+600,aud:"cryptopilot-cloud-paper-preview",jti:"token_"+sub+"_0001"})).toString("base64url");
  const {createHmac}=await import("node:crypto");
@@ -29,14 +30,14 @@ const storage = {
   }
 };
 const sessionStores=new Map();
-const env = {PAPER_VERIFY_KEYS_JSON:verifyKeys,PAPER_SESSIONS:{
+const env = {PAPER_VERIFY_KEYS_JSON:verifyKeys,PAPER_ADMIN_KEY:adminKey,PAPER_SESSIONS:{
  idFromName: name=>name,
  get: id=>({fetch: request=>{
    const s=sessionStores.get(id)||new Map();sessionStores.set(id,s);
    return new PaperSessions({storage:{
      get:async k=>s.get(k),
      put:async (k,v)=>s.set(k,v)
-   }}).fetch(request);
+   }},env).fetch(request);
  }})
 },PAPER_LEDGER:{
   idFromName: name => name,
@@ -90,6 +91,22 @@ assert.equal((await call("/v1/paper/revoke","POST",{})).data.revoked,true);
 assert.equal((await call("/v1/paper/status")).status,401);
 assert.equal((await call("/v1/paper/fill","POST",{...first,id:"after_revoke",sequence:3})).status,401);
 assert.equal((await call("/v1/paper/status","GET",undefined,bob)).status,200);
+ // Privileged revocation must be denied without the separate administrator secret.
+ const sessionDO=new PaperSessions({storage:{
+   get:async k=>sessionStores.get("session:v1:alice").get(k),
+   put:async(k,v)=>sessionStores.get("session:v1:alice").set(k,v),
+   transaction:async callback=>callback({
+     get:async k=>sessionStores.get("session:v1:alice").get(k),
+     put:async(k,v)=>sessionStores.get("session:v1:alice").set(k,v)
+   })
+ }},env);
+ const adminRequest=(path,body,authorized=false)=>new Request("https://internal.invalid"+path,{
+   method:"POST",headers:{"content-type":"application/json",...(authorized?{"x-paper-admin-key":adminKey}:{})},
+   body:JSON.stringify(body)
+ });
+ assert.equal((await sessionDO.fetch(adminRequest("/admin/revoke-all",{revokedBefore:Math.floor(Date.now()/1000)}))).status,401);
+ assert.equal((await sessionDO.fetch(adminRequest("/admin/revoke-token",{tokenId:"alice_token_0001"},true))).status,200);
+ assert.equal((await sessionDO.fetch(adminRequest("/admin/revoke-all",{revokedBefore:Math.floor(Date.now()/1000)},true))).status,200);
  // Central session epoch revokes all previously issued Alice tokens, not Bob.
  const session=sessionStores.get("session:v1:alice");
  session.set("revokedBefore",Math.floor(Date.now()/1000));
