@@ -12,7 +12,7 @@ CONFIG = ROOT / "cloud-paper/wrangler.toml"
 class CloudWorkerContract(unittest.TestCase):
     def test_worker_is_paper_only(self):
         source = WORKER.read_text(encoding="utf-8")
-        self.assertIn("async function identity(request, secret)", source)
+        self.assertIn("async function identity(request, keys)", source)
         self.assertIn("const identityClaims = await identity(request, signingKeys)", source)
         self.assertIn('this.state.storage.transaction(async txn =>', source)
         self.assertIn('await txn.put("state",next)', source)
