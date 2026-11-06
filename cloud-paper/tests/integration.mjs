@@ -109,6 +109,14 @@ assert.equal((await call("/v1/paper/status","GET",undefined,bob)).status,200);
  assert.equal((await sessionDO.fetch(adminRequest("/admin/revoke-all",{revokedBefore:Math.floor(Date.now()/1000)},true))).status,200);
  assert.equal((await sessionDO.fetch(adminRequest("/admin/revoke-all",{revokedBefore:Math.floor(Date.now()/1000)},true))).status,409);
  assert.equal(sessionStores.get("session:v1:alice").get("audit:audit_test_revoke-all_001").action,"revoke-all");
+ assert.equal((await sessionDO.fetch(adminRequest("/admin/audit-entry",{auditId:"audit_test_revoke-all_001"}))).status,401);
+ const auditResponse=await sessionDO.fetch(adminRequest("/admin/audit-entry",{auditId:"audit_test_revoke-all_001"},true));
+ assert.equal(auditResponse.status,200);
+ const audit=await auditResponse.json();
+ assert.equal(audit.action,"revoke-all");
+ assert.equal(audit.actor,"test_operator");
+ assert.equal((await sessionDO.fetch(adminRequest("/admin/audit-entry",{auditId:"audit_nonexistent_0001"},true))).status,404);
+
  // Central session epoch revokes all previously issued Alice tokens, not Bob.
  const session=sessionStores.get("session:v1:alice");
  session.set("revokedBefore",Math.floor(Date.now()/1000));
