@@ -48,6 +48,16 @@ assert.equal((await call("/v1/paper/fill","POST",{...first,id:"buy2",sequence:3}
 // New Durable Object instance reading same persistent storage after restart.
 assert.equal((await new PaperLedger({storage},env).fetch(request("/v1/paper/status"))).status,200);
 assert.equal((await call("/v1/paper/status")).data.sequence,1);
+// Rejected overflows and maliciously invalid stored values must not mutate the ledger.
+const overflow={id:"overflow",sequence:2,symbol:"BTC",side:"BUY",quantityUnits:Number.MAX_SAFE_INTEGER,priceCentsPerUnit:1,feeCents:0};
+assert.equal((await call("/v1/paper/fill","POST",overflow)).status,409);
+assert.equal((await call("/v1/paper/status")).data.sequence,1);
+const previousState=structuredClone(store.get("state"));
+store.set("state",{...previousState,cashCents:-1});
+assert.equal((await call("/v1/paper/fill","POST",{...first,id:"corrupt",sequence:2})).status,409);
+assert.equal(store.get("state").cashCents,-1);
+store.set("state",previousState);
+
 const sell={id:"sell1",sequence:2,symbol:"BTC",side:"SELL",quantityUnits:1000000,priceCentsPerUnit:11000,feeCents:50};
 assert.equal((await call("/v1/paper/fill","POST",sell)).status,200);
 assert.equal((await call("/v1/paper/status")).data.cashCents,100900);

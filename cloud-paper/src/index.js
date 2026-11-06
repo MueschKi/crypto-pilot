@@ -92,17 +92,22 @@ export class PaperLedger {
         if (fill.feeCents>notional) throw new Error("invalid fee");
         const positions = {...state.positions};
         const current = positions[fill.symbol] || {quantityUnits:0,costCents:0};
+        if (!Number.isSafeInteger(current.quantityUnits) || !Number.isSafeInteger(current.costCents) || current.quantityUnits<0 || current.costCents<0) throw new Error("invalid stored position");
+        if (!Number.isSafeInteger(state.cashCents) || state.cashCents<0 || !Number.isSafeInteger(state.sequence)) throw new Error("invalid stored state");
         let cashCents = state.cashCents;
         if (fill.side === "BUY") {
           const cost = notional+fill.feeCents;
-          if (cost>cashCents || current.costCents+cost>15000) throw new Error("risk limit");
+          if (!Number.isSafeInteger(cost) || !Number.isSafeInteger(current.costCents+cost) || cost>cashCents || current.costCents+cost>15000) throw new Error("risk limit");
+          if (!Number.isSafeInteger(current.quantityUnits+fill.quantityUnits)) throw new Error("quantity overflow");
           if (!positions[fill.symbol] && Object.keys(positions).length>=3) throw new Error("position limit");
           const gross = Object.values(positions).reduce((sum,p)=>sum+p.costCents,0);
+          if (!Number.isSafeInteger(gross)) throw new Error("gross overflow");
           if (gross+cost>45000) throw new Error("gross limit");
           cashCents -= cost;
           positions[fill.symbol]={quantityUnits:current.quantityUnits+fill.quantityUnits,costCents:current.costCents+cost};
         } else {
           if (fill.quantityUnits>current.quantityUnits) throw new Error("short sale blocked");
+          if (!Number.isSafeInteger(cashCents+notional-fill.feeCents)) throw new Error("cash overflow");
           cashCents += notional-fill.feeCents;
           const remaining=current.quantityUnits-fill.quantityUnits;
           if (!remaining) delete positions[fill.symbol];
