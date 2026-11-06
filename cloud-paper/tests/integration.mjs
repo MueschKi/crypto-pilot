@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {readFile} from "node:fs/promises";
 
 const source = await readFile(new URL("../src/index.js", import.meta.url), "utf8");
-const {default: worker, PaperLedger} = await import("data:text/javascript;base64,"+Buffer.from(source).toString("base64"));
+const {default: worker, PaperLedger, PaperSessions} = await import("data:text/javascript;base64,"+Buffer.from(source).toString("base64"));
 const secret = "test-signing-key-not-for-production-use-123456789";
 const verifyKeys=JSON.stringify({test_k1:secret});
 async function token(sub) {
@@ -28,7 +28,17 @@ const storage = {
     catch (e) {store.clear();for (const [k,v] of before)store.set(k,v);throw e;}
   }
 };
-const env = {PAPER_VERIFY_KEYS_JSON:verifyKeys,PAPER_LEDGER:{
+const sessionStores=new Map();
+const env = {PAPER_VERIFY_KEYS_JSON:verifyKeys,PAPER_SESSIONS:{
+ idFromName: name=>name,
+ get: id=>({fetch: request=>{
+   const s=sessionStores.get(id)||new Map();sessionStores.set(id,s);
+   return new PaperSessions({storage:{
+     get:async k=>s.get(k),
+     put:async (k,v)=>s.set(k,v)
+   }}).fetch(request);
+ }})
+},PAPER_LEDGER:{
   idFromName: name => name,
   get: id => ({fetch: request => {store=stores.get(id)||new Map();stores.set(id,store);return new PaperLedger({storage},env).fetch(request)}})
 }};
