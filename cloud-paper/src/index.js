@@ -60,14 +60,16 @@ export default {
       const size = Number(request.headers.get("content-length")||0);
       if (size > LIMIT) return response({error:"payload too large"},413);
     }
-    // Single fixed preview wallet. Not a multi-user implementation.
+    // A verified subject maps to a distinct persistent preview wallet.
     const id = env.PAPER_LEDGER.idFromName("wallet:v1:"+identityClaims.subject);
     const forwarded = new Request(request);
     forwarded.headers.set("x-internal-paper-token-id",identityClaims.tokenId);
-    return env.PAPER_LEDGER.get(id).fetch(forwarded);
+    try { return await env.PAPER_LEDGER.get(id).fetch(forwarded); }
+    catch (_) { return response({error:"paper storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
   }
 };
 
+class PaperRuleViolation extends Error { constructor(message) {super(message);this.name="PaperRuleViolation";} }
 const INITIAL = {sequence:0,cashCents:100000,positions:{},halted:false};
 const allowed = new Set(["BTC","ETH","SOL","NEAR"]);
 function validFill(f) {
@@ -85,10 +87,14 @@ export class PaperLedger {
     const path = new URL(request.url).pathname;
     // Per-wallet token revocation list; a revoked token cannot read or mutate.
     const tokenId = request.headers.get("x-internal-paper-token-id");
-    if (!tokenId || await this.state.storage.get("revoked:"+tokenId)) return denied();
+    if (!tokenId) return denied();
+    try { if (await this.state.storage.get("revoked:"+tokenId)) return denied(); }
+    catch (_) { return response({error:"paper storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
     if (path === "/v1/paper/status" && request.method === "GET") {
-      const state = await this.state.storage.get("state") || INITIAL;
-      return response({...state, mode:"PAPER_ONLY", realTrading:false});
+      try {
+        const state = await this.state.storage.get("state") || INITIAL;
+        return response({...state, mode:"PAPER_ONLY", realTrading:false});
+      } catch (_) { return response({error:"paper storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
     }
     if (request.method !== "POST") return response({error:"method not allowed"},405);
     let raw;
@@ -98,16 +104,18 @@ export class PaperLedger {
     } catch (_) { return response({error:"invalid payload"},400); }
     if (path === "/v1/paper/revoke") {
       // Self-revocation persists for this wallet; no API to re-enable a token.
-      await this.state.storage.put("revoked:"+tokenId,true);
+      try { await this.state.storage.put("revoked:"+tokenId,true); }
+      catch (_) { return response({error:"paper storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
       return response({revoked:true,mode:"PAPER_ONLY",realTrading:false});
     }
     if (path === "/v1/paper/halt") {
-      const state = await this.state.storage.transaction(async txn => {
+      let state;
+      try { state = await this.state.storage.transaction(async txn => {
         const prior = await txn.get("state") || INITIAL;
         const next = {...prior,halted:true};
         await txn.put("state",next);
         return next;
-      });
+      }); } catch (_) { return response({error:"paper storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
       return response({...state, mode:"PAPER_ONLY", realTrading:false});
     }
     if (path !== "/v1/paper/fill") return response({error:"not found"},404);
@@ -117,48 +125,51 @@ export class PaperLedger {
     try {
       const result = await this.state.storage.transaction(async txn => {
         const state = await txn.get("state") || INITIAL;
-        if (state.halted) throw new Error("paper halted");
+        if (state.halted) throw new PaperRuleViolation("paper halted");
         const previous = await txn.get("order:"+fill.id);
         if (previous) {
-          if (JSON.stringify(previous.fill) !== JSON.stringify(fill)) throw new Error("idempotency conflict");
+          if (JSON.stringify(previous.fill) !== JSON.stringify(fill)) throw new PaperRuleViolation("idempotency conflict");
           return {state, duplicate:true};
         }
-        if (fill.sequence !== state.sequence+1) throw new Error("sequence conflict");
+        if (fill.sequence !== state.sequence+1) throw new PaperRuleViolation("sequence conflict");
         // Integer micro-units; exact cent notional required, no rounding drift.
         const product = fill.quantityUnits*fill.priceCentsPerUnit;
-        if (!Number.isSafeInteger(product) || product%1000000!==0) throw new Error("invalid notional");
+        if (!Number.isSafeInteger(product) || product%1000000!==0) throw new PaperRuleViolation("invalid notional");
         const notional = product/1000000;
-        if (fill.feeCents>notional) throw new Error("invalid fee");
+        if (fill.feeCents>notional) throw new PaperRuleViolation("invalid fee");
         const positions = {...state.positions};
         const current = positions[fill.symbol] || {quantityUnits:0,costCents:0};
-        if (!Number.isSafeInteger(current.quantityUnits) || !Number.isSafeInteger(current.costCents) || current.quantityUnits<0 || current.costCents<0) throw new Error("invalid stored position");
-        if (!Number.isSafeInteger(state.cashCents) || state.cashCents<0 || !Number.isSafeInteger(state.sequence)) throw new Error("invalid stored state");
+        if (!Number.isSafeInteger(current.quantityUnits) || !Number.isSafeInteger(current.costCents) || current.quantityUnits<0 || current.costCents<0) throw new PaperRuleViolation("invalid stored position");
+        if (!Number.isSafeInteger(state.cashCents) || state.cashCents<0 || !Number.isSafeInteger(state.sequence)) throw new PaperRuleViolation("invalid stored state");
         let cashCents = state.cashCents;
         if (fill.side === "BUY") {
           const cost = notional+fill.feeCents;
-          if (!Number.isSafeInteger(cost) || !Number.isSafeInteger(current.costCents+cost) || cost>cashCents || current.costCents+cost>15000) throw new Error("risk limit");
-          if (!Number.isSafeInteger(current.quantityUnits+fill.quantityUnits)) throw new Error("quantity overflow");
-          if (!positions[fill.symbol] && Object.keys(positions).length>=3) throw new Error("position limit");
+          if (!Number.isSafeInteger(cost) || !Number.isSafeInteger(current.costCents+cost) || cost>cashCents || current.costCents+cost>15000) throw new PaperRuleViolation("risk limit");
+          if (!Number.isSafeInteger(current.quantityUnits+fill.quantityUnits)) throw new PaperRuleViolation("quantity overflow");
+          if (!positions[fill.symbol] && Object.keys(positions).length>=3) throw new PaperRuleViolation("position limit");
           const gross = Object.values(positions).reduce((sum,p)=>sum+p.costCents,0);
-          if (!Number.isSafeInteger(gross)) throw new Error("gross overflow");
-          if (gross+cost>45000) throw new Error("gross limit");
+          if (!Number.isSafeInteger(gross)) throw new PaperRuleViolation("gross overflow");
+          if (gross+cost>45000) throw new PaperRuleViolation("gross limit");
           cashCents -= cost;
           positions[fill.symbol]={quantityUnits:current.quantityUnits+fill.quantityUnits,costCents:current.costCents+cost};
         } else {
-          if (fill.quantityUnits>current.quantityUnits) throw new Error("short sale blocked");
-          if (!Number.isSafeInteger(cashCents+notional-fill.feeCents)) throw new Error("cash overflow");
+          if (fill.quantityUnits>current.quantityUnits) throw new PaperRuleViolation("short sale blocked");
+          if (!Number.isSafeInteger(cashCents+notional-fill.feeCents)) throw new PaperRuleViolation("cash overflow");
           cashCents += notional-fill.feeCents;
           const remaining=current.quantityUnits-fill.quantityUnits;
           if (!remaining) delete positions[fill.symbol];
           else positions[fill.symbol]={quantityUnits:remaining,costCents:Math.floor(current.costCents*remaining/current.quantityUnits)};
         }
-        if (!Number.isSafeInteger(cashCents) || cashCents<0) throw new Error("invalid balance");
+        if (!Number.isSafeInteger(cashCents) || cashCents<0) throw new PaperRuleViolation("invalid balance");
         const next={sequence:fill.sequence,cashCents,positions,halted:false};
         await txn.put("state",next);
         await txn.put("order:"+fill.id,{fill});
         return {state:next,duplicate:false};
       });
       return response({...result,mode:"PAPER_ONLY",realTrading:false});
-    } catch (e) { return response({error:String(e.message),mode:"PAPER_ONLY"},409); }
+    } catch (e) {
+      if (e && e.name === "PaperRuleViolation") return response({error:e.message,mode:"PAPER_ONLY"},409);
+      return response({error:"paper transaction unavailable",mode:"PAPER_ONLY",realTrading:false},503);
+    }
   }
 }
