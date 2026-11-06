@@ -74,7 +74,7 @@ try {
  assert.equal((await call(mf,"/v1/paper/status")).data.sequence,2);
 
  assert.equal((await call(mf,"/v1/paper/fill","POST",alice,fill)).data.duplicate,true);
- assert.equal((await call(mf,"/v1/paper/status","GET",bob)).data.sequence,0);
+ assert.equal((await call(mf,"/v1/paper/status","GET",bob)).status,401);
  assert.equal((await call(mf,"/v1/paper/revoke","POST",alice,{})).status,200);
  assert.equal((await call(mf,"/v1/paper/status","GET",alice)).status,401);
  await mf.dispose();
