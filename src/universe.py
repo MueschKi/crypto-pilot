@@ -36,6 +36,7 @@ def parse_leaders(data: object) -> list[dict]:
     if not isinstance(data, list) or len(data) != 20:
         raise ValueError('Top-20 ranking unavailable or incomplete')
     leaders, ids = [], set()
+    previous_rank = 0
     for pos, row in enumerate(data, 1):
         if not isinstance(row, dict):
             raise ValueError('Invalid market-cap entry')
@@ -46,10 +47,15 @@ def parse_leaders(data: object) -> list[dict]:
                 and isinstance(cap,(int,float)) and not isinstance(cap,bool) and cap>0):
             raise ValueError('Invalid or duplicate market-cap entry')
         rank = row.get('market_cap_rank')
-        if not isinstance(rank,int) or rank != pos:
-            raise ValueError('Top-20 ranking is not consecutive')
+        # CoinGecko may omit an asset from its /coins/markets response while
+        # market_cap_rank still reflects the full global ranking. Do not reject
+        # valid ordered top-20 rows just because the ranks have gaps.
+        if (not isinstance(rank,int) or isinstance(rank,bool)
+                or rank <= previous_rank or rank < pos):
+            raise ValueError('Top-20 ranking is not strictly ordered')
+        previous_rank = rank
         ids.add(cid)
-        leaders.append({'rank':pos,'id':cid,'name':name,'symbol':symbol.upper(),
+        leaders.append({'rank':rank,'id':cid,'name':name,'symbol':symbol.upper(),
                         'market_cap_eur':cap, 'stablecoin':cid in STABLE_IDS})
     return leaders
 
