@@ -11,3 +11,11 @@ class_name = "PaperLedger"
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["PaperLedger"]
+
+[[durable_objects.bindings]]
+name = "PAPER_SESSIONS"
+class_name = "PaperSessions"
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["PaperSessions"]
