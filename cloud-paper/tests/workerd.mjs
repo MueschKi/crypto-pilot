@@ -50,6 +50,13 @@ try {
  const impossible={...fill,id:"too_expensive",sequence:2,priceCentsPerUnit:999999999};
  assert.equal((await call(mf,"/v1/paper/fill","POST",alice,impossible)).status,409);
  assert.equal((await call(mf,"/v1/paper/status")).data.sequence,1);
+ // Two conflicting transactions with the same sequence: exactly one may commit.
+ const raceA={...fill,id:"race_a",sequence:2,symbol:"ETH"};
+ const raceB={...fill,id:"race_b",sequence:2,symbol:"SOL"};
+ const race=await Promise.all([call(mf,"/v1/paper/fill","POST",alice,raceA),call(mf,"/v1/paper/fill","POST",alice,raceB)]);
+ assert.deepEqual(race.map(r=>r.status).sort(),[200,409]);
+ assert.equal((await call(mf,"/v1/paper/status")).data.sequence,2);
+
  assert.equal((await call(mf,"/v1/paper/fill","POST",alice,fill)).data.duplicate,true);
  assert.equal((await call(mf,"/v1/paper/status","GET",bob)).data.sequence,0);
  assert.equal((await call(mf,"/v1/paper/revoke","POST",alice,{})).status,200);
@@ -59,7 +66,7 @@ try {
  assert.equal((await call(mf,"/v1/paper/status","GET",alice)).status,401);
  assert.equal((await call(mf,"/v1/paper/status","GET",bob)).data.sequence,0);
  const alice2=await signed("alice","alice_token_0002");
- assert.equal((await call(mf,"/v1/paper/status","GET",alice2)).data.sequence,1);
+ assert.equal((await call(mf,"/v1/paper/status","GET",alice2)).data.sequence,2);
  assert.equal((await call(mf,"/v1/paper/halt","POST",alice2,{})).data.halted,true);
  await mf.dispose();
  mf=runtime();
