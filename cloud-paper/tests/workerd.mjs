@@ -7,11 +7,12 @@ import {join, resolve} from "node:path";
 import {Miniflare} from "miniflare";
 
 const secret = "integration-only-signing-key-0123456789abcdef";
+const verifyKeys=JSON.stringify({test_k1:secret});
 const path = resolve("cloud-paper/src/index.js");
 const dir = await mkdtemp(join(tmpdir(),"cryptopilot-workerd-"));
 async function signed(sub, jti) {
- const payload=Buffer.from(JSON.stringify({sub,jti,exp:Math.floor(Date.now()/1000)+600,aud:"cryptopilot-cloud-paper-preview"})).toString("base64url");
- return "v1."+payload+"."+createHmac("sha256",secret).update("v1."+payload).digest("hex");
+ const payload=Buffer.from(JSON.stringify({sub,jti,iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+600,aud:"cryptopilot-cloud-paper-preview"})).toString("base64url");
+ return "v2.test_k1."+payload+"."+createHmac("sha256",secret).update("v2.test_k1."+payload).digest("hex");
 }
 const alice=await signed("alice","alice_token_0001");
 const bob=await signed("bob","bob_token_0001");
@@ -19,7 +20,7 @@ function runtime() {
  return new Miniflare({
    modules:true,scriptPath:path,
    compatibilityDate:"2026-10-01",
-   bindings:{PAPER_SIGNING_KEY:secret},
+   bindings:{PAPER_VERIFY_KEYS_JSON:verifyKeys},
    durableObjects:{PAPER_LEDGER:{className:"PaperLedger",useSQLite:true}},
    durableObjectsPersist:join(dir,"durable"),
  });

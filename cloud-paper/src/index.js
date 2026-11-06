@@ -9,27 +9,35 @@ const LIMIT = 16 * 1024;
 // Production must replace token issuance with a trusted external identity provider.
 const enc = new TextEncoder();
 const hex = bytes => [...new Uint8Array(bytes)].map(b=>b.toString(16).padStart(2,"0")).join("");
-async function identity(request, secret) {
-  if (typeof secret !== "string" || secret.length < 32) return null;
+async function identity(request, keys) {
+  // Only explicitly configured server-side keys may verify tokens.
+  if (!keys || typeof keys !== "object" || Array.isArray(keys)) return null;
   const auth = request.headers.get("authorization") || "";
   if (!auth.startsWith("Bearer ")) return null;
   const token = auth.slice(7);
   const parts = token.split(".");
-  if (parts.length !== 3 || parts[0] !== "v1") return null;
-  const [version, payload, signature] = parts;
-  if (!/^[a-zA-Z0-9_-]{1,512}$/.test(payload) || !/^[a-f0-9]{64}$/.test(signature)) return null;
+  if (parts.length !== 4 || parts[0] !== "v2") return null;
+  const [version, kid, payload, signature] = parts;
+  if (!/^[a-zA-Z0-9_-]{1,32}$/.test(kid)
+      || !/^[a-zA-Z0-9_-]{1,512}$/.test(payload)
+      || !/^[a-f0-9]{64}$/.test(signature)) return null;
+  if (!Object.prototype.hasOwnProperty.call(keys,kid)) return null;
+  const secret = keys[kid];
+  if (typeof secret !== "string" || secret.length < 32) return null;
   let claims;
   try {
     const base64 = payload.replace(/-/g,"+").replace(/_/g,"/");
     claims = JSON.parse(atob(base64.padEnd(Math.ceil(base64.length/4)*4,"=")));
   } catch (_) { return null; }
+  const now = Math.floor(Date.now()/1000);
   if (!claims || !/^[a-zA-Z0-9_-]{1,64}$/.test(claims.sub||"")
-      || !Number.isSafeInteger(claims.exp) || claims.exp <= Math.floor(Date.now()/1000)
-      || claims.exp > Math.floor(Date.now()/1000)+3600
+      || !Number.isSafeInteger(claims.iat) || claims.iat > now+30 || claims.iat < now-3600
+      || !Number.isSafeInteger(claims.exp) || claims.exp <= now
+      || claims.exp > claims.iat+3600
       || claims.aud !== "cryptopilot-cloud-paper-preview"
       || !/^[a-zA-Z0-9_-]{8,96}$/.test(claims.jti||"")) return null;
   const key = await crypto.subtle.importKey("raw",enc.encode(secret),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
-  const actual = hex(await crypto.subtle.sign("HMAC",key,enc.encode(version+"."+payload)));
+  const actual = hex(await crypto.subtle.sign("HMAC",key,enc.encode(version+"."+kid+"."+payload)));
   let diff = 0;
   for (let i=0;i<64;i++) diff |= actual.charCodeAt(i)^signature.charCodeAt(i);
   return diff===0 ? {subject:claims.sub,tokenId:claims.jti} : null;
@@ -37,7 +45,10 @@ async function identity(request, secret) {
 
 export default {
   async fetch(request, env) {
-    const identityClaims = await identity(request, env.PAPER_SIGNING_KEY);
+    let signingKeys;
+    try { signingKeys=JSON.parse(env.PAPER_VERIFY_KEYS_JSON||"null"); }
+    catch (_) { return denied(); }
+    const identityClaims = await identity(request, signingKeys);
     if (!identityClaims) return denied();
     if (!env.PAPER_LEDGER) return response({error:"storage unavailable"},503);
     const url = new URL(request.url);
