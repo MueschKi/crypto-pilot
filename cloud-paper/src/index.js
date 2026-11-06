@@ -208,10 +208,23 @@ export class PaperSessions {
       const key=this.env?.PAPER_ADMIN_KEY;
       if(typeof key!=="string" || key.length<32 || request.headers.get("x-paper-admin-key")!==key)return denied();
     }
+    const actor=request.headers.get("x-paper-admin-actor");
+    const auditId=request.headers.get("x-paper-audit-id");
+    if(path.startsWith("/admin/") && (!/^[a-zA-Z0-9_-]{3,64}$/.test(actor||"")
+        || !/^[a-zA-Z0-9_-]{12,96}$/.test(auditId||"")))
+      return response({error:"missing audit identity"},400);
     if(path==="/admin/revoke-token"){
       if(!/^[a-zA-Z0-9_-]{8,96}$/.test(body?.tokenId||""))return response({error:"invalid token id"},400);
-      try {await this.state.storage.put("revoked:"+body.tokenId,true);}
-      catch (_){return response({error:"session storage unavailable"},503);}
+      try {
+        await this.state.storage.transaction(async txn=>{
+          if(await txn.get("audit:"+auditId))throw new PaperRuleViolation("duplicate audit id");
+          await txn.put("revoked:"+body.tokenId,true);
+          await txn.put("audit:"+auditId,{action:"revoke-token",actor,tokenId:body.tokenId,at:Date.now()});
+        });
+      } catch (e){
+        if(e?.name==="PaperRuleViolation")return response({error:"duplicate audit id"},409);
+        return response({error:"session storage unavailable"},503);
+      }
       return response({revoked:true,mode:"PAPER_ONLY",realTrading:false});
     }
     if(path==="/admin/revoke-all"){
@@ -220,10 +233,15 @@ export class PaperSessions {
         return response({error:"invalid cutoff"},400);
       try {
         await this.state.storage.transaction(async txn=>{
+          if(await txn.get("audit:"+auditId))throw new PaperRuleViolation("duplicate audit id");
           const previous=await txn.get("revokedBefore")||0;
           await txn.put("revokedBefore",Math.max(previous,cutoff));
+          await txn.put("audit:"+auditId,{action:"revoke-all",actor,cutoff,at:Date.now()});
         });
-      } catch (_){return response({error:"session storage unavailable"},503);}
+      } catch (e){
+        if(e?.name==="PaperRuleViolation")return response({error:"duplicate audit id"},409);
+        return response({error:"session storage unavailable"},503);
+      }
       return response({revoked:true,mode:"PAPER_ONLY",realTrading:false});
     }
     return response({error:"not found"},404);
