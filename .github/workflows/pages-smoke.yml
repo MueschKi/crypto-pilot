@@ -1,0 +1,32 @@
+name: Published Pages smoke check
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - '.github/workflows/pages-smoke.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  published-site:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check published page and product identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://mueschki.github.io/crypto-pilot/"
+          for attempt in $(seq 1 12); do
+            if curl --fail --silent --show-error --location --max-time 15 \
+              --retry 2 --retry-delay 2 "$URL" -o /tmp/crypto-pilot.html \
+              && grep -q 'CryptoPilot · Live Cockpit' /tmp/crypto-pilot.html; then
+              echo "Published CryptoPilot HTML verified at $URL"
+              exit 0
+            fi
+            echo "Pages not ready (attempt $attempt/12)"
+            sleep 20
+          done
+          echo "::error::Published CryptoPilot page unreachable or incorrect"
+          exit 1
