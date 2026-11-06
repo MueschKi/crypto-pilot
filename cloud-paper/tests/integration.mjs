@@ -55,7 +55,7 @@ assert.equal(result.data.duplicate,true);
 assert.equal((await call("/v1/paper/fill","POST",{...first,feeCents:60})).status,409);
 assert.equal((await call("/v1/paper/fill","POST",{...first,id:"buy2",sequence:3})).status,409);
 // New Durable Object instance reading same persistent storage after restart.
-assert.equal((await new PaperLedger({storage},env).fetch(request("/v1/paper/status"))).status,200);
+assert.equal((await new PaperLedger({storage},env).fetch(new Request("https://paper.invalid/v1/paper/status",{headers:{"x-internal-paper-token-id":"token_alice_0001"}}))).status,200);
 assert.equal((await call("/v1/paper/status")).data.sequence,1);
 assert.equal((await call("/v1/paper/status","GET",undefined,bob)).data.sequence,0);
 // Rejected overflows and maliciously invalid stored values must not mutate the ledger.
