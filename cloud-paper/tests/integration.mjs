@@ -90,6 +90,13 @@ assert.equal((await call("/v1/paper/revoke","POST",{})).data.revoked,true);
 assert.equal((await call("/v1/paper/status")).status,401);
 assert.equal((await call("/v1/paper/fill","POST",{...first,id:"after_revoke",sequence:3})).status,401);
 assert.equal((await call("/v1/paper/status","GET",undefined,bob)).status,200);
+ // Central session epoch revokes all previously issued Alice tokens, not Bob.
+ const session=sessionStores.get("session:v1:alice");
+ session.set("revokedBefore",Math.floor(Date.now()/1000));
+ const aliceNew=await token("alice");
+ assert.equal((await call("/v1/paper/status","GET",undefined,aliceNew)).status,401);
+ assert.equal((await call("/v1/paper/status","GET",undefined,bob)).status,200);
+
 // Simulate a Durable Object storage outage: fail closed, never claim a rule conflict.
 const unavailable={get:async()=>{throw Error("disk unavailable")},put:async()=>{throw Error("disk unavailable")},transaction:async()=>{throw Error("disk unavailable")}};
 const down=new PaperLedger({storage:unavailable},env);
