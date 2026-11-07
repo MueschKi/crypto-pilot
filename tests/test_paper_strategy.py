@@ -9,7 +9,7 @@ ROOT=pathlib.Path(__file__).resolve().parents[1]
 class PaperStrategyChecks(unittest.TestCase):
     def test_opt_in_persists_but_running_requires_foreground_and_fresh_tick(self):
         html=(ROOT/"docs"/"index.html").read_text(encoding="utf-8")
-        self.assertIn('src="./paper-rules.js?v=20261104-paper40"',html)
+        self.assertIn('src="./paper-rules.js?v=20261107-exit53"',html)
         self.assertIn("armed:d.armed===true&&!d.stopped,active:false",html)
         self.assertIn('JSON.stringify({...S.sim,active:false})',html)
         self.assertIn('if(S.sim.armed){S.sim.armed=false;S.sim.active=false;releasePaperLease()}',html)
@@ -42,11 +42,11 @@ const flat=tape.map(x=>({...x,price:100}));
 assert(!R.inspectEntry(flat,quote,now,0).buy,"flat signal");
 const pos={qty:1,cost:100,openedAt:now-60000,peakBid:105};
 assert.equal(R.inspectExit(pos,{...quote,bid:96},now).reason,"Verluststopp (Demo)");
-assert.equal(R.inspectExit(pos,{...quote,bid:105.5},now).reason,"Gewinnziel (Demo)");
-assert.equal(R.inspectExit(pos,{...quote,bid:103},now).reason,"Nachziehender Gewinnschutz (Demo)");
+assert.equal(R.inspectExit(pos,{...quote,bid:105.5,ask:105.6},now).reason,"Gewinnziel (Demo)");
+assert.equal(R.inspectExit(pos,{...quote,bid:103,ask:103.1},now).reason,"Nachziehender Gewinnschutz (Demo)");
 assert.equal(R.inspectExit({...pos,peakBid:99,openedAt:now-50*60000},{...quote,bid:99.5},now).reason,"Zeitstopp bei Verlust (Demo)");
 assert(!R.inspectExit(pos,{...quote,time:now-21000},now).sell,"stale tick is no fill");
-assert(!R.inspectExit({...pos,peakBid:101.6},{...quote,bid:101.6},now).sell,"still hold");
+assert(!R.inspectExit({...pos,peakBid:101.6},{...quote,bid:101.6,ask:101.7},now).sell,"still hold");
 """
         p=subprocess.run([node,"-e",script],cwd=ROOT,text=True,capture_output=True)
         self.assertEqual(p.returncode,0,p.stderr)
