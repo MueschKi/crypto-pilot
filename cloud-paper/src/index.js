@@ -52,9 +52,9 @@ export default {
     if (!identityClaims) return denied();
     if (!env.PAPER_LEDGER || !env.PAPER_SESSIONS) return response({error:"storage unavailable"},503);
     const url = new URL(request.url);
-    if (!["/v1/paper/status","/v1/paper/halt","/v1/paper/fill","/v1/paper/revoke"].includes(url.pathname))
+    if (!["/v1/paper/status","/v1/paper/journal","/v1/paper/halt","/v1/paper/fill","/v1/paper/revoke"].includes(url.pathname))
       return response({error:"not found"},404);
-    const method = url.pathname.endsWith("/status")?"GET":"POST";
+    const method = ["/v1/paper/status","/v1/paper/journal"].includes(url.pathname)?"GET":"POST";
     if (request.method !== method) return response({error:"method not allowed"},405);
     if (request.method === "POST") {
       const size = Number(request.headers.get("content-length")||0);
@@ -106,6 +106,24 @@ export class PaperLedger {
         const state = await this.state.storage.get("state") || INITIAL;
         return response({...state, mode:"PAPER_ONLY", realTrading:false});
       } catch (_) { return response({error:"paper storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
+    }
+    if (path === "/v1/paper/journal" && request.method === "GET") {
+      // Bounded, chronological, server-persisted history; missing entries fail closed.
+      try {
+        const current = await this.state.storage.get("state") || INITIAL;
+        if (!Number.isSafeInteger(current.sequence) || current.sequence < 0)
+          return response({error:"invalid journal state",mode:"PAPER_ONLY",realTrading:false},503);
+        const start = Math.max(1,current.sequence-49);
+        const entries=[];
+        for (let seq=start;seq<=current.sequence;seq++) {
+          const entry=await this.state.storage.get("journal:"+seq);
+          if (!entry || entry.sequence!==seq || !validFill(entry.fill))
+            return response({error:"journal integrity failure",mode:"PAPER_ONLY",realTrading:false},503);
+          entries.push(entry);
+        }
+        return response({entries,fromSequence:entries.length?start:0,toSequence:current.sequence,
+          truncated:start>1,mode:"PAPER_ONLY",realTrading:false});
+      } catch (_) {return response({error:"paper storage unavailable",mode:"PAPER_ONLY",realTrading:false},503);}
     }
     if (request.method !== "POST") return response({error:"method not allowed"},405);
     let raw;
@@ -175,6 +193,7 @@ export class PaperLedger {
         const next={sequence:fill.sequence,cashCents,positions,halted:false};
         await txn.put("state",next);
         await txn.put("order:"+fill.id,{fill});
+        await txn.put("journal:"+fill.sequence,{sequence:fill.sequence,fill,recordedAt:new Date().toISOString()});
         return {state:next,duplicate:false};
       });
       return response({...result,mode:"PAPER_ONLY",realTrading:false});
