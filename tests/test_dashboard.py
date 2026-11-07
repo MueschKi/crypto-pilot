@@ -18,7 +18,7 @@ class DashboardChecks(unittest.TestCase):
         self.assertIn('id="lossAnalysis"', self.html)
         self.assertIn('id="lossReasons"', self.html)
         self.assertIn("reasonGroups=new Map()", self.html)
-        self.assertIn("g.pnl-b[1].pnl", self.html)
+        self.assertIn("a[1].pnl-b[1].pnl", self.html)
         self.assertIn("kein Beweis für die Ursache eines Verlusts", self.html)
         self.assertIn("Keine automatische Änderung der Handelsregeln", self.html)
         self.assertIn("line.append(label,detail)", self.html)
