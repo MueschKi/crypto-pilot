@@ -9,7 +9,7 @@ ROOT=pathlib.Path(__file__).resolve().parents[1]
 class PaperStrategyChecks(unittest.TestCase):
     def test_opt_in_persists_but_running_requires_foreground_and_fresh_tick(self):
         html=(ROOT/"docs"/"index.html").read_text(encoding="utf-8")
-        self.assertIn('src="./paper-rules.js?v=20261104-paper40"',html)
+        self.assertIn('src="./paper-rules.js?v=20261107-exit53"',html)
         self.assertIn("armed:d.armed===true&&!d.stopped,active:false",html)
         self.assertIn('JSON.stringify({...S.sim,active:false})',html)
         self.assertIn('if(S.sim.armed){S.sim.armed=false;S.sim.active=false;releasePaperLease()}',html)
