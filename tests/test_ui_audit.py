@@ -30,9 +30,9 @@ class UIChecks(unittest.TestCase):
         parser=Structure();parser.feed(HTML)
         self.assertEqual(len(parser.ids),len(set(parser.ids)),"Duplicate HTML IDs")
         self.assertEqual(parser.depth,0,"Missing closing details tag")
-        for area in ("signalSection","forecastSection","labSection","journalSection","diagnosticSection","lossAnalysis"):
+        for area in ("signalSection","forecastSection","labSection","journalSection","diagnosticSection","lossAnalysis","riskBudgetDetails"):
             self.assertIn((area,False),parser.details,"Non-essential panel must default collapsed")
-        self.assertEqual(len(parser.summary_depths),7)
+        self.assertEqual(len(parser.summary_depths),8)
         self.assertIn(("runtimeDetails",False),parser.details)
         self.assertTrue(all(d>0 for d in parser.summary_depths))
         self.assertIn("collapsible summary:focus-visible",HTML)

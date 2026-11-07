@@ -23,6 +23,14 @@ class DashboardChecks(unittest.TestCase):
         self.assertIn("Keine automatische Änderung der Handelsregeln", self.html)
         self.assertIn("line.append(label,detail)", self.html)
 
+    def test_paper_risk_budget_is_visible_and_fail_closed(self):
+        for element in ("riskBuffer", "riskNextBuy", "riskExposurePct", "riskEligibility"):
+            self.assertIn(f'id="{element}"', self.html)
+        self.assertIn("Math.min(150,S.sim.cash,v*.60-grossExposure)", self.html)
+        self.assertIn("v>=950&&openPositions.length<3&&budget>=30", self.html)
+        self.assertIn("!S.sim.stopped&&!S.paperStorageFault", self.html)
+        self.assertIn("Die angezeigte Kaufgrenze ist kein Kaufsignal", self.html)
+
     def test_strategy_quality_scorecard_is_honest(self):
         for element in ("profitFactor", "bestTrade", "worstTrade", "strategyConfidence"):
             self.assertIn(f'id="{element}"', self.html)
