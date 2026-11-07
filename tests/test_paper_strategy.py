@@ -42,11 +42,11 @@ const flat=tape.map(x=>({...x,price:100}));
 assert(!R.inspectEntry(flat,quote,now,0).buy,"flat signal");
 const pos={qty:1,cost:100,openedAt:now-60000,peakBid:105};
 assert.equal(R.inspectExit(pos,{...quote,bid:96},now).reason,"Verluststopp (Demo)");
-assert.equal(R.inspectExit(pos,{...quote,bid:105.5},now).reason,"Gewinnziel (Demo)");
-assert.equal(R.inspectExit(pos,{...quote,bid:103},now).reason,"Nachziehender Gewinnschutz (Demo)");
+assert.equal(R.inspectExit(pos,{...quote,bid:105.5,ask:105.6},now).reason,"Gewinnziel (Demo)");
+assert.equal(R.inspectExit(pos,{...quote,bid:103,ask:103.1},now).reason,"Nachziehender Gewinnschutz (Demo)");
 assert.equal(R.inspectExit({...pos,peakBid:99,openedAt:now-50*60000},{...quote,bid:99.5},now).reason,"Zeitstopp bei Verlust (Demo)");
 assert(!R.inspectExit(pos,{...quote,time:now-21000},now).sell,"stale tick is no fill");
-assert(!R.inspectExit({...pos,peakBid:101.6},{...quote,bid:101.6},now).sell,"still hold");
+assert(!R.inspectExit({...pos,peakBid:101.6},{...quote,bid:101.6,ask:101.7},now).sell,"still hold");
 """
         p=subprocess.run([node,"-e",script],cwd=ROOT,text=True,capture_output=True)
         self.assertEqual(p.returncode,0,p.stderr)
