@@ -7,7 +7,7 @@ HTML = (Path(__file__).resolve().parents[1] / "docs" / "index.html").read_text(e
 
 class EmergencyStopUI(unittest.TestCase):
     def test_manual_stop_is_visible_and_persistent(self):
-        self.assertIn("Web v4.9 · Forschungsbasis v4.11", HTML)
+        self.assertIn("Web v4.10 · Forschungsbasis v4.11", HTML)
         self.assertIn('id="paperEmergencyStop"', HTML)
         self.assertIn('$("paperEmergencyStop").addEventListener("click"', HTML)
         self.assertIn("S.sim.stopped=true;S.sim.armed=false;S.sim.active=false;releasePaperLease();", HTML)
