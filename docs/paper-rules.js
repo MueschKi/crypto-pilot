@@ -25,7 +25,7 @@ function inspectEntry(ticks,q,now,lastTradeAt){
  return {buy,reason:buy?"Momentum + enger Spread + Datenqualität bestätigt.":"Momentum-/Volatilitätsfilter nicht erfüllt.",momentumPct,spreadPct};
 }
 function inspectExit(position,q,now){
- if(!position||!Number.isFinite(position.qty)||position.qty<=0||!Number.isFinite(position.cost)||position.cost<=0||!q||![q.bid,q.ask,q.last,q.time].every(Number.isFinite)||q.bid<=0||now-q.time>P.maxAgeMs)return {sell:false,reason:"Kein gültiger Kurs – kein fiktiver Verkauf.",peak:null};
+ if(!position||!Number.isFinite(position.qty)||position.qty<=0||!Number.isFinite(position.cost)||position.cost<=0||!q||![q.bid,q.ask,q.last,q.time].every(Number.isFinite)||q.bid<=0||q.last<=0||q.ask<q.bid||q.time>now+1000||now-q.time>P.maxAgeMs)return {sell:false,reason:"Kein gültiger Kurs – kein fiktiver Verkauf.",peak:null};
  const net=q.bid*.999*.996;
  const baseline=position.cost/position.qty;
  const pnlPct=100*(net/baseline-1);
