@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "cloud-paper/**"
+      - "docs/index.html"
       - ".github/workflows/cloud-paper-workerd.yml"
   workflow_dispatch:
 
