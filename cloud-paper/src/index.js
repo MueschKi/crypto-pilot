@@ -32,7 +32,7 @@ async function identity(request, keys) {
   const now = Math.floor(Date.now()/1000);
   if (!claims || !/^[a-zA-Z0-9_-]{1,64}$/.test(claims.sub||"")
       || !Number.isSafeInteger(claims.iat) || claims.iat > now+30 || claims.iat < now-3600
-      || !Number.isSafeInteger(claims.exp) || claims.exp <= now
+      || !Number.isSafeInteger(claims.exp) || claims.exp <= claims.iat || claims.exp <= now
       || claims.exp > claims.iat+3600
       || claims.aud !== "cryptopilot-cloud-paper-preview"
       || !/^[a-zA-Z0-9_-]{8,96}$/.test(claims.jti||"")) return null;
