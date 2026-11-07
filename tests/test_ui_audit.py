@@ -44,10 +44,18 @@ class UIChecks(unittest.TestCase):
         parser=Structure();parser.feed(HTML)
         self.assertIn(("riskSnapshot",False),parser.details)
         self.assertIn(("strategyResults",False),parser.details)
-        self.assertIn("Web v4.9 · Forschungsbasis v4.11",HTML)
-        self.assertNotIn("Web v4.8",HTML)
+        self.assertIn("Web v4.10 · Forschungsbasis v4.11",HTML)
+        self.assertNotIn("Web v4.9",HTML)
         for element in ("riskPositions","riskInvested","riskOpenPnl","riskDrawdown","realizedPnl","profitFactor"):
             self.assertIn(f'id="{element}"',HTML)
+
+    def test_market_table_is_compact_and_expandable(self):
+        self.assertIn('id="marketOverview"',HTML)
+        self.assertIn('id="toggleMarkets" aria-controls="rows" aria-expanded="false"',HTML)
+        self.assertIn(".market-compact #rows tr:nth-child(n+6){display:none}",HTML)
+        self.assertIn('panel.classList.toggle("market-compact")===false',HTML)
+        self.assertIn('setAttribute("aria-expanded",String(expanded))',HTML)
+        self.assertIn("Nur Top 5 anzeigen",HTML)
 
     def test_held_coin_keeps_kraken_subscription_after_ranking_rotation(self):
         node=shutil.which("node")
