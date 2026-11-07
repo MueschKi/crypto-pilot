@@ -14,6 +14,15 @@ class DashboardChecks(unittest.TestCase):
     def setUpClass(cls):
         cls.html = (ROOT / "docs" / "index.html").read_text(encoding="utf-8")
 
+    def test_paper_exit_diagnostics_are_descriptive_only(self):
+        self.assertIn('id="lossAnalysis"', self.html)
+        self.assertIn('id="lossReasons"', self.html)
+        self.assertIn("reasonGroups=new Map()", self.html)
+        self.assertIn("a[1].pnl-b[1].pnl", self.html)
+        self.assertIn("kein Beweis für die Ursache eines Verlusts", self.html)
+        self.assertIn("Keine automatische Änderung der Handelsregeln", self.html)
+        self.assertIn("line.append(label,detail)", self.html)
+
     def test_strategy_quality_scorecard_is_honest(self):
         for element in ("profitFactor", "bestTrade", "worstTrade", "strategyConfidence"):
             self.assertIn(f'id="{element}"', self.html)
