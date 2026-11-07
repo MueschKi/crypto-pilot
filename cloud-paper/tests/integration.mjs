@@ -69,6 +69,14 @@ assert.equal((await call("/v1/paper/fill","POST",{...first,id:"buy2",sequence:3}
 // New Durable Object instance reading same persistent storage after restart.
 assert.equal((await new PaperLedger({storage},env).fetch(new Request("https://paper.invalid/v1/paper/status",{headers:{"x-internal-paper-token-id":"token_alice_0001"}}))).status,200);
 assert.equal((await call("/v1/paper/status")).data.sequence,1);
+const journal1=await call("/v1/paper/journal");
+assert.equal(journal1.status,200);
+assert.equal(journal1.data.entries.length,1);
+assert.deepEqual(journal1.data.entries[0].fill,first);
+assert.equal(journal1.data.entries[0].sequence,1);
+assert.equal(journal1.data.truncated,false);
+assert.equal((await call("/v1/paper/journal","GET",undefined,bob)).data.entries.length,0);
+assert.equal((await call("/v1/paper/journal","POST",{})).status,405);
 assert.equal((await call("/v1/paper/status","GET",undefined,bob)).data.sequence,0);
 // Rejected overflows and maliciously invalid stored values must not mutate the ledger.
 const overflow={id:"overflow",sequence:2,symbol:"BTC",side:"BUY",quantityUnits:Number.MAX_SAFE_INTEGER,priceCentsPerUnit:1,feeCents:0};
@@ -83,6 +91,14 @@ store.set("state",previousState);
 const sell={id:"sell1",sequence:2,symbol:"BTC",side:"SELL",quantityUnits:1000000,priceCentsPerUnit:11000,feeCents:50};
 assert.equal((await call("/v1/paper/fill","POST",sell)).status,200);
 assert.equal((await call("/v1/paper/status")).data.cashCents,100900);
+const journal2=await call("/v1/paper/journal");
+assert.deepEqual(journal2.data.entries.map(e=>e.fill.id),["buy1","sell1"]);
+assert.equal((await call("/v1/paper/fill","POST",sell)).data.duplicate,true);
+assert.equal((await call("/v1/paper/journal")).data.entries.length,2);
+const journalBackup=store.get("journal:2");
+store.delete("journal:2");
+assert.equal((await call("/v1/paper/journal")).status,503);
+store.set("journal:2",journalBackup);
 assert.equal((await call("/v1/paper/halt","POST",{})).data.halted,true);
 assert.equal((await call("/v1/paper/fill","POST",{...first,id:"buy3",sequence:3})).status,409);
 assert.equal((await call("/v1/paper/status")).data.halted,true);
@@ -132,6 +148,7 @@ const internal=(path,method="GET",body)=>new Request("https://paper.invalid"+pat
  ...(body?{body:JSON.stringify(body)}:{})
 });
 assert.equal((await down.fetch(internal("/v1/paper/status"))).status,503);
+assert.equal((await down.fetch(internal("/v1/paper/journal"))).status,503);
 assert.equal((await down.fetch(internal("/v1/paper/fill","POST",{...first,id:"outage",sequence:1}))).status,503);
 assert.equal((await down.fetch(internal("/v1/paper/halt","POST",{}))).status,503);
 assert.equal((await down.fetch(internal("/v1/paper/revoke","POST",{}))).status,503);
