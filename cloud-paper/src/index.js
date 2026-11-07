@@ -119,6 +119,9 @@ export class PaperLedger {
           const entry=await this.state.storage.get("journal:"+seq);
           if (!entry || entry.sequence!==seq || !validFill(entry.fill))
             return response({error:"journal integrity failure",mode:"PAPER_ONLY",realTrading:false},503);
+          const order=await this.state.storage.get("order:"+entry.fill.id);
+          if (!order || JSON.stringify(order.fill)!==JSON.stringify(entry.fill))
+            return response({error:"journal integrity failure",mode:"PAPER_ONLY",realTrading:false},503);
           entries.push(entry);
         }
         return response({entries,fromSequence:entries.length?start:0,toSequence:current.sequence,
