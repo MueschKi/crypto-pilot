@@ -14,6 +14,14 @@ class DashboardChecks(unittest.TestCase):
     def setUpClass(cls):
         cls.html = (ROOT / "docs" / "index.html").read_text(encoding="utf-8")
 
+    def test_strategy_quality_scorecard_is_honest(self):
+        for element in ("profitFactor", "bestTrade", "worstTrade", "strategyConfidence"):
+            self.assertIn(f'id="{element}"', self.html)
+        self.assertIn("closed.length<20", self.html)
+        self.assertIn("losses>0?gains/losses:null", self.html)
+        self.assertIn("Number.isFinite(t.realizedPnl)", self.html)
+        self.assertIn("kein Nachweis für künftige Gewinne", self.html)
+
     def test_real_stream_not_fake_live_quotes(self):
         self.assertIn("wss://ws.kraken.com", self.html)
         self.assertIn("api.coingecko.com", self.html)
