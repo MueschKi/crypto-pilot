@@ -44,8 +44,8 @@ class UIChecks(unittest.TestCase):
         parser=Structure();parser.feed(HTML)
         self.assertIn(("riskSnapshot",False),parser.details)
         self.assertIn(("strategyResults",False),parser.details)
-        self.assertIn("Web v4.11 · Forschungsbasis v4.11",HTML)
-        self.assertNotIn("Web v4.10",HTML)
+        self.assertIn("Web v4.12 · Forschungsbasis v4.11",HTML)
+        self.assertNotIn("Web v4.11",HTML)
         for element in ("riskPositions","riskInvested","riskOpenPnl","riskDrawdown","realizedPnl","profitFactor"):
             self.assertIn(f'id="{element}"',HTML)
 
@@ -64,6 +64,16 @@ class UIChecks(unittest.TestCase):
         self.assertIn('function refreshTicker()',HTML)
         self.assertIn('refreshTicker();',HTML)
         self.assertIn(".hero p{display:none}",HTML)
+
+    def test_collapsed_panels_expose_honest_live_summaries(self):
+        self.assertIn('id="riskSummary"',HTML)
+        self.assertIn('id="strategySummary"',HTML)
+        self.assertIn('text("riskSummary",openPositions.length+" / 3 Positionen',HTML)
+        self.assertIn('S.paperStorageFault?"Speicher gesperrt"',HTML)
+        self.assertIn('openPnl===null?"Bewertung nicht verfügbar"',HTML)
+        self.assertIn('text("strategySummary",closed.length?',HTML)
+        self.assertIn('closed.length<20?" · kleine Stichprobe"',HTML)
+        self.assertIn('Noch keine auswertbaren Verkäufe',HTML)
 
     def test_held_coin_keeps_kraken_subscription_after_ranking_rotation(self):
         node=shutil.which("node")
