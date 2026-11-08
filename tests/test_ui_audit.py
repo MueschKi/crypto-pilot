@@ -30,9 +30,9 @@ class UIChecks(unittest.TestCase):
         parser=Structure();parser.feed(HTML)
         self.assertEqual(len(parser.ids),len(set(parser.ids)),"Duplicate HTML IDs")
         self.assertEqual(parser.depth,0,"Missing closing details tag")
-        for area in ("signalSection","forecastSection","labSection","journalSection","diagnosticSection","lossAnalysis","riskBudgetDetails","riskSnapshot","strategyResults","tickerSection"):
+        for area in ("signalSection","forecastSection","labSection","journalSection","diagnosticSection","lossAnalysis","riskBudgetDetails","riskSnapshot","strategyResults","tickerSection","paperChartSection"):
             self.assertIn((area,False),parser.details,"Non-essential panel must default collapsed")
-        self.assertEqual(len(parser.summary_depths),11)
+        self.assertEqual(len(parser.summary_depths),12)
         self.assertIn(("runtimeDetails",False),parser.details)
         self.assertTrue(all(d>0 for d in parser.summary_depths))
         self.assertIn("collapsible summary:focus-visible",HTML)
@@ -44,8 +44,8 @@ class UIChecks(unittest.TestCase):
         parser=Structure();parser.feed(HTML)
         self.assertIn(("riskSnapshot",False),parser.details)
         self.assertIn(("strategyResults",False),parser.details)
-        self.assertIn("Web v4.12 · Forschungsbasis v4.11",HTML)
-        self.assertNotIn("Web v4.11",HTML)
+        self.assertIn("Web v4.13 · Forschungsbasis v4.11",HTML)
+        self.assertNotIn("Web v4.12",HTML)
         for element in ("riskPositions","riskInvested","riskOpenPnl","riskDrawdown","realizedPnl","profitFactor"):
             self.assertIn(f'id="{element}"',HTML)
 
@@ -74,6 +74,16 @@ class UIChecks(unittest.TestCase):
         self.assertIn('text("strategySummary",closed.length?',HTML)
         self.assertIn('closed.length<20?" · kleine Stichprobe"',HTML)
         self.assertIn('Noch keine auswertbaren Verkäufe',HTML)
+
+    def test_paper_chart_optional_and_safe_for_empty_history(self):
+        parser=Structure();parser.feed(HTML)
+        self.assertIn(("paperChartSection",False),parser.details)
+        self.assertIn('id="chart" class="chart"',HTML)
+        self.assertIn('S.sim.series.filter(v=>Number.isFinite(v)&&v>0)',HTML)
+        self.assertIn('Noch keine gültigen Depotwerte',HTML)
+        self.assertIn('if(!series.length)',HTML)
+        self.assertIn('id="positions"',HTML)
+        self.assertIn('id="paperState"',HTML)
 
     def test_held_coin_keeps_kraken_subscription_after_ranking_rotation(self):
         node=shutil.which("node")
