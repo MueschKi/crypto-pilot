@@ -92,6 +92,25 @@ function validFill(f) {
     && Number.isSafeInteger(f.priceCentsPerUnit) && f.priceCentsPerUnit > 0
     && Number.isSafeInteger(f.feeCents) && f.feeCents >= 0;
 }
+// A corrupted persisted wallet must never be presented as a trustworthy balance.
+function validState(state) {
+  if (!state || typeof state !== "object" || Array.isArray(state)
+      || !Number.isSafeInteger(state.sequence) || state.sequence < 0
+      || !Number.isSafeInteger(state.cashCents) || state.cashCents < 0
+      || typeof state.halted !== "boolean"
+      || !state.positions || typeof state.positions !== "object" || Array.isArray(state.positions)) return false;
+  const entries = Object.entries(state.positions);
+  if (entries.length > 3) return false;
+  let gross = 0;
+  for (const [symbol,position] of entries) {
+    if (!allowed.has(symbol) || !position
+        || !Number.isSafeInteger(position.quantityUnits) || position.quantityUnits <= 0
+        || !Number.isSafeInteger(position.costCents) || position.costCents <= 0
+        || position.costCents > 15000) return false;
+    gross += position.costCents;
+  }
+  return Number.isSafeInteger(gross) && gross <= 45000;
+}
 export class PaperLedger {
   constructor(state, env) { this.state=state; this.env=env; }
   async fetch(request) {
@@ -104,6 +123,7 @@ export class PaperLedger {
     if (path === "/v1/paper/status" && request.method === "GET") {
       try {
         const state = await this.state.storage.get("state") || INITIAL;
+        if (!validState(state)) return response({error:"invalid paper state",mode:"PAPER_ONLY",realTrading:false},503);
         return response({...state, mode:"PAPER_ONLY", realTrading:false});
       } catch (_) { return response({error:"paper storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
     }
@@ -111,7 +131,7 @@ export class PaperLedger {
       // Bounded, chronological, server-persisted history; missing entries fail closed.
       try {
         const current = await this.state.storage.get("state") || INITIAL;
-        if (!Number.isSafeInteger(current.sequence) || current.sequence < 0)
+        if (!validState(current))
           return response({error:"invalid journal state",mode:"PAPER_ONLY",realTrading:false},503);
         const start = Math.max(1,current.sequence-49);
         const entries=[];
@@ -157,10 +177,12 @@ export class PaperLedger {
     try {
       const result = await this.state.storage.transaction(async txn => {
         const state = await txn.get("state") || INITIAL;
+        if (!validState(state)) throw new PaperRuleViolation("invalid stored state");
         if (state.halted) throw new PaperRuleViolation("paper halted");
         const previous = await txn.get("order:"+fill.id);
         if (previous) {
           if (JSON.stringify(previous.fill) !== JSON.stringify(fill)) throw new PaperRuleViolation("idempotency conflict");
+          if (fill.sequence > state.sequence) throw new PaperRuleViolation("invalid stored order sequence");
           return {state, duplicate:true};
         }
         if (fill.sequence !== state.sequence+1) throw new PaperRuleViolation("sequence conflict");
