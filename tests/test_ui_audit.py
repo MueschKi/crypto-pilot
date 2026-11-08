@@ -30,9 +30,9 @@ class UIChecks(unittest.TestCase):
         parser=Structure();parser.feed(HTML)
         self.assertEqual(len(parser.ids),len(set(parser.ids)),"Duplicate HTML IDs")
         self.assertEqual(parser.depth,0,"Missing closing details tag")
-        for area in ("signalSection","forecastSection","labSection","journalSection","diagnosticSection","lossAnalysis","riskBudgetDetails","riskSnapshot","strategyResults"):
+        for area in ("signalSection","forecastSection","labSection","journalSection","diagnosticSection","lossAnalysis","riskBudgetDetails","riskSnapshot","strategyResults","tickerSection"):
             self.assertIn((area,False),parser.details,"Non-essential panel must default collapsed")
-        self.assertEqual(len(parser.summary_depths),10)
+        self.assertEqual(len(parser.summary_depths),11)
         self.assertIn(("runtimeDetails",False),parser.details)
         self.assertTrue(all(d>0 for d in parser.summary_depths))
         self.assertIn("collapsible summary:focus-visible",HTML)
@@ -44,8 +44,8 @@ class UIChecks(unittest.TestCase):
         parser=Structure();parser.feed(HTML)
         self.assertIn(("riskSnapshot",False),parser.details)
         self.assertIn(("strategyResults",False),parser.details)
-        self.assertIn("Web v4.10 · Forschungsbasis v4.11",HTML)
-        self.assertNotIn("Web v4.9",HTML)
+        self.assertIn("Web v4.11 · Forschungsbasis v4.11",HTML)
+        self.assertNotIn("Web v4.10",HTML)
         for element in ("riskPositions","riskInvested","riskOpenPnl","riskDrawdown","realizedPnl","profitFactor"):
             self.assertIn(f'id="{element}"',HTML)
 
@@ -56,6 +56,14 @@ class UIChecks(unittest.TestCase):
         self.assertIn('panel.classList.toggle("market-compact")===false',HTML)
         self.assertIn('setAttribute("aria-expanded",String(expanded))',HTML)
         self.assertIn("Nur Top 5 anzeigen",HTML)
+
+    def test_ticker_is_optional_without_disabling_live_updates(self):
+        parser=Structure();parser.feed(HTML)
+        self.assertIn(("tickerSection",False),parser.details)
+        self.assertIn('id="ticker"',HTML)
+        self.assertIn('function refreshTicker()',HTML)
+        self.assertIn('refreshTicker();',HTML)
+        self.assertIn(".hero p{display:none}",HTML)
 
     def test_held_coin_keeps_kraken_subscription_after_ranking_rotation(self):
         node=shutil.which("node")
