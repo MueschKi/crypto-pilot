@@ -30,9 +30,9 @@ class UIChecks(unittest.TestCase):
         parser=Structure();parser.feed(HTML)
         self.assertEqual(len(parser.ids),len(set(parser.ids)),"Duplicate HTML IDs")
         self.assertEqual(parser.depth,0,"Missing closing details tag")
-        for area in ("signalSection","forecastSection","labSection","journalSection","diagnosticSection","lossAnalysis","riskBudgetDetails","riskSnapshot","strategyResults","tickerSection","paperChartSection"):
+        for area in ("signalSection","forecastSection","labSection","journalSection","diagnosticSection","lossAnalysis","riskBudgetDetails","riskSnapshot","strategyResults","tickerSection","paperChartSection","paperRulesSection"):
             self.assertIn((area,False),parser.details,"Non-essential panel must default collapsed")
-        self.assertEqual(len(parser.summary_depths),12)
+        self.assertEqual(len(parser.summary_depths),13)
         self.assertIn(("runtimeDetails",False),parser.details)
         self.assertTrue(all(d>0 for d in parser.summary_depths))
         self.assertIn("collapsible summary:focus-visible",HTML)
@@ -44,8 +44,8 @@ class UIChecks(unittest.TestCase):
         parser=Structure();parser.feed(HTML)
         self.assertIn(("riskSnapshot",False),parser.details)
         self.assertIn(("strategyResults",False),parser.details)
-        self.assertIn("Web v4.13 · Forschungsbasis v4.11",HTML)
-        self.assertNotIn("Web v4.12",HTML)
+        self.assertIn("Web v4.14 · Forschungsbasis v4.11",HTML)
+        self.assertNotIn("Web v4.13",HTML)
         for element in ("riskPositions","riskInvested","riskOpenPnl","riskDrawdown","realizedPnl","profitFactor"):
             self.assertIn(f'id="{element}"',HTML)
 
@@ -83,6 +83,16 @@ class UIChecks(unittest.TestCase):
         self.assertIn('Noch keine gültigen Depotwerte',HTML)
         self.assertIn('if(!series.length)',HTML)
         self.assertIn('id="positions"',HTML)
+        self.assertIn('id="paperState"',HTML)
+
+    def test_paper_summary_shows_fail_closed_state_and_keeps_rules_available(self):
+        parser=Structure();parser.feed(HTML)
+        self.assertIn(("paperRulesSection",False),parser.details)
+        self.assertIn('id="paperQuickStatus" role="status"',HTML)
+        self.assertIn('text("paperQuickStatus",S.paperStorageFault?',HTML)
+        self.assertIn('S.sim.stopped?"NOT-AUS · Paper gesperrt"',HTML)
+        self.assertIn('openPnl===null?"Bewertung nicht verfügbar"',HTML)
+        self.assertIn('Nur bei frischen Kraken-Kursen. Keine Gewinnzusage.',HTML)
         self.assertIn('id="paperState"',HTML)
 
     def test_held_coin_keeps_kraken_subscription_after_ranking_rotation(self):
