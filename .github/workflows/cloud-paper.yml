@@ -1,0 +1,65 @@
+name: Cloud Paper safety and gated deployment
+on:
+  push:
+    paths:
+      - 'cloud-paper/**'
+      - '.github/workflows/cloud-paper.yml'
+  pull_request:
+    paths:
+      - 'cloud-paper/**'
+      - '.github/workflows/cloud-paper.yml'
+  workflow_dispatch:
+    inputs:
+      deploy_preview:
+        description: 'Deploy isolated, non-public paper-only preview after passing tests'
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: cloud-paper-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  safety:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Worker JavaScript syntax
+        run: node --check cloud-paper/src/index.js
+      - name: Verify paper ledger and authentication integration
+        run: node cloud-paper/tests/integration.mjs
+      - name: Confirm private preview configuration
+        shell: bash
+        run: |
+          grep -Eq '^workers_dev = false$' cloud-paper/wrangler.toml
+          ! grep -Eq '^route(s)?[[:space:]]*=' cloud-paper/wrangler.toml
+          ! grep -Eiq '(kraken.*(private|order)|api[_-]?secret)' cloud-paper/wrangler.toml
+  deploy-preview:
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy_preview == true && github.ref == 'refs/heads/main'
+    needs: safety
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: cloud-paper-preview
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Deploy isolated Worker (no public route)
+        working-directory: cloud-paper
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          npx --yes wrangler@4 deploy --config wrangler.toml
