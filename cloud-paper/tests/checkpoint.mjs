@@ -1,0 +1,18 @@
+import assert from "node:assert/strict";
+import {checkpointPaperTick as checkpoint} from "../src/checkpoint.mjs";
+const data=new Map();
+const storage={transaction:async fn=>fn({get:async k=>data.get(k),put:async(k,v)=>{data.set(k,v);}})};
+const input={tickId:"100",nowMs:300000,enabled:true,halted:false,marketFresh:true};
+assert.deepEqual(await checkpoint(storage,input),{accepted:true,reason:"checkpoint_only",tickId:"100"});
+assert.equal((await checkpoint(storage,input)).reason,"duplicate_or_old");
+assert.equal((await checkpoint(storage,{...input,tickId:"99"})).reason,"duplicate_or_old");
+assert.equal((await checkpoint(storage,{...input,tickId:"101",halted:true})).reason,"halted");
+assert.equal((await checkpoint(storage,{...input,tickId:"101",marketFresh:false})).reason,"stale_market");
+assert.equal((await checkpoint(storage,{...input,tickId:"101",enabled:false})).reason,"disabled");
+assert.equal(data.get("paper_tick_checkpoint").tickId,"100");
+assert.equal((await checkpoint(storage,{...input,tickId:"101"})).accepted,true);
+assert.equal((await checkpoint(null,input)).reason,"storage_unavailable");
+data.set("paper_tick_checkpoint",{tickId:"broken",nowMs:1});
+assert.equal((await checkpoint(storage,{...input,tickId:"102"})).reason,"storage_unavailable");
+assert.equal(data.get("paper_tick_checkpoint").tickId,"broken");
+console.log("persistent paper tick checkpoint: OK");
