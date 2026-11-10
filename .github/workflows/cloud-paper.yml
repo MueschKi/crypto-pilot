@@ -39,6 +39,8 @@ jobs:
         run: node cloud-paper/tests/scheduler.mjs
       - name: Verify persistent paper tick checkpoint
         run: node cloud-paper/tests/checkpoint.mjs
+      - name: Verify market quote safety gate
+        run: node cloud-paper/tests/market-guard.mjs
       - name: Confirm private preview configuration
         shell: bash
         run: |
