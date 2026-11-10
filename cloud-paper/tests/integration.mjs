@@ -86,6 +86,8 @@ const previousState=structuredClone(store.get("state"));
 store.set("state",{...previousState,cashCents:-1});
 assert.equal((await call("/v1/paper/status")).status,503);
 assert.equal((await call("/v1/paper/journal")).status,503);
+assert.equal((await call("/v1/paper/halt","POST",{})).status,503);
+assert.equal(store.get("state").cashCents,-1);
 assert.equal((await call("/v1/paper/fill","POST",{...first,id:"corrupt",sequence:2})).status,409);
 assert.equal(store.get("state").cashCents,-1);
 store.set("state",previousState);
