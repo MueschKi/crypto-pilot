@@ -27,6 +27,19 @@ main{position:relative;z-index:1}.panel{position:relative;overflow:hidden;transi
 .safety-facts{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 4px}.safety-facts span{display:inline-flex;align-items:center;gap:6px;border:1px solid #38516f;background:#10243b;border-radius:999px;padding:7px 11px;font-size:12px;color:#dbeaff;font-weight:650}.safety-facts span:last-child{border-color:#655044;background:#30251e;color:#ffddae}@media(max-width:500px){.safety-facts{gap:6px}.safety-facts span{font-size:11px;padding:6px 9px}}
 .market-compact #rows tr:nth-child(n+6){display:none}.market-toggle{margin-top:10px;width:100%}
 .risk-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}.risk-grid>div{background:#101e35;border:1px solid #2b4160;border-radius:11px;padding:11px}.risk-grid strong{font-size:clamp(15px,2.3vw,21px);font-variant-numeric:tabular-nums}@media(max-width:650px){.risk-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.risk-grid>div{padding:10px}}
+
+/* v4.9 mobile-first declutter: keep all trading and emergency controls accessible. */
+:root{--panel:#101d31;--line:#293b55}
+main{max-width:1100px;padding:12px 14px 42px}
+.hero{padding:6px 0 2px}.hero h1{font-size:clamp(24px,4vw,36px);margin:9px 0 7px;letter-spacing:-.8px}.hero p{margin:6px 0 10px;max-width:720px}
+.panel{padding:14px;border-radius:14px;box-shadow:none;background:#101d31}
+.grid{gap:8px}.layout,.stack{gap:10px}.controls{gap:7px;margin:9px 0}.button{min-height:42px}
+.collapsible>summary{cursor:pointer;list-style-position:inside;line-height:1.5;min-height:40px;display:list-item;align-content:center;font-weight:700}
+.collapsible:not([open]){padding-top:9px;padding-bottom:9px}
+.collapsible[open]>summary{margin-bottom:10px}
+.ambient-orb{display:none}
+@media(max-width:760px){main{padding:9px 10px 34px}.brand{font-size:24px}.tag{font-size:10px;padding:5px 8px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.layout{grid-template-columns:minmax(0,1fr)}.panel{padding:12px;border-radius:12px}.metric{font-size:clamp(20px,6vw,27px)}.label{font-size:10px}.controls .button{flex:1 1 auto}.hero h1{font-size:25px}.tickerbox{margin-top:8px}}
+@media(prefers-reduced-motion:reduce){.ticker,.stream-orbs i,.live{animation:none!important}.panel,.metric{transition:none!important}}
 </style>
 </head>
 <body><div class="ambient-orb orb-a" aria-hidden="true"></div><div class="ambient-orb orb-b" aria-hidden="true"></div><main>
