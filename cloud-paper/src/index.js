@@ -164,6 +164,7 @@ export class PaperLedger {
       let state;
       try { state = await this.state.storage.transaction(async txn => {
         const prior = await txn.get("state") || INITIAL;
+        if (!validState(prior)) throw new PaperRuleViolation("invalid stored state");
         const next = {...prior,halted:true};
         await txn.put("state",next);
         return next;
