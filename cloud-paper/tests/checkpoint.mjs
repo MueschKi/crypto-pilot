@@ -12,6 +12,8 @@ assert.equal((await checkpoint(storage,{...input,tickId:"101",enabled:false})).r
 assert.equal(data.get("paper_tick_checkpoint").tickId,"100");
 assert.equal((await checkpoint(storage,{...input,tickId:"101"})).accepted,true);
 assert.equal((await checkpoint(null,input)).reason,"storage_unavailable");
+assert.equal((await checkpoint(storage,{...input,tickId:"00102"})).reason,"invalid_tick");
+assert.equal((await checkpoint(storage,{...input,tickId:"000"})).reason,"invalid_tick");
 data.set("paper_tick_checkpoint",{tickId:"broken",nowMs:1});
 assert.equal((await checkpoint(storage,{...input,tickId:"102"})).reason,"storage_unavailable");
 assert.equal(data.get("paper_tick_checkpoint").tickId,"broken");

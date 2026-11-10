@@ -1,7 +1,7 @@
 // Persistent, paper-only tick checkpoint. No order execution or exchange access.
 // Requires a transactional Durable Object storage facade with get/put.
 export async function checkpointPaperTick(storage, {tickId, nowMs, halted, enabled, marketFresh}) {
-  if (typeof tickId !== "string" || !/^[0-9]{1,16}$/.test(tickId)
+  if (typeof tickId !== "string" || !/^(0|[1-9][0-9]{0,15})$/.test(tickId)
       || !Number.isSafeInteger(nowMs) || nowMs < 0)
     return {accepted:false, reason:"invalid_tick"};
   if (!enabled) return {accepted:false, reason:"disabled"};
@@ -13,7 +13,7 @@ export async function checkpointPaperTick(storage, {tickId, nowMs, halted, enabl
     return await storage.transaction(async tx => {
       const last = await tx.get("paper_tick_checkpoint");
       if (last !== undefined && (typeof last !== "object" || last === null
-          || !/^[0-9]{1,16}$/.test(last.tickId)
+          || !/^(0|[1-9][0-9]{0,15})$/.test(last.tickId)
           || !Number.isSafeInteger(last.nowMs) || last.nowMs < 0))
         throw new Error("invalid checkpoint");
       if (last && BigInt(tickId) <= BigInt(last.tickId))
