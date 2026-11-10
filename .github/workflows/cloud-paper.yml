@@ -37,6 +37,8 @@ jobs:
         run: node cloud-paper/tests/integration.mjs
       - name: Verify offline paper scheduling gate
         run: node cloud-paper/tests/scheduler.mjs
+      - name: Verify persistent paper tick checkpoint
+        run: node cloud-paper/tests/checkpoint.mjs
       - name: Confirm private preview configuration
         shell: bash
         run: |
