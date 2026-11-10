@@ -35,6 +35,8 @@ jobs:
         run: node --check cloud-paper/src/index.js
       - name: Verify paper ledger and authentication integration
         run: node cloud-paper/tests/integration.mjs
+      - name: Verify offline paper scheduling gate
+        run: node cloud-paper/tests/scheduler.mjs
       - name: Confirm private preview configuration
         shell: bash
         run: |
