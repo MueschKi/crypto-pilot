@@ -120,6 +120,45 @@ export class PaperLedger {
   constructor(state, env) { this.state=state; this.env=env; }
   async fetch(request) {
     const path = new URL(request.url).pathname;
+    // This endpoint exists only on the Durable Object binding, never the Worker router.
+    if(path==='/internal/cron' && request.method==='POST') {
+      const key=this.env?.PAPER_CRON_KEY;
+      if(typeof key!=='string'||key.length<32||request.headers.get('x-paper-cron-key')!==key)return denied();
+      if(this.env.PAPER_AUTOTRADE_ENABLED!=='true')return response({enabled:false,mode:'PAPER_ONLY'});
+      try {
+        const {now,prices}=await request.json();
+        if(!Number.isSafeInteger(now)||Math.abs(Date.now()-now)>120000)return response({error:'invalid clock'},400);
+        if(!prices||['BTC','ETH','SOL'].some(k=>!Number.isSafeInteger(prices[k])||prices[k]<=0))return response({error:'invalid prices'},400);
+        const storage=this.state.storage;
+        const wallet=await storage.get('state')||INITIAL;
+        if(!validState(wallet)||wallet.halted)return response({error:'halted or corrupt wallet'},409);
+        const last=await storage.get('cron:last');
+        if(last && (!Number.isSafeInteger(last.now)||last.now>now))return response({error:'invalid checkpoint'},503);
+        if(last && now-last.now<300000)return response({reason:'not_due',mode:'PAPER_ONLY'});
+        const {decidePaperTrade}=await import('./strategy.mjs');
+        const signal=decidePaperTrade({prices,previousPrices:last?.prices,wallet,enabled:true,halted:wallet.halted,nowMs:now,lastTradeMs:last?.lastTradeMs||0});
+        let trade=null;
+        if(signal.action!=='WAIT'){
+          const price=prices[signal.symbol];
+          // Integer cents / micro-units: quantize to an exactly representable cent amount.
+          const gcd=(a,b)=>b?gcd(b,a%b):a;
+          const divisor=gcd(price,1000000),stepUnits=1000000/divisor,stepCents=price/divisor;
+          const units=signal.action==='BUY'?Math.floor(signal.notionalCents/stepCents)*stepUnits:Math.floor(signal.quantityUnits/stepUnits)*stepUnits;
+          if(Number.isSafeInteger(units)&&units>0){
+            const notional=units*price/1000000;
+            if(Number.isSafeInteger(notional)&&notional>0){
+              const fee=Math.max(1,Math.ceil(notional*0.0026));
+              const fill={id:'cron_'+Math.floor(now/300000)+'_'+signal.symbol+'_'+signal.action,sequence:wallet.sequence+1,symbol:signal.symbol,side:signal.action,quantityUnits:units,priceCentsPerUnit:price,feeCents:fee};
+              const filled=await this.fetch(new Request('https://internal.invalid/v1/paper/fill',{method:'POST',headers:{'x-internal-paper-token-id':'cloud_cron_internal'},body:JSON.stringify(fill)}));
+              if(!filled.ok)return response({error:'fill rejected',status:filled.status},503);
+              trade={id:fill.id,side:fill.side,symbol:fill.symbol};
+            }
+          }
+        }
+        await storage.put('cron:last',{now,prices,lastTradeMs:trade?now:(last?.lastTradeMs||0)});
+        return response({mode:'PAPER_ONLY',signal:signal.action,reason:signal.reason,trade});
+      } catch(_){return response({error:'cron storage or market processing unavailable'},503);}
+    }
     // Per-wallet token revocation list; a revoked token cannot read or mutate.
     const tokenId = request.headers.get("x-internal-paper-token-id");
     if (!tokenId) return denied();
