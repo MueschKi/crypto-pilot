@@ -30,3 +30,18 @@ env.PAPER_AUTOTRADE_ENABLED='false';
 assert.equal((await tick(now,p0)).status,200);
 assert.equal(data.get('state').sequence,1);
 console.log('Cloud cron wallet integration passed');
+
+// Scheduled Worker must surface a rejected cron as an observable failure.
+const workerSource=await readFile(new URL('../src/index.js',import.meta.url),'utf8');
+const cronMock='data:text/javascript;base64,'+Buffer.from('export async function runPaperCron(){return new Response(JSON.stringify({error:"simulated rejection"}),{status:503})}').toString('base64');
+const workerModule=await import('data:text/javascript;base64,'+Buffer.from(workerSource.replace("import('./cron.mjs')",'import('+JSON.stringify(cronMock)+')')).toString('base64'));
+const messages=[];
+const originalError=console.error;
+console.error=(...args)=>messages.push(args.join(' '));
+try {
+  const pending=[];
+  await workerModule.default.scheduled({}, {PAPER_CRON_KEY:'0123456789abcdef0123456789abcdef',PAPER_LEDGER:{idFromName:()=> 'test',get:()=>({fetch:async()=>new Response(JSON.stringify({error:'simulated rejection'}),{status:503})})}}, {waitUntil:p=>pending.push(p)});
+  assert.equal(pending.length,1);
+  await assert.rejects(pending[0]);
+  assert.ok(messages.some(m=>m.includes('paper_cron_failure')));
+} finally {console.error=originalError;}
