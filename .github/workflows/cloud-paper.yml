@@ -50,7 +50,9 @@ jobs:
         run: |
           grep -Eq '^workers_dev = false$' cloud-paper/wrangler.toml
           ! grep -Eq '^route(s)?[[:space:]]*=' cloud-paper/wrangler.toml
-          ! grep -Eq '^\\[triggers\\]|^crons[[:space:]]*=' cloud-paper/wrangler.toml
+          grep -Fxq '[triggers]' cloud-paper/wrangler.toml
+          grep -Fxq 'crons = ["*/5 * * * *"]' cloud-paper/wrangler.toml
+          grep -Fxq 'PAPER_AUTOTRADE_ENABLED = "true"' cloud-paper/wrangler.toml
           ! grep -Eiq '(kraken.*(private|order)|api[_-]?secret)' cloud-paper/wrangler.toml
   deploy-preview:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy_preview == true))
