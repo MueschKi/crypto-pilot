@@ -3,7 +3,13 @@ main = "src/index.js"
 compatibility_date = "2026-10-01"
 workers_dev = false
 
-# No routes or deployment credentials. Manual security review required.
+[triggers]
+crons = ["*/5 * * * *"]
+
+[vars]
+PAPER_AUTOTRADE_ENABLED = "true"
+
+# No public routes. Cron requires a separate PAPER_CRON_KEY secret (>=32 chars).
 [[durable_objects.bindings]]
 name = "PAPER_LEDGER"
 class_name = "PaperLedger"
