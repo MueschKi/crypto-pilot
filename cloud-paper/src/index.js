@@ -43,13 +43,11 @@ async function identity(request, keys) {
   return diff===0 ? {subject:claims.sub,tokenId:claims.jti,issuedAt:claims.iat} : null;
 }
 
-import {runPaperCron} from './cron.mjs';
-
 export default {
   async scheduled(event,env,ctx) {
     // Cron remains inactive unless an operator explicitly configures a secret.
     if(typeof env.PAPER_CRON_KEY!=='string'||env.PAPER_CRON_KEY.length<32)return;
-    ctx.waitUntil(runPaperCron(env,Date.now()));
+    ctx.waitUntil(import('./cron.mjs').then(({runPaperCron})=>runPaperCron(env,Date.now())));
   },
   async fetch(request, env) {
     let signingKeys;
