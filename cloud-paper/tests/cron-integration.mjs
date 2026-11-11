@@ -33,7 +33,8 @@ console.log('Cloud cron wallet integration passed');
 
 // Scheduled Worker must surface a rejected cron as an observable failure.
 const workerSource=await readFile(new URL('../src/index.js',import.meta.url),'utf8');
-const workerModule=await import('data:text/javascript;base64,'+Buffer.from(workerSource).toString('base64'));
+const cronMock='data:text/javascript;base64,'+Buffer.from('export async function runPaperCron(){return new Response(JSON.stringify({error:"simulated rejection"}),{status:503})}').toString('base64');
+const workerModule=await import('data:text/javascript;base64,'+Buffer.from(workerSource.replace("import('./cron.mjs')",'import('+JSON.stringify(cronMock)+')')).toString('base64'));
 const messages=[];
 const originalError=console.error;
 console.error=(...args)=>messages.push(args.join(' '));
