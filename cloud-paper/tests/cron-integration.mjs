@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+const strategy=await readFile(new URL('../src/strategy.mjs',import.meta.url),'utf8');
+let source=await readFile(new URL('../src/index.js',import.meta.url),'utf8');
+source=source.replace("import('./strategy.mjs')",'import('+JSON.stringify('data:text/javascript;base64,'+Buffer.from(strategy).toString('base64'))+')');
+const {PaperLedger}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+let data=new Map();
+const storage={get:async k=>structuredClone(data.get(k)),put:async(k,v)=>{data.set(k,structuredClone(v));},transaction:async fn=>{const old=structuredClone([...data]);try{return await fn({get:storage.get,put:storage.put});}catch(e){data=new Map(old);throw e;}}};
+const env={PAPER_CRON_KEY:'test-cron-secret-0123456789abcdef0123456789',PAPER_AUTOTRADE_ENABLED:'true'};
+const ledger=new PaperLedger({storage},env);
+const now=Date.now();
+const tick=(t,prices,key=env.PAPER_CRON_KEY)=>ledger.fetch(new Request('https://internal.invalid/internal/cron',{method:'POST',headers:{'x-paper-cron-key':key},body:JSON.stringify({now:t,prices})}));
+const p0={BTC:100000,ETH:10000,SOL:1000};
+assert.equal((await tick(now,p0,'wrong')).status,401);
+assert.equal((await tick(now,p0)).status,200);
+assert.equal(data.get('state'),undefined);
+assert.equal((await tick(now,p0)).status,200);
+assert.equal((await tick(now+300000,{...p0,BTC:101000})).status,400); // future clock rejected
+// Simulate elapsed ticks by supplying current-time checkpoint in storage.
+await storage.put('cron:last',{now:now-300000,prices:p0,lastTradeMs:0});
+const result=await tick(now,{...p0,BTC:101000});
+assert.equal(result.status,200,await result.text());
+assert.equal(data.get('state').sequence,1);
+assert.equal(data.get('journal:1').fill.side,'BUY');
+assert.equal((await tick(now,{...p0,BTC:101000})).status,200);
+assert.equal(data.get('state').sequence,1);
+await storage.put('state',{...data.get('state'),halted:true});
+assert.equal((await tick(now,{...p0,BTC:102000})).status,409);
+env.PAPER_AUTOTRADE_ENABLED='false';
+assert.equal((await tick(now,p0)).status,200);
+assert.equal(data.get('state').sequence,1);
+console.log('Cloud cron wallet integration passed');
