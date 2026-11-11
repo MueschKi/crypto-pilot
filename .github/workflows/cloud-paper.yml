@@ -53,7 +53,7 @@ jobs:
           ! grep -Eq '^\\[triggers\\]|^crons[[:space:]]*=' cloud-paper/wrangler.toml
           ! grep -Eiq '(kraken.*(private|order)|api[_-]?secret)' cloud-paper/wrangler.toml
   deploy-preview:
-    if: github.event_name == 'workflow_dispatch' && inputs.deploy_preview == true && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy_preview == true))
     needs: safety
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -74,3 +74,5 @@ jobs:
           test -n "$CLOUDFLARE_API_TOKEN"
           test -n "$CLOUDFLARE_ACCOUNT_ID"
           npx --yes wrangler@4 deploy --config wrangler.toml
+          # Generate a dedicated private cron credential, never expose it in logs.
+          openssl rand -hex 32 | npx --yes wrangler@4 secret put PAPER_CRON_KEY --config wrangler.toml
