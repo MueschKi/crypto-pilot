@@ -41,6 +41,8 @@ jobs:
         run: node cloud-paper/tests/checkpoint.mjs
       - name: Verify market quote safety gate
         run: node cloud-paper/tests/market-guard.mjs
+      - name: Verify paper strategy risk gates
+        run: node cloud-paper/tests/strategy.mjs
       - name: Confirm private preview configuration
         shell: bash
         run: |

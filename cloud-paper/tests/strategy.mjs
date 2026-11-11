@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {decidePaperTrade as decide} from '../src/strategy.mjs';
+const prices={BTC:10100,ETH:10100,SOL:10100};
+const previousPrices={BTC:10000,ETH:10000,SOL:10000};
+const wallet={cashCents:100000,positions:{}};
+const base={prices,previousPrices,wallet,enabled:true,halted:false,nowMs:600000,lastTradeMs:0};
+assert.deepEqual(decide(base),{action:'BUY',symbol:'BTC',notionalCents:5000,reason:'momentum_entry'});
+assert.equal(decide({...base,enabled:false}).reason,'disabled');
+assert.equal(decide({...base,halted:true}).reason,'halted');
+assert.equal(decide({...base,lastTradeMs:599999}).reason,'cooldown');
+assert.equal(decide({...base,prices:{...prices,BTC:0}}).reason,'invalid_prices');
+assert.equal(decide({...base,wallet:{cashCents:4000,positions:{}}}).action,'WAIT');
+assert.equal(decide({...base,wallet:{cashCents:100000,positions:{BTC:{quantityUnits:100000,costCents:10000}}},prices:{BTC:9900,ETH:10000,SOL:10000}}).action,'SELL');
+assert.equal(decide({...base,wallet:{cashCents:100000,positions:{BTC:{quantityUnits:1,costCents:15000},ETH:{quantityUnits:1,costCents:15000},SOL:{quantityUnits:1,costCents:15000}}}}).action,'WAIT');
+console.log('Paper strategy safety tests passed');
