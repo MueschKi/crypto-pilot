@@ -48,6 +48,8 @@ main{max-width:1100px;padding:12px 14px 42px}
 .focus-nav button[aria-selected=true]{background:#2a5790;border-color:#7daff4;color:white}
 .focus-nav button:focus-visible{outline:3px solid #9bc5ff;outline-offset:2px}
 @media(max-width:600px){.focus-nav{margin:0 -10px;padding:8px 10px}.focus-nav button{font-size:12px;padding:10px 8px}.hero h1{display:none}.hero p{display:none}.safety-facts{font-size:11px}}
+
+.focus-page[hidden]{display:none!important}.focus-page{min-width:0}.focus-page>.panel,.focus-page>details{margin-top:10px}.focus-page .grid{grid-template-columns:repeat(2,minmax(0,1fr))}.focus-page .hero .safety-facts{display:none}.focus-page .flowbar{display:none}.focus-page .controls #paperEmergencyStop{border-color:#df6885;color:#ffe2e9}
 </style>
 </head>
 <body><div class="ambient-orb orb-a" aria-hidden="true"></div><div class="ambient-orb orb-b" aria-hidden="true"></div><main>
@@ -829,23 +831,29 @@ window.addEventListener("pagehide",()=>{S.sim.active=false;releasePaperLease()})
 window.addEventListener("storage",event=>{if(event.key===PAPER_LEASE_KEY&&S.sim.active){
  try{const data=JSON.parse(event.newValue||"null");if(data&&data.id!==PAPER_TAB_ID&&data.until>Date.now()){S.sim.active=false;renderDepot()}}catch(_){}
 }});
-</script>
-<script>
 // View-only grouping: never detach/recreate trading controls or change stored state.
 (()=>{
   const main=document.querySelector('main');if(!main)return;
   const nav=document.createElement('nav');nav.className='focus-nav';nav.setAttribute('aria-label','Hauptbereiche');
   const views=[['home','Übersicht'],['market','Märkte'],['strategy','Strategie'],['more','Mehr']];
-  const groups={market:['tickerSection','signalSection','marketChart'],strategy:['strategyResults','lossAnalysis','forecastSection','labSection'],more:['riskBudgetDetails','runtimeDetails','journalSection','diagnosticSection','paperRulesSection']};
-  const nodes=[...main.children];
-  for(const [view,ids] of Object.entries(groups))for(const id of ids){const el=document.getElementById(id);if(!el)continue;let root=el;while(root.parentElement!==main&&root.parentElement)root=root.parentElement;if(root.parentElement===main&&root!==nav)root.dataset.focusView=view;}
-  // The live chart is a section without its own id; use its canvas to identify the section.
-  const chart=document.getElementById('marketChart');if(chart){let root=chart;while(root.parentElement!==main&&root.parentElement)root=root.parentElement;if(root.parentElement===main)root.dataset.focusView='market';}
-  // Keep primary start/stop and emergency controls always on the home screen.
-  const controls=document.getElementById('paperEmergencyStop')?.closest('.controls');if(controls&&controls.parentElement===main)controls.dataset.focusView='home';
+  const buckets={home:document.createElement('div'),market:document.createElement('div'),strategy:document.createElement('div'),more:document.createElement('div')};
+  const top=main.querySelector('.top');top?.after(nav);
+  const marketIds=new Set(['tickerSection','signalSection','marketOverview']);
+  const strategyIds=new Set(['strategyResults','lossAnalysis','forecastSection','labSection']);
+  for(const el of [...main.children]){
+    if(el===top||el===nav)continue;
+    let view='more';
+    if(el.classList.contains('hero')||el.classList.contains('grid')||el.classList.contains('statusStrip')||el.classList.contains('controls')||el.querySelector('#paperEmergencyStop'))view='home';
+    else if(marketIds.has(el.id)||el.querySelector('#marketChart')||el.querySelector('#rows')||el.classList.contains('layout'))view='market';
+    else if(strategyIds.has(el.id))view='strategy';
+    buckets[view].append(el);
+  }
+  const grid=buckets.home.querySelector('.grid');if(grid){[...grid.querySelectorAll(':scope > .panel')].slice(2).forEach(el=>buckets.more.append(el));}
+  const controls=buckets.home.querySelector('.controls');if(controls){for(const id of ['refresh','reset']){const el=controls.querySelector('#'+id);if(el)buckets.more.append(el);}}
   for(const [view,label] of views){const button=document.createElement('button');button.type='button';button.textContent=label;button.dataset.view=view;button.setAttribute('role','tab');button.addEventListener('click',()=>show(view));nav.append(button);}
-  nav.setAttribute('role','tablist');const top=main.querySelector('.top');top?.after(nav);
-  function show(view){for(const button of nav.children){const selected=button.dataset.view===view;button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;}for(const node of nodes){const target=node.dataset.focusView||'home';node.hidden=target!==view;}nav.hidden=false;}
+  nav.setAttribute('role','tablist');
+  for(const [name,el] of Object.entries(buckets)){el.className='focus-page';el.id='focus-'+name;main.append(el);}
+  function show(view){for(const button of nav.children){const selected=button.dataset.view===view;button.setAttribute('aria-selected',String(selected));button.tabIndex=selected?0:-1;}for(const [name,el] of Object.entries(buckets))el.hidden=name!==view;}
   show('home');
 })();
 </script>
