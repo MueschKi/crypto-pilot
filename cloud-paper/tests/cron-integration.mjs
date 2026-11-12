@@ -45,3 +45,17 @@ try {
   await assert.rejects(pending[0]);
   assert.ok(messages.some(m=>m.includes('paper_cron_failure')));
 } finally {console.error=originalError;}
+
+
+// A missing deployment secret must be an observable failure, never a silent success.
+{
+  const errors=[];
+  const original=console.error;
+  console.error=(...args)=>errors.push(args.join(' '));
+  try {
+    const pending=[];
+    await assert.rejects(workerModule.default.scheduled({}, {PAPER_LEDGER:{}}, {waitUntil:p=>pending.push(p)}),/credential unavailable/);
+    assert.equal(pending.length,0);
+    assert.ok(errors.some(line=>line.includes('paper_cron_failure')&&line.includes('credential unavailable')));
+  } finally {console.error=original;}
+}
