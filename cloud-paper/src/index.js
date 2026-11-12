@@ -46,7 +46,10 @@ async function identity(request, keys) {
 export default {
   async scheduled(event,env,ctx) {
     // Cron remains inactive unless an operator explicitly configures a secret.
-    if(typeof env.PAPER_CRON_KEY!=='string'||env.PAPER_CRON_KEY.length<32)return;
+    if(typeof env.PAPER_CRON_KEY!=='string'||env.PAPER_CRON_KEY.length<32){
+      console.error(JSON.stringify({event:'paper_cron_failure',reason:'cron credential unavailable'}));
+      throw Error('paper cron credential unavailable');
+    }
     ctx.waitUntil((async()=>{
       try {
         const {runPaperCron}=await import('./cron.mjs');
