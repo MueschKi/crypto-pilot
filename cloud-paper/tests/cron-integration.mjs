@@ -29,6 +29,7 @@ assert.equal((await tick(now,{...p0,BTC:102000})).status,409);
 env.PAPER_AUTOTRADE_ENABLED='false';
 assert.equal((await tick(now,p0)).status,200);
 assert.equal(data.get('state').sequence,1);
+env.PAPER_AUTOTRADE_ENABLED='true'; // Reset after disabled-mode assertion.
 // Regression: realistic BTC prices (e.g. €85,000) must allow a €50
 // fractional paper BUY; previously exact-cent quantization yielded zero units.
 data=new Map();
