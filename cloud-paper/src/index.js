@@ -160,13 +160,15 @@ export class PaperLedger {
         let trade=null;
         if(signal.action!=='WAIT'){
           const price=prices[signal.symbol];
-          // Integer cents / micro-units: quantize to an exactly representable cent amount.
-          const gcd=(a,b)=>b?gcd(b,a%b):a;
-          const divisor=gcd(price,1000000),stepUnits=1000000/divisor,stepCents=price/divisor;
-          const units=signal.action==='BUY'?Math.floor(signal.notionalCents/stepCents)*stepUnits:Math.floor(signal.quantityUnits/stepUnits)*stepUnits;
+          // Crypto is fractional: round the cash value to cents, not the crypto quantity
+          // to an exact-cent multiple (which makes €50 BTC orders impossible).
+          const units=signal.action==='BUY'
+            ?Math.floor(signal.notionalCents*1000000/price)
+            :signal.quantityUnits;
           if(Number.isSafeInteger(units)&&units>0){
-            const notional=units*price/1000000;
-            if(Number.isSafeInteger(notional)&&notional>0){
+            const product=units*price;
+            const notional=Math.round(product/1000000);
+            if(Number.isSafeInteger(product)&&Number.isSafeInteger(notional)&&notional>0){
               const fee=Math.max(1,Math.ceil(notional*0.0026));
               const fill={id:'cron_'+Math.floor(now/300000)+'_'+signal.symbol+'_'+signal.action,sequence:wallet.sequence+1,symbol:signal.symbol,side:signal.action,quantityUnits:units,priceCentsPerUnit:price,feeCents:fee};
               const filled=await this.fetch(new Request('https://internal.invalid/v1/paper/fill',{method:'POST',headers:{'x-internal-paper-token-id':'cloud_cron_internal'},body:JSON.stringify(fill)}));
@@ -251,10 +253,12 @@ export class PaperLedger {
           return {state, duplicate:true};
         }
         if (fill.sequence !== state.sequence+1) throw new PaperRuleViolation("sequence conflict");
-        // Integer micro-units; exact cent notional required, no rounding drift.
+        // Integer micro-units with cent-rounded cash settlement. Exact-cent
+        // divisibility would silently block normal fractional BTC/ETH orders.
         const product = fill.quantityUnits*fill.priceCentsPerUnit;
-        if (!Number.isSafeInteger(product) || product%1000000!==0) throw new PaperRuleViolation("invalid notional");
-        const notional = product/1000000;
+        if (!Number.isSafeInteger(product)) throw new PaperRuleViolation("invalid notional");
+        const notional = Math.round(product/1000000);
+        if (!Number.isSafeInteger(notional) || notional<=0) throw new PaperRuleViolation("invalid notional");
         if (fill.feeCents>notional) throw new PaperRuleViolation("invalid fee");
         const positions = {...state.positions};
         const current = positions[fill.symbol] || {quantityUnits:0,costCents:0};
