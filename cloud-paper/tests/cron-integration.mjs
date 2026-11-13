@@ -20,6 +20,7 @@ assert.equal((await tick(now+300000,{...p0,BTC:101000})).status,400); // future 
 await storage.put('cron:last',{now:now-300000,prices:p0,lastTradeMs:0});
 const result=await tick(now,{...p0,BTC:101000});
 assert.equal(result.status,200,await result.text());
+assert.equal((await result.clone().json()).trade?.persisted,true);
 assert.equal(data.get('state').sequence,1);
 assert.equal(data.get('journal:1').fill.side,'BUY');
 assert.equal((await tick(now,{...p0,BTC:101000})).status,200);
@@ -37,6 +38,7 @@ const realistic={BTC:8500000,ETH:300000,SOL:15000};
 await storage.put('cron:last',{now:now-300000,prices:realistic,lastTradeMs:0});
 const realisticBuy=await tick(now,{...realistic,BTC:8600000});
 assert.equal(realisticBuy.status,200,await realisticBuy.text());
+assert.equal((await realisticBuy.clone().json()).trade?.persisted,true);
 assert.equal(data.get('state')?.sequence,1,'fractional BTC BUY must persist');
 assert.equal(data.get('journal:1')?.fill.side,'BUY');
 assert.ok(data.get('journal:1')?.fill.quantityUnits>0);
@@ -45,6 +47,7 @@ assert.equal(data.get('state').sequence,1,'duplicate cron must not duplicate BUY
 await storage.put('cron:last',{now:now-300000,prices:{...realistic,BTC:8700000},lastTradeMs:0});
 const realisticSell=await tick(now,{...realistic,BTC:8600000});
 assert.equal(realisticSell.status,200,await realisticSell.text());
+assert.equal((await realisticSell.clone().json()).trade?.persisted,true);
 assert.equal(data.get('state')?.sequence,2,'fractional BTC SELL must persist');
 assert.equal(data.get('journal:2')?.fill.side,'SELL');
 assert.equal(Object.keys(data.get('state').positions).length,0);
