@@ -12,4 +12,12 @@ assert.equal(decide({...base,prices:{...prices,BTC:0}}).reason,'invalid_prices')
 assert.equal(decide({...base,wallet:{cashCents:4000,positions:{}}}).action,'WAIT');
 assert.equal(decide({...base,wallet:{cashCents:100000,positions:{BTC:{quantityUnits:100000,costCents:10000}}},prices:{BTC:9900,ETH:10000,SOL:10000}}).action,'SELL');
 assert.equal(decide({...base,wallet:{cashCents:100000,positions:{BTC:{quantityUnits:1,costCents:15000},ETH:{quantityUnits:1,costCents:15000},SOL:{quantityUnits:1,costCents:15000}}}}).action,'WAIT');
+const smoke={...base,prices:{BTC:8500000,ETH:300000,SOL:15000},previousPrices:{BTC:8500000,ETH:300000,SOL:15000},wallet:{cashCents:100000,positions:{},sequence:0},smokeMode:true};
+assert.deepEqual(decide(smoke),{action:'BUY',symbol:'BTC',notionalCents:5000,reason:'paper_smoke_entry'});
+assert.deepEqual(decide({...smoke,wallet:{cashCents:95000,positions:{BTC:{quantityUnits:580,costCents:5000}},sequence:1}}),{action:'SELL',symbol:'BTC',quantityUnits:580,reason:'paper_smoke_exit'});
+assert.equal(decide({...smoke,wallet:{...smoke.wallet,sequence:8}}).reason,'smoke_complete');
+assert.equal(decide({...smoke,halted:true}).reason,'halted');
+assert.equal(decide({...smoke,lastTradeMs:599999}).reason,'cooldown');
+assert.equal(decide({...smoke,prices:{...smoke.prices,BTC:0}}).reason,'invalid_prices');
+assert.equal(decide({...smoke,enabled:false}).reason,'disabled');
 console.log('Paper strategy safety tests passed');
