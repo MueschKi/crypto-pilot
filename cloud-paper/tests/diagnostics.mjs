@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
 const path=new URL('../scripts/summarize-tail.mjs',import.meta.url).pathname;
 const wrap=(events)=>events.map(message=>JSON.stringify({logs:[{message:[JSON.stringify(message)]}]})).join('\n')+'\n';
-const ok=spawnSync(process.execPath,[path],{input:wrap([{event:'paper_cron_tick',httpStatus:200,signal:'WAIT',reason:'no_signal',tradeId:null},{event:'paper_cron_tick',httpStatus:200,signal:'BUY',tradeId:'cron_123_BTC_BUY'}]),encoding:'utf8'});
+const ok=spawnSync(process.execPath,[path],{input:wrap([{event:'paper_cron_tick',httpStatus:200,signal:'WAIT',reason:'no_signal',tradeId:null},{event:'paper_cron_tick',httpStatus:200,signal:'BUY',tradeId:'cron_123_BTC_BUY',tradePersisted:true}]),encoding:'utf8'});
 assert.equal(ok.status,0,ok.stderr);
 assert.match(ok.stdout,/"ticks":2/);
 assert.match(ok.stdout,/"buys":1/);
 assert.match(ok.stdout,/"tradeIds":1/);
+assert.match(ok.stdout,/"persistedTrades":1/);
 assert.doesNotMatch(ok.stdout,/no_signal|cron_123/);
 const missing=spawnSync(process.execPath,[path],{input:'',encoding:'utf8'});
 assert.equal(missing.status,2);
@@ -14,3 +15,7 @@ const failure=spawnSync(process.execPath,[path],{input:wrap([{event:'paper_cron_
 assert.equal(failure.status,1);
 assert.doesNotMatch(failure.stdout,/secret unavailable/);
 console.log('Private cron diagnostics parser passed');
+
+const unverified=spawnSync(process.execPath,[path],{input:wrap([{event:'paper_cron_tick',httpStatus:200,signal:'BUY',tradeId:'cron_124_BTC_BUY'}]),encoding:'utf8'});
+assert.equal(unverified.status,1);
+assert.match(unverified.stdout,/"unverifiedTrades":1/);
