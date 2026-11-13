@@ -43,6 +43,8 @@ jobs:
         run: node cloud-paper/tests/market-guard.mjs
       - name: Verify persistent cron execution and duplicate safety
         run: node cloud-paper/tests/cron-integration.mjs
+      - name: Verify private cron diagnostic summaries
+        run: node cloud-paper/tests/diagnostics.mjs
       - name: Verify paper strategy risk gates
         run: node cloud-paper/tests/strategy.mjs
       - name: Confirm private preview configuration
