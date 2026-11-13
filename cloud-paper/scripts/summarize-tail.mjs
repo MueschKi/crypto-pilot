@@ -1,15 +1,19 @@
 // Accept Cloudflare Wrangler tail NDJSON on stdin; emit only allowlisted paper telemetry.
 // Never persist raw log messages, wallet balances, request headers, or secrets.
-const counts={ticks:0,errors:0,buys:0,sells:0,waits:0,tradeIds:0,persistedTrades:0,unverifiedTrades:0};
+const counts={tailEvents:0,consoleEntries:0,unparsedMessages:0,ticks:0,errors:0,buys:0,sells:0,waits:0,tradeIds:0,persistedTrades:0,unverifiedTrades:0};
 let buffer='';
 function record(line){
   let outer;try{outer=JSON.parse(line);}catch{return;}
+  if(outer&&typeof outer==='object')counts.tailEvents++;
   const logs=outer?.logs;
   if(!Array.isArray(logs))return;
   for(const entry of logs){
+    counts.consoleEntries++;
     for(const arg of (Array.isArray(entry?.message)?entry.message:[entry?.message])){
-      if(typeof arg!=='string')continue;
-      let msg;try{msg=JSON.parse(arg);}catch{continue;}
+      let msg;
+      if(typeof arg==='object'&&arg!==null)msg=arg;
+      else if(typeof arg==='string'){try{msg=JSON.parse(arg);}catch{counts.unparsedMessages++;continue;}}
+      else {counts.unparsedMessages++;continue;}
       if(msg?.event==='paper_cron_tick'){
         counts.ticks++;
         if(msg.httpStatus!==200)counts.errors++;
