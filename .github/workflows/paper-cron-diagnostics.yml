@@ -34,8 +34,18 @@ jobs:
           # 6 minutes covers at least one 5-minute cron interval.
           # Wrangler timeout 124 means a normal observation window, not a failure.
           set +e
-          timeout --signal=INT --kill-after=10s 370s npx --yes wrangler@4 tail cryptopilot-cloud-paper-preview --format json 2>/dev/null | node scripts/summarize-tail.mjs
+          timeout --signal=INT --kill-after=10s 370s npx --yes wrangler@4 tail cryptopilot-cloud-paper-preview --format json 2> /tmp/paper-tail-error.log | node scripts/summarize-tail.mjs
           status=( "${PIPESTATUS[@]}" )
           set -e
+          # Classify Wrangler stderr without exposing credentials or raw runtime data.
+          if grep -Eiq 'unauthoriz|forbidden|permission|authentication|code 10000|code 9109' /tmp/paper-tail-error.log; then
+            echo "::error::Cloudflare tail authorization or permission denied"
+          elif grep -Eiq 'unknown argument|unknown option|invalid.*(argument|option)' /tmp/paper-tail-error.log; then
+            echo "::error::Wrangler tail CLI option rejected"
+          elif grep -Eiq 'websocket|connection|network|timed out|timeout' /tmp/paper-tail-error.log; then
+            echo "::error::Cloudflare tail network or websocket failure"
+          elif [[ -s /tmp/paper-tail-error.log ]]; then
+            echo "::notice::Wrangler wrote diagnostic stderr; raw contents withheld"
+          fi
           if [[ "${status[1]}" -ne 0 ]]; then exit "${status[1]}"; fi
           if [[ "${status[0]}" -ne 0 && "${status[0]}" -ne 124 && "${status[0]}" -ne 130 ]]; then exit "${status[0]}"; fi
