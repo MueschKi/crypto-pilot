@@ -30,3 +30,10 @@ const unknownForm=spawnSync(process.execPath,[path],{input:JSON.stringify({logs:
 assert.equal(unknownForm.status,2);
 assert.match(unknownForm.stdout,/"tailEvents":1/);
 assert.match(unknownForm.stdout,/"unparsedMessages":1/);
+
+const nonJson=spawnSync(process.execPath,[path],{input:'Connected to tail stream\\n',encoding:'utf8'});
+assert.equal(nonJson.status,2);
+assert.match(nonJson.stdout,/"inputLines":1/);
+assert.match(nonJson.stdout,/"invalidJsonLines":1/);
+assert.doesNotMatch(nonJson.stdout,/Connected to tail stream/);
+assert.match(missing.stdout,/"inputLines":0/);
