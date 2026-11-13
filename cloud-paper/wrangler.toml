@@ -8,6 +8,8 @@ crons = ["*/5 * * * *"]
 
 [vars]
 PAPER_AUTOTRADE_ENABLED = "true"
+# Temporary bounded paper-only trade execution verification (4 BUY/SELL cycles).
+PAPER_SMOKE_TRADES_ENABLED = "true"
 
 # No public routes. Cron requires a separate PAPER_CRON_KEY secret (>=32 chars).
 [[durable_objects.bindings]]
