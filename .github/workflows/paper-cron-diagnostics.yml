@@ -1,0 +1,41 @@
+name: Private paper cron diagnostics
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+permissions:
+  contents: read
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate private paper-only configuration
+        run: |
+          grep -Fxq 'workers_dev = false' cloud-paper/wrangler.toml
+          ! grep -Eq '^route(s)?[[:space:]]*=' cloud-paper/wrangler.toml
+          node --check cloud-paper/scripts/summarize-tail.mjs
+      - name: Observe scheduled executions without exposing raw logs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          cd cloud-paper
+          # 6 minutes covers at least one 5-minute cron interval.
+          # Wrangler timeout 124 means a normal observation window, not a failure.
+          set +e
+          timeout --signal=INT --kill-after=10s 370s npx --yes wrangler@4 tail cryptopilot-cloud-paper-preview --format json 2>/dev/null | node scripts/summarize-tail.mjs
+          status=( "${PIPESTATUS[@]}" )
+          set -e
+          if [[ "${status[1]}" -ne 0 ]]; then exit "${status[1]}"; fi
+          if [[ "${status[0]}" -ne 0 && "${status[0]}" -ne 124 && "${status[0]}" -ne 130 ]]; then exit "${status[0]}"; fi
