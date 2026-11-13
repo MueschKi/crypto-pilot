@@ -7,7 +7,7 @@ function record(line){
   const logs=outer?.logs;
   if(!Array.isArray(logs))return;
   for(const entry of logs){
-    for(const arg of entry?.message||[]){
+    for(const arg of (Array.isArray(entry?.message)?entry.message:[entry?.message])){
       if(typeof arg!=='string')continue;
       let msg;try{msg=JSON.parse(arg);}catch{continue;}
       if(msg?.event==='paper_cron_tick'){
