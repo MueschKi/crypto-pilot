@@ -19,3 +19,14 @@ console.log('Private cron diagnostics parser passed');
 const unverified=spawnSync(process.execPath,[path],{input:wrap([{event:'paper_cron_tick',httpStatus:200,signal:'BUY',tradeId:'cron_124_BTC_BUY'}]),encoding:'utf8'});
 assert.equal(unverified.status,1);
 assert.match(unverified.stdout,/"unverifiedTrades":1/);
+
+const objectForm=spawnSync(process.execPath,[path],{input:JSON.stringify({logs:[{message:[{event:'paper_cron_tick',httpStatus:200,signal:'SELL',tradeId:'cron_125_BTC_SELL',tradePersisted:true}]}]})+'\n',encoding:'utf8'});
+assert.equal(objectForm.status,0,objectForm.stderr);
+assert.match(objectForm.stdout,/"tailEvents":1/);
+assert.match(objectForm.stdout,/"consoleEntries":1/);
+assert.match(objectForm.stdout,/"sells":1/);
+assert.match(objectForm.stdout,/"persistedTrades":1/);
+const unknownForm=spawnSync(process.execPath,[path],{input:JSON.stringify({logs:[{message:['unstructured line']} ]})+'\n',encoding:'utf8'});
+assert.equal(unknownForm.status,2);
+assert.match(unknownForm.stdout,/"tailEvents":1/);
+assert.match(unknownForm.stdout,/"unparsedMessages":1/);
