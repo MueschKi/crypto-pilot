@@ -34,7 +34,7 @@ jobs:
           # 6 minutes covers at least one 5-minute cron interval.
           # Wrangler timeout 124 means a normal observation window, not a failure.
           set +e
-          timeout --signal=INT --kill-after=10s 370s npx --yes wrangler@4 tail cryptopilot-cloud-paper-preview --format json 2>/dev/null | node scripts/summarize-tail.mjs
+          timeout --signal=INT --kill-after=10s 370s npx --yes wrangler@4 tail cryptopilot-cloud-paper-preview --format json 2> >(sed -E 's/[A-Za-z0-9_\\-]{32,}/[redacted]/g' >&2) | node scripts/summarize-tail.mjs
           status=( "${PIPESTATUS[@]}" )
           set -e
           if [[ "${status[1]}" -ne 0 ]]; then exit "${status[1]}"; fi
