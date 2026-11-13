@@ -52,6 +52,22 @@ assert.equal(data.get('state')?.sequence,2,'fractional BTC SELL must persist');
 assert.equal(data.get('journal:2')?.fill.side,'SELL');
 assert.equal(Object.keys(data.get('state').positions).length,0);
 
+// Smoke mode executes real persistent paper fills without artificial price changes.
+data=new Map();
+env.PAPER_SMOKE_TRADES_ENABLED='true';
+await storage.put('cron:last',{now:now-300000,prices:realistic,lastTradeMs:0});
+const smokeBuy=await tick(now,realistic);
+assert.equal(smokeBuy.status,200,await smokeBuy.clone().text());
+assert.equal((await smokeBuy.json()).trade?.persisted,true);
+assert.equal(data.get('journal:1')?.fill.side,'BUY');
+assert.equal(data.get('state')?.sequence,1);
+await storage.put('cron:last',{now:now-300000,prices:realistic,lastTradeMs:0});
+const smokeSell=await tick(now,realistic);
+assert.equal(smokeSell.status,200,await smokeSell.clone().text());
+assert.equal((await smokeSell.json()).trade?.persisted,true);
+assert.equal(data.get('journal:2')?.fill.side,'SELL');
+assert.equal(data.get('state')?.sequence,2);
+env.PAPER_SMOKE_TRADES_ENABLED='false';
 console.log('Cloud cron wallet integration passed');
 
 // Scheduled Worker must surface a rejected cron as an observable failure.
