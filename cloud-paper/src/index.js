@@ -57,7 +57,7 @@ export default {
         if(result instanceof Response){
           const payload=await result.json().catch(()=>({error:'invalid cron response'}));
           // Operational evidence without wallet balances, keys or personal data.
-          console.log(JSON.stringify({event:'paper_cron_tick',httpStatus:result.status,mode:'PAPER_ONLY',signal:payload.signal||null,reason:payload.reason||payload.error||null,tradeId:payload.trade?.id||null}));
+          console.log(JSON.stringify({event:'paper_cron_tick',httpStatus:result.status,mode:'PAPER_ONLY',signal:payload.signal||null,reason:payload.reason||payload.error||null,tradeId:payload.trade?.id||null,tradePersisted:payload.trade?.persisted===true}));
           if(!result.ok)throw Error('paper cron rejected with HTTP '+result.status);
         } else {
           console.error(JSON.stringify({event:'paper_cron_failure',reason:result?.reason||'invalid result'}));
@@ -173,7 +173,16 @@ export class PaperLedger {
               const fill={id:'cron_'+Math.floor(now/300000)+'_'+signal.symbol+'_'+signal.action,sequence:wallet.sequence+1,symbol:signal.symbol,side:signal.action,quantityUnits:units,priceCentsPerUnit:price,feeCents:fee};
               const filled=await this.fetch(new Request('https://internal.invalid/v1/paper/fill',{method:'POST',headers:{'x-internal-paper-token-id':'cloud_cron_internal'},body:JSON.stringify(fill)}));
               if(!filled.ok)return response({error:'fill rejected',status:filled.status},503);
-              trade={id:fill.id,side:fill.side,symbol:fill.symbol};
+              // Read back all three independently stored records before reporting a persisted trade.
+              const [savedState,savedJournal,savedOrder]=await Promise.all([
+                storage.get('state'),storage.get('journal:'+fill.sequence),storage.get('order:'+fill.id)
+              ]);
+              if(savedState?.sequence!==fill.sequence
+                || savedJournal?.sequence!==fill.sequence
+                || JSON.stringify(savedJournal?.fill)!==JSON.stringify(fill)
+                || JSON.stringify(savedOrder?.fill)!==JSON.stringify(fill))
+                return response({error:'paper trade persistence verification failed'},503);
+              trade={id:fill.id,side:fill.side,symbol:fill.symbol,persisted:true};
             }
           }
         }
