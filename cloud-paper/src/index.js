@@ -156,7 +156,7 @@ export class PaperLedger {
         if(last && (!Number.isSafeInteger(last.now)||last.now>now))return response({error:'invalid checkpoint'},503);
         if(last && now-last.now<300000)return response({reason:'not_due',mode:'PAPER_ONLY'});
         const {decidePaperTrade}=await import('./strategy.mjs');
-        const signal=decidePaperTrade({prices,previousPrices:last?.prices,wallet,enabled:true,halted:wallet.halted,nowMs:now,lastTradeMs:last?.lastTradeMs||0});
+        const signal=decidePaperTrade({prices,previousPrices:last?.prices,wallet,enabled:true,halted:wallet.halted,nowMs:now,lastTradeMs:last?.lastTradeMs||0,smokeMode:this.env.PAPER_SMOKE_TRADES_ENABLED==='true'});
         let trade=null;
         if(signal.action!=='WAIT'){
           const price=prices[signal.symbol];
