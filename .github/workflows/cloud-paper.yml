@@ -4,10 +4,12 @@ on:
     paths:
       - 'cloud-paper/**'
       - '.github/workflows/cloud-paper.yml'
+      - '.github/workflows/paper-cron-diagnostics.yml'
   pull_request:
     paths:
       - 'cloud-paper/**'
       - '.github/workflows/cloud-paper.yml'
+      - '.github/workflows/paper-cron-diagnostics.yml'
   workflow_dispatch:
     inputs:
       deploy_preview:
