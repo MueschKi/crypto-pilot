@@ -43,6 +43,8 @@ jobs:
         run: node cloud-paper/tests/checkpoint.mjs
       - name: Verify market quote safety gate
         run: node cloud-paper/tests/market-guard.mjs
+      - name: Verify fresh and unambiguous public market quotes
+        run: node cloud-paper/tests/market-freshness.mjs
       - name: Verify persistent cron execution and duplicate safety
         run: node cloud-paper/tests/cron-integration.mjs
       - name: Verify private cron diagnostic summaries
