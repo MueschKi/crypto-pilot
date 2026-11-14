@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {fetchPaperPrices} from '../src/cron.mjs';
+const values={XXBTZEUR:{c:['85000']},XETHZEUR:{c:['3000']},SOLEUR:{c:['150']}};
+const make=(result,date=new Date().toUTCString())=>async()=>({ok:true,headers:{get:k=>k==='date'?date:null},json:async()=>({error:[],result})});
+assert.deepEqual(await fetchPaperPrices(make(values)),{BTC:8500000,ETH:300000,SOL:15000});
+await assert.rejects(fetchPaperPrices(make(values,new Date(Date.now()-300000).toUTCString())),/stale market response/);
+await assert.rejects(fetchPaperPrices(make({...values,XBTZEUR:{c:['86000']}})),/duplicate market symbol/);
+await assert.rejects(fetchPaperPrices(make({XXBTZEUR:values.XXBTZEUR})),/missing price/);
+await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['NaN']}})),/invalid price/);
+console.log('Public quote freshness and ambiguity gates passed');
