@@ -1,11 +1,11 @@
 // Accept Cloudflare Wrangler tail NDJSON on stdin; emit only allowlisted paper telemetry.
 // Never persist raw log messages, wallet balances, request headers, or secrets.
-const counts={inputLines:0,invalidJsonLines:0,tailEvents:0,consoleEntries:0,unparsedMessages:0,ticks:0,errors:0,buys:0,sells:0,waits:0,tradeIds:0,persistedTrades:0,unverifiedTrades:0};
+const counts={inputLines:0,invalidJsonLines:0,ansiLines:0,wranglerStatusLines:0,otherNonJsonLines:0,tailEvents:0,consoleEntries:0,unparsedMessages:0,ticks:0,errors:0,buys:0,sells:0,waits:0,tradeIds:0,persistedTrades:0,unverifiedTrades:0};
 let buffer='';
 function record(line){
   if(!line.trim())return;
   counts.inputLines++;
-  let outer;try{outer=JSON.parse(line);}catch{counts.invalidJsonLines++;return;}
+  let outer;try{outer=JSON.parse(line);}catch{counts.invalidJsonLines++;if(/\x1b\[[0-9;]*m/.test(line))counts.ansiLines++;else if(/^\s*(?:Connected|Connecting|Listening|Waiting|Successfully|⛅|wrangler|\[wrangler)/i.test(line))counts.wranglerStatusLines++;else counts.otherNonJsonLines++;return;}
   if(outer&&typeof outer==='object')counts.tailEvents++;
   const logs=outer?.logs;
   if(!Array.isArray(logs))return;
