@@ -77,7 +77,7 @@ export default {
     if (!identityClaims) return denied();
     if (!env.PAPER_LEDGER || !env.PAPER_SESSIONS) return response({error:"storage unavailable"},503);
     const url = new URL(request.url);
-    if (!["/v1/paper/status","/v1/paper/journal","/v1/paper/halt","/v1/paper/fill","/v1/paper/revoke"].includes(url.pathname))
+    if (!["/v1/paper/status","/v1/paper/journal","/v1/paper/halt","/v1/paper/pause","/v1/paper/resume","/v1/paper/fill","/v1/paper/revoke"].includes(url.pathname))
       return response({error:"not found"},404);
     const method = ["/v1/paper/status","/v1/paper/journal"].includes(url.pathname)?"GET":"POST";
     if (request.method !== method) return response({error:"method not allowed"},405);
@@ -145,6 +145,9 @@ export class PaperLedger {
       const key=this.env?.PAPER_CRON_KEY;
       if(typeof key!=='string'||key.length<32||request.headers.get('x-paper-cron-key')!==key)return denied();
       if(this.env.PAPER_AUTOTRADE_ENABLED!=='true')return response({enabled:false,mode:'PAPER_ONLY'});
+      // Operator pause survives Worker restarts and never clears an emergency halt.
+      try { if(await this.state.storage.get('cron:paused')===true)return response({enabled:false,reason:'operator_paused',mode:'PAPER_ONLY'}); }
+      catch (_) { return response({error:'cron control storage unavailable'},503); }
       try {
         const {now,prices}=await request.json();
         if(!Number.isSafeInteger(now)||Math.abs(Date.now()-now)>120000)return response({error:'invalid clock'},400);
@@ -242,6 +245,22 @@ export class PaperLedger {
       try { await this.state.storage.put("revoked:"+tokenId,true); }
       catch (_) { return response({error:"paper storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
       return response({revoked:true,mode:"PAPER_ONLY",realTrading:false});
+    }
+    if (path === "/v1/paper/pause" || path === "/v1/paper/resume") {
+      // Authenticated operator control; storage failures fail closed. A halt is
+      // irreversible via resume and must be handled by an explicit recovery plan.
+      try {
+        const paused = await this.state.storage.transaction(async txn => {
+          const wallet=await txn.get("state") || INITIAL;
+          if(!validState(wallet) || wallet.halted)throw new PaperRuleViolation("halted or invalid wallet");
+          const next=path==="/v1/paper/pause";
+          await txn.put("cron:paused",next);
+          return next;
+        });
+        return response({enabled:!paused,paused,mode:"PAPER_ONLY",realTrading:false});
+      } catch(e) {
+        return response({error:e?.name==="PaperRuleViolation"?"halted or invalid wallet":"control storage unavailable",mode:"PAPER_ONLY",realTrading:false},503);
+      }
     }
     if (path === "/v1/paper/halt") {
       let state;
