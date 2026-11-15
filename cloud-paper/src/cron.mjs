@@ -34,7 +34,9 @@ export async function fetchPaperPrices(fetcher=fetch) {
      Math.max(0,responseAgeMs)+cacheAgeMs>120000)throw Error('stale market response');
   const result={};
   for(const [key,value] of Object.entries(json.result)){
-    // Accept only the three explicitly requested Kraken EUR instruments.\n    // Substring matching could silently interpret an unrelated asset as BTC/ETH/SOL.\n    const symbol=({XXBTZEUR:'BTC',XBTZEUR:'BTC',XETHZEUR:'ETH',ETHEUR:'ETH',SOLEUR:'SOL'})[key]||null;
+    // Accept only the three explicitly requested Kraken EUR instruments.
+    // Substring matching could silently interpret an unrelated asset as BTC/ETH/SOL.
+    const symbol=({XXBTZEUR:'BTC',XBTZEUR:'BTC',XETHZEUR:'ETH',ETHEUR:'ETH',SOLEUR:'SOL'})[key]||null;
     if(!symbol)continue;
     if(Object.hasOwn(result,symbol))throw Error('duplicate market symbol');
     const price=Number(value?.c?.[0]);
