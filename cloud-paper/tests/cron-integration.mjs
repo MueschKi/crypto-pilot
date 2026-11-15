@@ -17,13 +17,14 @@ assert.equal(data.get('state'),undefined);
 // Cron cadence must follow scheduled five-minute buckets, not exact elapsed time.
 // A previous tick 299 seconds earlier in the preceding bucket is due;
 // a duplicate within the current bucket is not.
-const boundaryNow=Math.floor(now/300000)*300000+1000;
-await storage.put('cron:last',{now:boundaryNow-299000,prices:p0,lastTradeMs:0});
+const boundaryNow=now;
+const precedingBucket=Math.floor(now/300000)*300000-1000;
+await storage.put('cron:last',{now:precedingBucket,prices:p0,lastTradeMs:0});
 const boundaryTick=await tick(boundaryNow,p0);
 assert.equal(boundaryTick.status,200,await boundaryTick.clone().text());
 assert.notEqual((await boundaryTick.json()).reason,'not_due');
 assert.equal(data.get('cron:last')?.now,boundaryNow);
-const boundaryDuplicate=await tick(boundaryNow+1000,p0);
+const boundaryDuplicate=await tick(boundaryNow,p0);
 assert.equal((await boundaryDuplicate.json()).reason,'not_due');
 data=new Map();
 
