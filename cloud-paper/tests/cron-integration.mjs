@@ -66,6 +66,22 @@ assert.equal(data.get('state')?.sequence,2,'fractional BTC SELL must persist');
 assert.equal(data.get('journal:2')?.fill.side,'SELL');
 assert.equal(Object.keys(data.get('state').positions).length,0);
 
+// A corrupted persisted checkpoint must fail closed without overwriting it or trading.
+for (const bad of [
+  {now:now-300000,prices:{...realistic,BTC:-1},lastTradeMs:0},
+  {now:now-300000,prices:realistic,lastTradeMs:now+1},
+  {now:now-300000,prices:realistic,lastTradeMs:NaN},
+  {now:-1,prices:realistic,lastTradeMs:0}
+]) {
+  data=new Map();
+  await storage.put('cron:last',bad);
+  const rejected=await tick(now,{...realistic,BTC:8600000});
+  assert.equal(rejected.status,503,'corrupt checkpoint must reject cron');
+  assert.deepEqual(data.get('cron:last'),bad,'corrupt checkpoint must not be overwritten');
+  assert.equal(data.get('state'),undefined,'corrupt checkpoint must not create fills');
+  assert.equal(data.get('journal:1'),undefined);
+}
+
 // Checkpoint storage failure must never produce a paper fill.
 data=new Map();
 await storage.put('cron:last',{now:now-300000,prices:realistic,lastTradeMs:0});
