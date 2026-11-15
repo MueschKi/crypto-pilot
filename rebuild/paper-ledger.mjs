@@ -1,0 +1,45 @@
+// Pure paper-only ledger. No exchange order endpoints or credentials.
+export function applyPaperOrder(state, order, policy = {}) {
+  const feeRate = policy.feeRate ?? 0.004;
+  const slippageRate = policy.slippageRate ?? 0.001;
+  const maxExposure = policy.maxExposure ?? 0.4;
+  const maxAgeMs = policy.maxAgeMs ?? 120000;
+  const now = order.now;
+  if (!state || !Array.isArray(state.trades) || !Number.isFinite(state.cash) || state.cash < 0 ||
+      !Number.isFinite(state.quantity) || state.quantity < 0 || !Number.isFinite(state.costBasis) || state.costBasis < 0)
+    throw new Error("invalid wallet");
+  if (!state.enabled || state.emergencyStop) return { state, status: "disabled" };
+  if (!order || typeof order.id !== "string" || !/^[a-zA-Z0-9:_-]{1,128}$/.test(order.id))
+    throw new Error("invalid id");
+  if (state.trades.some(t => t.id === order.id)) return { state, status: "duplicate" };
+  if (!["BUY", "SELL"].includes(order.side) || !Number.isFinite(order.price) || order.price <= 0 ||
+      !Number.isFinite(order.quantity) || order.quantity <= 0 || !Number.isFinite(now) ||
+      !Number.isFinite(order.priceTimestamp) || order.priceTimestamp > now ||
+      now - order.priceTimestamp > maxAgeMs) throw new Error("invalid or stale quote/order");
+  if (![feeRate, slippageRate, maxExposure].every(Number.isFinite) ||
+      feeRate < 0 || feeRate >= 1 || slippageRate < 0 || slippageRate >= 1 ||
+      maxExposure <= 0 || maxExposure > 1) throw new Error("invalid policy");
+  const executionPrice = order.price * (order.side === "BUY" ? 1 + slippageRate : 1 - slippageRate);
+  const notional = executionPrice * order.quantity;
+  const fee = notional * feeRate;
+  if (!Number.isFinite(notional) || !Number.isFinite(fee)) throw new Error("overflow");
+  const next = { ...state, trades: [...state.trades] };
+  if (order.side === "BUY") {
+    const equity = state.cash + state.quantity * order.price;
+    if (notional + fee > state.cash + 1e-9) return { state, status: "insufficient_cash" };
+    if ((state.quantity + order.quantity) * order.price > equity * maxExposure + 1e-9)
+      return { state, status: "exposure_limit" };
+    next.cash -= notional + fee;
+    next.quantity += order.quantity;
+    next.costBasis += notional + fee;
+  } else {
+    if (order.quantity > state.quantity + 1e-9) return { state, status: "insufficient_position" };
+    const basisRemoved = state.costBasis * (order.quantity / state.quantity);
+    next.cash += notional - fee;
+    next.quantity -= order.quantity;
+    next.costBasis -= basisRemoved;
+    if (next.quantity < 1e-9) { next.quantity = 0; next.costBasis = 0; }
+  }
+  next.trades.push({ id: order.id, side: order.side, quantity: order.quantity, executionPrice, fee, priceTimestamp: order.priceTimestamp, at: now });
+  return { state: next, status: "filled" };
+}
