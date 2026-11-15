@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"><meta name="theme-color" content="#d7d7d0"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="Eieralarm LCD"><title>EIERALARM LCD – Retro-Handheld</title><meta name="description" content="Eieralarm: das nostalgische Ei-Fangspiel im LCD-Handheld-Design – im Querformat spielbar.">
+<style>
+:root{color-scheme:light;font-family:system-ui,-apple-system,sans-serif;touch-action:manipulation}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#aaa9a2}body{display:flex;align-items:center;justify-content:center;overscroll-behavior:none;-webkit-user-select:none;user-select:none}button{font:inherit;touch-action:manipulation;-webkit-tap-highlight-color:transparent}#handheld{width:min(99.5vw,calc(99.5dvh * 1.96364));aspect-ratio:1080/550;position:relative;max-height:99.5dvh;filter:drop-shadow(0 1.7vmin 1.5vmin #3336)}svg{display:block;width:100%;height:100%}.lcd{font-family:'Courier New',monospace;letter-spacing:2px}#controls{position:absolute;inset:0;pointer-events:none}.face-button{position:absolute;pointer-events:auto;border:2px solid #8d3131;border-radius:50%;background:radial-gradient(circle at 34% 24%,#ff8884 0%,#c63137 39%,#9a232b 78%,#612329 100%);box-shadow:inset 0 2px 5px #fff8,inset 0 -4px 8px #2e080777,0 3px 3px #32323266;display:grid;place-content:center;color:#fee8e2;font-size:clamp(12px,2.5vmin,21px);font-weight:900;text-shadow:0 1px 2px #8008;cursor:pointer;width:6.7%;aspect-ratio:1}.face-button:active,.face-button.selected{background:radial-gradient(circle at 40% 45%,#ec6c67,#ac242a 70%);box-shadow:inset 0 3px 9px #3f0509aa,0 1px 1px #777;transform:translateY(1px)}.face-button[data-lane=tl]{left:4.45%;top:34.3%}.face-button[data-lane=bl]{left:4.45%;top:66.5%}.face-button[data-lane=tr]{right:4.45%;top:34.3%}.face-button[data-lane=br]{right:4.45%;top:66.5%}.micro-button{pointer-events:auto;position:absolute;right:6.0%;width:4.3%;height:5.6%;border:1px solid #272d30;border-radius:100px;background:linear-gradient(#56616a,#11181d);box-shadow:inset 0 1px 2px #b5c4c4,0 2px 2px #5557;cursor:pointer}.micro-button:active{background:#151719}.micro-button[data-action=classic]{top:15.2%}.micro-button[data-action=turbo]{top:23.2%}.micro-button[data-action=pause]{top:31.2%}.micro-button.active{outline:2px solid #e55450;outline-offset:2px}.start-button{pointer-events:auto;position:absolute;top:61%;left:50%;transform:translateX(-50%);white-space:nowrap;border:2px solid #33483d;color:#1b382c;background:#c1cfb1f5;padding:1.1% 2.7%;border-radius:4px;font-family:'Courier New',monospace;font-weight:bold;font-size:clamp(13px,2.3vmin,23px);box-shadow:3px 3px 0 #34483866;cursor:pointer}.start-button[hidden]{display:none}.topbar{position:absolute;top:1.8%;left:22%;width:56%;height:10%;display:flex;justify-content:space-between;align-items:center;pointer-events:none}.topbar span{font-family:'Courier New',monospace;color:#83847c;font-size:clamp(8px,1.65vmin,13px);font-weight:bold}#message{position:absolute;left:36%;top:49%;width:29%;text-align:center;color:#273b32;font:bold clamp(11px,1.85vmin,18px) 'Courier New',monospace;line-height:1.35;pointer-events:none;text-shadow:0 1px #e5ead7}#message:empty{display:none}#rotate{display:none;position:fixed;inset:0;background:#d1d1c9;color:#263128;align-items:center;justify-content:center;text-align:center;padding:30px;z-index:10}#rotate .hint{font-size:19px;font-weight:700;max-width:320px;line-height:1.6}#rotate .phone{font-size:74px;display:block;transform:rotate(90deg);margin-bottom:30px}#footer{position:fixed;bottom:3px;right:8px;font-size:9px;color:#4f4e48;opacity:.7}@media (orientation:portrait){#rotate{display:flex}#footer{display:none}}@media (max-height:420px){#handheld{width:min(99.5vw,calc(99.5dvh * 1.96364))}#footer{display:none}}
+</style></head><body>
+<div id="rotate"><div class="hint"><span class="phone">▣</span>Bitte iPhone ins <strong>Querformat</strong> drehen.<div style="font-size:14px;font-weight:400;margin-top:16px">Falls nötig, die Ausrichtungssperre im Kontrollzentrum ausschalten.</div></div></div>
+<div id="handheld" aria-label="Eieralarm Retro-Handheld im Querformat">
+<svg viewBox="0 0 1080 550" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Silbernes Handheld mit vier roten Tasten, Hühnern und Wolf auf einem LCD-Bildschirm">
+<defs><linearGradient id="metal" x1="0" x2=".3" y1="0" y2="1"><stop stop-color="#f0f0ec"/><stop offset=".27" stop-color="#e0dfda"/><stop offset=".72" stop-color="#c8c7c2"/><stop offset="1" stop-color="#b5b5b0"/></linearGradient><linearGradient id="glass" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#acb8a4"/><stop offset="1" stop-color="#b5c5b0"/></linearGradient><linearGradient id="bezel" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#8a8c88"/><stop offset=".5" stop-color="#303a37"/><stop offset="1" stop-color="#707a75"/></linearGradient><pattern id="pixels" width="5" height="5" patternUnits="userSpaceOnUse"><circle cx="1.5" cy="1.5" r=".4" fill="#30443c" opacity=".13"/></pattern><filter id="engrave"><feGaussianBlur stdDeviation=".2"/></filter></defs>
+<rect x="4" y="4" width="1072" height="542" rx="54" fill="#a9a9a4" stroke="#666862" stroke-width="5"/><rect x="12" y="11" width="1056" height="520" rx="49" fill="url(#metal)" stroke="#f9f9f6" stroke-width="3"/><path d="M32 480 Q60 524 130 524 H950 Q1030 524 1049 470" fill="none" stroke="#949995" stroke-width="2" opacity=".6"/>
+<rect x="166" y="100" width="755" height="374" rx="21" fill="#888d87" stroke="#faf9f5" stroke-width="8"/><rect x="178" y="113" width="729" height="349" rx="8" fill="url(#bezel)" stroke="#555956" stroke-width="5"/><rect x="189" y="123" width="708" height="329" rx="1" fill="url(#glass)" stroke="#1d2824" stroke-width="7"/>
+<rect x="196" y="130" width="694" height="314" fill="url(#pixels)" opacity=".6"/>
+<!-- Original LCD layout, new independently drawn artwork. -->
+<g id="lcd-scene" fill="none" stroke="#30453b" stroke-linecap="round" stroke-linejoin="round">
+<g id="houses" stroke-width="3.2">
+ <g transform="translate(219 173)"><path d="M-7 26 L-7 -17 L22 -41 L51 -17 L51 26 M-12 -17 L22 -46 L57 -17" stroke="#7b5648" stroke-width="5"/><path d="M0 5 H46 M2 20 V5 M18 20 V5 M36 20 V5" stroke="#536c51" stroke-width="4"/><path d="M20 -12 Q0 -21 3 2 Q22 16 40 0 Q44 -16 28 -19 L18 -31 L10 -19" fill="#b2bbaf"/><path d="M35 -7 l12 5 -12 5" fill="#7b5648"/><circle cx="32" cy="-12" r="2.5" fill="#253a31"/></g>
+ <g transform="translate(812 173)"><path d="M-7 26 L-7 -17 L22 -41 L51 -17 L51 26 M-12 -17 L22 -46 L57 -17" stroke="#7b5648" stroke-width="5"/><path d="M0 5 H46 M2 20 V5 M18 20 V5 M36 20 V5" stroke="#536c51" stroke-width="4"/><path d="M22 -12 Q2 -21 3 2 Q22 16 42 0 Q45 -16 29 -19 L20 -31 L13 -19" fill="#b2bbaf"/><path d="M11 -7 l-11 5 11 5" fill="#7b5648"/><circle cx="17" cy="-12" r="2.5" fill="#253a31"/></g>
+ <g transform="translate(219 329)"><path d="M-7 26 L-7 -17 L22 -41 L51 -17 L51 26 M-12 -17 L22 -46 L57 -17" stroke="#7b5648" stroke-width="5"/><path d="M0 5 H46 M2 20 V5 M18 20 V5 M36 20 V5" stroke="#536c51" stroke-width="4"/><path d="M20 -12 Q0 -21 3 2 Q22 16 40 0 Q44 -16 28 -19 L18 -31 L10 -19" fill="#b2bbaf"/><path d="M35 -7 l12 5 -12 5" fill="#7b5648"/><circle cx="32" cy="-12" r="2.5" fill="#253a31"/></g>
+ <g transform="translate(812 329)"><path d="M-7 26 L-7 -17 L22 -41 L51 -17 L51 26 M-12 -17 L22 -46 L57 -17" stroke="#7b5648" stroke-width="5"/><path d="M0 5 H46 M2 20 V5 M18 20 V5 M36 20 V5" stroke="#536c51" stroke-width="4"/><path d="M22 -12 Q2 -21 3 2 Q22 16 42 0 Q45 -16 29 -19 L20 -31 L13 -19" fill="#b2bbaf"/><path d="M11 -7 l-11 5 11 5" fill="#7b5648"/><circle cx="17" cy="-12" r="2.5" fill="#253a31"/></g>
+</g>
+<g stroke="#98594d" stroke-width="6"><path d="M258 222 L459 298"/><path d="M823 222 L622 298"/><path d="M258 366 L459 407"/><path d="M823 366 L622 407"/></g>
+<g stroke="#334c3f" stroke-width="3"><path d="M258 226 L459 302"/><path d="M823 226 L622 302"/><path d="M258 370 L459 411"/><path d="M823 370 L622 411"/></g>
+<g id="hare" transform="translate(313 161)" opacity=".52"><path d="M-14 -12 L-24 -43 Q-13 -50 -6 -22 L5 -52 Q18 -53 13 -11 Q30 -2 20 21 Q9 36 -10 22 Q-29 4 -14 -12Z" fill="#31443c"/><circle cx="3" cy="-1" r="2" fill="#b3c2ac"/><path d="M-22 22 H24"/></g>
+<path d="M355 427 h40 m288 0 h40 M394 441 h55 m170 0 h55" stroke="#5b7a5f" stroke-width="2.5"/>
+</g>
+<g id="eggs" fill="#263b31" stroke="#263b31"></g>
+<g id="wolf" transform="translate(0 0)" stroke="#263a32" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M523 382 L507 437 L482 442" fill="none" stroke-width="10"/><path d="M566 382 L576 435 L598 441" fill="none" stroke-width="10"/><path d="M481 442 Q470 433 474 448 L508 448 M573 444 Q590 428 602 443 L604 450 L571 450" fill="#283f35" stroke-width="3"/>
+ <path d="M503 365 Q488 351 490 333 L485 312 Q509 303 537 316 Q568 300 584 320 L587 346 Q590 364 571 382Z" fill="#526c5d" stroke-width="5"/><path d="M574 371 Q606 352 601 393 L577 396" fill="#51695c" stroke-width="4"/>
+ <path d="M503 317 L491 271 L526 292 L549 276 L575 246 L575 304 Q605 330 582 348 Q557 365 521 351 Q502 339 503 317Z" fill="#617e6c" stroke-width="5"/>
+ <path d="M500 281 L511 300 L504 304 M560 276 L570 272 L568 299" fill="#c5c9b2" stroke-width="3"/><path d="M545 340 Q565 324 588 325 Q613 330 592 344 Q568 353 545 340Z" fill="#bcc6b0" stroke-width="3"/><ellipse cx="590" cy="326" rx="9" ry="6" fill="#263b31"/>
+ <ellipse cx="533" cy="318" rx="6" ry="11" fill="#c5cdb9" stroke-width="2"/><ellipse cx="552" cy="315" rx="6" ry="11" fill="#c5cdb9" stroke-width="2"/><circle cx="537" cy="319" r="3.2" fill="#263b31"/><circle cx="554" cy="316" r="3.2" fill="#263b31"/><path d="M570 343 q12 10 20 -1" fill="none" stroke-width="2"/>
+ <path d="M514 361 L543 375 L564 363" fill="none" stroke="#975b50" stroke-width="9"/>
+ <path id="arm" d="M516 365 Q492 348 473 318" fill="none" stroke-width="13"/>
+ <g id="basket" transform="translate(470 303)"><path d="M-29 -9 L-20 22 Q0 36 20 22 L29 -9Z" fill="#627a65" stroke-width="3.4"/><path d="M-31 -8 H31 M-22 6 H22 M-18 18 H18 M-12 -4 L-10 25 M0 -6 V28 M12 -4 L10 25" fill="none" stroke-width="2.3"/></g>
+</g>
+<g id="missIcons" fill="#334c3e"></g>
+<text id="lcdScore" class="lcd" x="676" y="164" font-size="40" font-weight="bold" text-anchor="middle" fill="#2c4338">000</text><text x="685" y="182" text-anchor="middle" fill="#557461" font-family="monospace" font-size="12">PUNKTE</text>
+<text id="lcdMode" x="533" y="162" text-anchor="middle" fill="#486353" font-family="monospace" font-size="17">SPIEL A</text>
+<text x="545" y="84" text-anchor="middle" fill="#c54b45" font-weight="800" font-size="32" letter-spacing="3">EIERALARM!</text>
+<text x="545" y="505" text-anchor="middle" fill="#454d4b" font-size="26" letter-spacing="4" font-weight="700">RETRO · LCD · 1984</text>
+<text x="947" y="93" fill="#454948" font-size="13" font-weight="bold">SPIEL A</text><text x="947" y="138" fill="#454948" font-size="13" font-weight="bold">SPIEL B</text><text x="947" y="183" fill="#454948" font-size="13" font-weight="bold">PAUSE</text>
+<text x="47" y="147" fill="#70736f" font-size="11" font-weight="bold">OBEN</text><text x="44" y="325" fill="#70736f" font-size="11" font-weight="bold">UNTEN</text><text x="969" y="479" fill="#777976" font-size="11" font-weight="bold">v1.1</text>
+</svg>
+<div class="topbar"><span>LCD HANDHELD</span><span id="record">REKORD 000</span></div>
+<div id="controls"><button class="face-button" data-lane="tl" aria-label="Links oben">↖</button><button class="face-button" data-lane="bl" aria-label="Links unten">↙</button><button class="face-button" data-lane="tr" aria-label="Rechts oben">↗</button><button class="face-button" data-lane="br" aria-label="Rechts unten">↘</button><button class="micro-button active" data-action="classic" aria-label="Spiel A starten"></button><button class="micro-button" data-action="turbo" aria-label="Spiel B starten"></button><button class="micro-button" data-action="pause" aria-label="Pause"></button></div>
+<div id="message">4 EIERBAHNEN<br>3 FEHLER ERLAUBT</div><button id="start" class="start-button">▶ SPIEL A STARTEN</button>
+</div><small id="footer">Eigenständige Hommage – keine offizielle Elektronika-Version.</small>
+<script>
+/* Eieralarm! — standalone deterministic arcade rules, ES modules. */
+const LANES = ['tl', 'tr', 'bl', 'br'];
+const MODE = Object.freeze({ classic: 'classic', turbo: 'turbo' });
+class EggGame {
+  constructor(random = Math.random) {
+    this.random = random;
+    this.reset();
+  }
+  reset() {
+    this.status = 'ready'; this.mode = MODE.classic; this.score = 0;
+    this.misses = 0; this.caught = 0; this.combo = 0; this.maxCombo = 0;
+    this.lane = 'bl'; this.eggs = []; this.particles = [];
+    this.spawnClock = 0; this.elapsed = 0; this.lastSpawnLane = null;
+    this.events = []; this.nextId = 1;
+  }
+  start(mode = MODE.classic) {
+    if (!Object.values(MODE).includes(mode)) throw new Error('Invalid mode');
+    this.reset(); this.mode = mode; this.status = 'running';
+    this.spawnClock = 360;
+    this.events.push({type:'start'});
+  }
+  selectLane(lane) {
+    if (!LANES.includes(lane)) return false;
+    if (this.lane !== lane) {
+      this.lane = lane;
+      this.events.push({ type: 'move', lane });
+    }
+    return true;
+  }
+  togglePause() {
+    if (this.status === 'running') { this.status = 'paused'; this.events.push({type:'pause'}); }
+    else if (this.status === 'paused') { this.status = 'running'; this.events.push({type:'resume'}); }
+    return this.status;
+  }
+  spawnDelay() {
+    return Math.max(this.mode === MODE.turbo ? 555 : 690,
+      (this.mode === MODE.turbo ? 1080 : 1530) - Math.floor(this.score / 5) * 47);
+  }
+  travelTime() {
+    return Math.max(this.mode === MODE.turbo ? 1940 : 2310,
+      (this.mode === MODE.turbo ? 3040 : 3820) - Math.floor(this.score / 5) * 85);
+  }
+  chooseLane() {
+    const available = LANES.filter(l => l !== this.lastSpawnLane);
+    const roll = Math.min(0.999999999, Math.max(0, this.random()));
+    return available[Math.floor(roll * available.length)];
+  }
+  spawnEgg(lane = this.chooseLane(), overrides = {}) {
+    if (!LANES.includes(lane)) throw new Error('Invalid lane');
+    const golden = false;
+    const egg = {
+      id: this.nextId++, lane, progress: overrides.progress ?? 0,
+      travelMs: overrides.travelMs ?? this.travelTime(), golden,
+    };
+    this.eggs.push(egg); this.lastSpawnLane = lane;
+    this.events.push({type:'spawn', lane});
+    return egg;
+  }
+  tick(deltaMs) {
+    if (this.status !== 'running') return;
+    const dt = Math.max(0, Math.min(250, Number(deltaMs) || 0));
+    this.elapsed += dt;
+    this.spawnClock += dt;
+    if (this.spawnClock >= this.spawnDelay() && this.eggs.length < 5) {
+      this.spawnClock -= this.spawnDelay();
+      this.spawnEgg();
+    }
+    const remaining = [];
+    for (const egg of this.eggs) {
+      egg.progress += dt / egg.travelMs;
+      if (egg.progress < 1) { remaining.push(egg); continue; }
+      if (egg.lane === this.lane) {
+        this.caught++;
+        this.combo++;
+        this.maxCombo = Math.max(this.combo, this.maxCombo);
+        const earned = 1;
+        this.score += earned;
+        this.events.push({type:'catch', lane:egg.lane, earned, combo:this.combo});
+      } else {
+        this.misses++;
+        this.combo = 0;
+        this.events.push({type:'miss', lane:egg.lane, misses:this.misses});
+        if (this.misses >= 3) {
+          this.status = 'over'; this.events.push({type:'gameover', score:this.score});
+          break;
+        }
+      }
+    }
+    this.eggs = this.status === 'over' ? [] : remaining;
+  }
+  drainEvents() { return this.events.splice(0); }
+}
+
+const game=new EggGame();const $=id=>document.getElementById(id);const lanes={tl:{start:[268,222],end:[458,294]},tr:{start:[813,222],end:[622,294]},bl:{start:[268,364],end:[458,403]},br:{start:[813,364],end:[622,403]}};
+let selectedMode=MODE.classic;try{selectedMode=localStorage.getItem('eieralarm-lcd-mode')||MODE.classic}catch{}if(!Object.values(MODE).includes(selectedMode))selectedMode=MODE.classic;
+let last=0,sound=true,audio=null;let best={classic:0,turbo:0};for(const key of ['classic','turbo']){try{best[key]=Number(localStorage.getItem('eieralarm-lcd-best-'+key))||0}catch{}}
+function beep(freq=590,duration=.047){if(!sound)return;try{audio??=new (window.AudioContext||window.webkitAudioContext)();if(audio.state==='suspended')audio.resume();const oscillator=audio.createOscillator(),gain=audio.createGain();oscillator.type='square';oscillator.frequency.value=freq;gain.gain.value=.024;oscillator.connect(gain);gain.connect(audio.destination);oscillator.start();oscillator.stop(audio.currentTime+duration);}catch{}}
+function position(lane){if(!LANES.includes(lane))return;game.selectLane(lane);draw();beep(420,.023)}
+for(const control of document.querySelectorAll('[data-lane]')){control.addEventListener('pointerdown',e=>{e.preventDefault();position(control.dataset.lane)});control.addEventListener('click',()=>position(control.dataset.lane));}
+function start(mode=selectedMode){selectedMode=mode;try{localStorage.setItem('eieralarm-lcd-mode',mode)}catch{}game.start(mode);$('message').textContent='';$('start').hidden=true;beep(750,.08);draw();}
+for(const el of document.querySelectorAll('.micro-button'))el.addEventListener('click',()=>{const type=el.dataset.action;if(type==='classic')start(MODE.classic);else if(type==='turbo')start(MODE.turbo);else if(game.status==='paused'){game.togglePause();$('message').textContent='';$('start').hidden=true;draw()}else if(game.status==='running'){game.togglePause();$('message').textContent='PAUSE';$('start').hidden=false;$('start').textContent='▶ WEITERSPIELEN';draw()}});
+$('start').addEventListener('click',()=>{if(game.status==='paused'){game.togglePause();$('message').textContent='';$('start').hidden=true;draw()}else start(selectedMode)});
+window.addEventListener('keydown',e=>{const key=e.key.toLowerCase();const map={q:'tl',w:'tr',a:'bl',s:'br',arrowleft:game.lane[0]==='t'?'tl':'bl',arrowright:game.lane[0]==='t'?'tr':'br',arrowup:game.lane[1]==='l'?'tl':'tr',arrowdown:game.lane[1]==='l'?'bl':'br'};if(map[key]){e.preventDefault();position(map[key])}if(key===' '||key==='enter'){e.preventDefault();if(game.status==='ready'||game.status==='over')start();else if(game.status==='paused'){$('start').click();}}});
+const svgNS='http://www.w3.org/2000/svg';function node(tag,attr){const n=document.createElementNS(svgNS,tag);Object.entries(attr).forEach(([k,v])=>n.setAttribute(k,v));return n;}
+function draw(){const target=lanes[game.lane].end;const x=game.lane.endsWith('l')?target[0]+13:target[0]-13;const y=target[1]+5;const arm=$('arm');arm.setAttribute('d',`M${game.lane.endsWith('l')?516:565} 362 Q${game.lane.endsWith('l')?483:595} ${game.lane.startsWith('t')?326:393} ${x} ${y}`);$('basket').setAttribute('transform',`translate(${target[0]} ${target[1]})`);
+ const eggs=$('eggs');eggs.replaceChildren();for(const egg of game.eggs){const c=lanes[egg.lane],s=Math.min(5,Math.max(0,Math.floor(egg.progress*6))),p=(s+.16)/6;const ex=c.start[0]+(c.end[0]-c.start[0])*p,ey=c.start[1]+(c.end[1]-c.start[1])*p-11;eggs.appendChild(node('ellipse',{cx:ex,cy:ey,rx:10.5,ry:14,fill:'#253c32',stroke:'#253c32','stroke-width':2,transform:`rotate(${egg.lane.endsWith('l')?'-25':'25'} ${ex} ${ey})`}))}
+ $('lcdScore').textContent=String(game.score%1000).padStart(3,'0');$('lcdMode').textContent=game.mode===MODE.turbo?'SPIEL B':'SPIEL A';$('record').textContent='REKORD '+String(Math.max(best[selectedMode],game.score)).padStart(3,'0');const miss=$('missIcons');miss.replaceChildren();for(let i=0;i<game.misses;i++){miss.appendChild(node('path',{d:`M${i*28+448} 181 l5 -12 l5 12 l14 -1 l-10 9 l7 12 l-12 -7 l-12 7 l3 -12 l-9 -9 Z`,fill:'#3d5444',opacity:.85}))}for(const el of document.querySelectorAll('.face-button'))el.classList.toggle('selected',el.dataset.lane===game.lane);for(const el of document.querySelectorAll('.micro-button'))el.classList.toggle('active',el.dataset.action===selectedMode);}
+let raf=0;function frame(t){if(!last)last=t;const dt=Math.max(0,Math.min(180,t-last));last=t;if(game.status==='running'){game.tick(dt);for(const evt of game.drainEvents()){if(evt.type==='catch')beep(760,.045);else if(evt.type==='miss')beep(210,.15);else if(evt.type==='gameover'){if(game.score>best[selectedMode]){best[selectedMode]=game.score;try{localStorage.setItem('eieralarm-lcd-best-'+selectedMode,best[selectedMode])}catch{}}$('message').innerHTML=`ENDE · ${game.score} PUNKTE<br>NOCH EINMAL?`;$('start').textContent='▶ NEUSTART';$('start').hidden=false;}}draw()}raf=requestAnimationFrame(frame);}raf=requestAnimationFrame(frame);document.addEventListener('visibilitychange',()=>{if(document.hidden&&game.status==='running'){game.togglePause();$('message').textContent='PAUSE';$('start').textContent='▶ WEITERSPIELEN';$('start').hidden=false;draw();}});
+// In Safari the screen orientation is not lockable without installing a PWA; the portrait gate guides rotation.
+window.addEventListener('pagehide',()=>{if(game.status==='running')game.togglePause()});draw();
+</script></body></html>
