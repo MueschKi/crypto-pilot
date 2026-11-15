@@ -31,3 +31,54 @@ assert.ok(turbo.spawnDelay()<classic.spawnDelay());
 assert.ok(turbo.travelTime()<classic.travelTime());
 const score=g.score;g.tick(250);assert.equal(g.score,score);
 console.log('PASS: four catch positions, landscape, score, pause, misses, game over and modes');
+
+
+assert.match(html,/<g id="hare"/,'Rabbit sprite exists');
+assert.match(html,/translate\(-540 -365\)/,'Wolf moves as one scaled figure');
+assert.match(html,/scale\('/,'Wolf is resized in each catch position');
+
+const aGame=new EggGame(()=>0);
+aGame.start(MODE.classic);
+assert.deepEqual([...aGame.activeLanes()],['tl','tr','br'],'Game A uses three tracks');
+aGame.misses=.5;
+assert.deepEqual([...aGame.activeLanes()],['tl','tr','bl'],'Game A adjusts idle track with penalty');
+aGame.misses=1.5;
+assert.deepEqual([...aGame.activeLanes()],['tr','bl','br']);
+aGame.misses=2.5;
+assert.deepEqual([...aGame.activeLanes()],['tl','bl','br']);
+const bGame=new EggGame(()=>0);
+bGame.start(MODE.turbo);
+assert.deepEqual([...bGame.activeLanes()],['tl','tr','bl','br'],'Game B uses four tracks');
+
+const rabbit=new EggGame(()=>0);
+rabbit.start();
+rabbit.elapsed=6000;rabbit.spawnClock=0;rabbit.tick(25);
+assert.equal(rabbit.hareVisible,true,'Hare appears periodically');
+rabbit.selectLane('bl');
+rabbit.spawnEgg('tl',{travelMs:250});
+rabbit.tick(250);
+assert.equal(rabbit.misses,.5,'Miss while hare is visible counts half');
+assert.equal(rabbit.missedEggs,1,'Actual dropped eggs remain countable');
+assert.equal(rabbit.chickLane,'tl','Miss shows hatch effect');
+rabbit.elapsed=9000;rabbit.spawnClock=0;rabbit.tick(25);
+assert.equal(rabbit.hareVisible,false,'Rabbit disappears after its display window');
+rabbit.spawnEgg('tr',{travelMs:250});rabbit.tick(250);
+assert.equal(rabbit.misses,1.5,'Miss without hare counts full point');
+
+const reset=new EggGame(()=>0);reset.start();
+reset.score=199;reset.misses=2.5;reset.spawnClock=0;reset.selectLane('tl');
+reset.spawnEgg('tl',{travelMs:250});reset.tick(250);
+assert.equal(reset.score,200);assert.equal(reset.misses,0,'200 points clear penalties');
+reset.score=499;reset.misses=2;reset.spawnClock=0;
+reset.spawnEgg('tl',{travelMs:250});reset.tick(250);
+assert.equal(reset.score,500);assert.equal(reset.misses,0,'500 points clear penalties');
+
+const pace=new EggGame(()=>0);pace.start();
+pace.score=0;const initial=pace.spawnDelay();
+pace.score=90;const preHundred=pace.spawnDelay();
+assert.ok(preHundred<initial,'Speed rises in 10-point increments');
+pace.score=100;
+assert.ok(pace.spawnDelay()>preHundred,'Speed eases after each 100 points');
+pace.score=999;const beforeWrap=pace.spawnDelay();
+pace.score=1000;assert.ok(pace.spawnDelay()<=beforeWrap,'Later rounds stay challenging');
+console.log('PASS: LCD rabbit, small moving wolf, both modes, half-misses, penalty resets and stepped speed');
