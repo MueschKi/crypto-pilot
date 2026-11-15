@@ -11,6 +11,8 @@ await assert.rejects(fetchPaperPrices(make({XXBTZEUR:values.XXBTZEUR})),/missing
 await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['NaN']}})),/invalid price/);
 const cached=age=>async()=>({ok:true,headers:{get:k=>k==='date'?new Date().toUTCString():k==='age'?age:null},json:async()=>({error:[],result:values})});
 await assert.rejects(fetchPaperPrices(cached('121')),/stale market cache/);
+const agedResponse=async()=>({ok:true,headers:{get:k=>k==='date'?new Date(Date.now()-90000).toUTCString():k==='age'?'45':null},json:async()=>({error:[],result:values})});
+await assert.rejects(fetchPaperPrices(agedResponse),/stale market response/);
 await assert.rejects(fetchPaperPrices(cached('-1')),/invalid market cache age/);
 await assert.rejects(fetchPaperPrices(cached('garbled')),/invalid market cache age/);
 await assert.deepEqual(await fetchPaperPrices(cached('0')),{BTC:8500000,ETH:300000,SOL:15000});
