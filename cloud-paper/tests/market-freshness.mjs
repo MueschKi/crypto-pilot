@@ -9,4 +9,9 @@ await assert.rejects(fetchPaperPrices(make(values,'invalid-date')),/stale market
 await assert.rejects(fetchPaperPrices(make({...values,XBTZEUR:{c:['86000']}})),/duplicate market symbol/);
 await assert.rejects(fetchPaperPrices(make({XXBTZEUR:values.XXBTZEUR})),/missing price/);
 await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['NaN']}})),/invalid price/);
+const cached=age=>async()=>({ok:true,headers:{get:k=>k==='date'?new Date().toUTCString():k==='age'?age:null},json:async()=>({error:[],result:values})});
+await assert.rejects(fetchPaperPrices(cached('121')),/stale market cache/);
+await assert.rejects(fetchPaperPrices(cached('-1')),/invalid market cache age/);
+await assert.rejects(fetchPaperPrices(cached('garbled')),/invalid market cache age/);
+await assert.deepEqual(await fetchPaperPrices(cached('0')),{BTC:8500000,ETH:300000,SOL:15000});
 console.log('Public quote freshness and ambiguity gates passed');
