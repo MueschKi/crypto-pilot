@@ -35,7 +35,7 @@ jobs:
       - name: Validate Worker config
         shell: bash
         run: |
-          node -e 'const c=require("./eieralarm-worker.jsonc");if(c.name!=="eieralarm-lcd"||!c.workers_dev||c.assets.directory!=="./docs/eieralarm")process.exit(1)'
+          node -e 'const c=JSON.parse(require("node:fs").readFileSync("eieralarm-worker.jsonc","utf8"));if(c.name!=="eieralarm-lcd"||!c.workers_dev||c.assets.directory!=="./docs/eieralarm")process.exit(1)'
   deploy:
     name: Deploy isolated EIERALARM static Worker
     needs: test
