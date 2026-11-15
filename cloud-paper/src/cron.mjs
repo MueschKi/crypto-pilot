@@ -9,16 +9,15 @@ export async function runPaperCron(env, now=Date.now()) {
   return stub.fetch(new Request('https://internal.invalid/internal/cron',{method:'POST',headers:{'x-paper-cron-key':env.PAPER_CRON_KEY||''},body:JSON.stringify({now,prices})}));
 }
 export async function fetchPaperPrices(fetcher=fetch) {
-  const res=await fetcher('https://api.kraken.com/0/public/Ticker?pair=XBTEUR,ETHEUR,SOLEUR',{headers:{accept:'application/json'},signal:AbortSignal.timeout(8000)});
+  const res=await fetcher('https://api.kraken.com/0/public/Ticker?pair=XBTEUR,ETHEUR,SOLEUR',{headers:{accept:'application/json','cache-control':'no-cache'},cache:'no-store',signal:AbortSignal.timeout(8000)});
   if(!res.ok)throw Error('market unavailable');
   const json=await res.json();if(json.error?.length || !json.result)throw Error('market invalid');
   // Kraken's public Ticker endpoint has no quote timestamp. Never claim a
   // historical response is fresh: reject a stale HTTP response Date when present.
   const responseDate=res.headers?.get?.('date');
-  if(responseDate){
-    const servedAt=Date.parse(responseDate);
-    if(!Number.isFinite(servedAt)||Math.abs(Date.now()-servedAt)>120000)throw Error('stale market response');
-  }
+  if(!responseDate)throw Error('market response date missing');
+  const servedAt=Date.parse(responseDate);
+  if(!Number.isFinite(servedAt)||Math.abs(Date.now()-servedAt)>120000)throw Error('stale market response');
   const result={};
   for(const [key,value] of Object.entries(json.result)){
     const symbol=key.includes('XBT')||key.includes('BTC')?'BTC':key.includes('ETH')?'ETH':key.includes('SOL')?'SOL':null;
