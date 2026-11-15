@@ -20,7 +20,7 @@
 </g>
 <g stroke="#98594d" stroke-width="6"><path d="M258 222 L459 298"/><path d="M823 222 L622 298"/><path d="M258 366 L459 407"/><path d="M823 366 L622 407"/></g>
 <g stroke="#334c3f" stroke-width="3"><path d="M258 226 L459 302"/><path d="M823 226 L622 302"/><path d="M258 370 L459 411"/><path d="M823 370 L622 411"/></g>
-<g id="hare" transform="translate(313 161)" opacity=".52"><path d="M-14 -12 L-24 -43 Q-13 -50 -6 -22 L5 -52 Q18 -53 13 -11 Q30 -2 20 21 Q9 36 -10 22 Q-29 4 -14 -12Z" fill="#31443c"/><circle cx="3" cy="-1" r="2" fill="#b3c2ac"/><path d="M-22 22 H24"/></g>
+<g id="hare" transform="translate(313 161)" opacity="0"><path d="M-14 -12 L-24 -43 Q-13 -50 -6 -22 L5 -52 Q18 -53 13 -11 Q30 -2 20 21 Q9 36 -10 22 Q-29 4 -14 -12Z" fill="#31443c"/><path d="M-12 -21 L-16 -36 M7 -28 L9 -45" stroke="#c1c9b5" stroke-width="2"/><ellipse cx="3" cy="0" rx="8" ry="10" fill="#b2c0ad"/><circle cx="5" cy="-3" r="2.3" fill="#283f33"/><path d="M-7 11 Q3 18 16 10 M-22 22 H24" stroke="#30453b" stroke-width="2"/><g transform="translate(30 15)"><path d="M-8 -3 Q-10 -18 0 -18 Q10 -18 8 -3 L13 3 H-13Z" fill="#31443c"/><circle cx="0" cy="6" r="3" fill="#31443c"/></g></g>
 <path d="M355 427 h40 m288 0 h40 M394 441 h55 m170 0 h55" stroke="#5b7a5f" stroke-width="2.5"/>
 </g>
 <g id="eggs" fill="#263b31" stroke="#263b31"></g>
@@ -38,106 +38,114 @@
 <text id="lcdScore" class="lcd" x="676" y="164" font-size="40" font-weight="bold" text-anchor="middle" fill="#2c4338">000</text><text x="685" y="182" text-anchor="middle" fill="#557461" font-family="monospace" font-size="12">PUNKTE</text>
 <text id="lcdMode" x="533" y="162" text-anchor="middle" fill="#486353" font-family="monospace" font-size="17">SPIEL A</text>
 <text x="545" y="84" text-anchor="middle" fill="#c54b45" font-weight="800" font-size="32" letter-spacing="3">EIERALARM!</text>
-<text x="545" y="505" text-anchor="middle" fill="#454d4b" font-size="26" letter-spacing="4" font-weight="700">RETRO · LCD · 1984</text>
+<text x="545" y="505" text-anchor="middle" fill="#454d4b" font-size="26" letter-spacing="4" font-weight="700">RETRO · LCD · EIERSPIEL</text>
 <text x="947" y="93" fill="#454948" font-size="13" font-weight="bold">SPIEL A</text><text x="947" y="138" fill="#454948" font-size="13" font-weight="bold">SPIEL B</text><text x="947" y="183" fill="#454948" font-size="13" font-weight="bold">PAUSE</text>
-<text x="47" y="147" fill="#70736f" font-size="11" font-weight="bold">OBEN</text><text x="44" y="325" fill="#70736f" font-size="11" font-weight="bold">UNTEN</text><text x="969" y="479" fill="#777976" font-size="11" font-weight="bold">v1.1</text>
+<text x="47" y="147" fill="#70736f" font-size="11" font-weight="bold">OBEN</text><text x="44" y="325" fill="#70736f" font-size="11" font-weight="bold">UNTEN</text><text x="969" y="479" fill="#777976" font-size="11" font-weight="bold">v1.2</text>
 </svg>
 <div class="topbar"><span>LCD HANDHELD</span><span id="record">REKORD 000</span></div>
 <div id="controls"><button class="face-button" data-lane="tl" aria-label="Links oben">↖</button><button class="face-button" data-lane="bl" aria-label="Links unten">↙</button><button class="face-button" data-lane="tr" aria-label="Rechts oben">↗</button><button class="face-button" data-lane="br" aria-label="Rechts unten">↘</button><button class="micro-button active" data-action="classic" aria-label="Spiel A starten"></button><button class="micro-button" data-action="turbo" aria-label="Spiel B starten"></button><button class="micro-button" data-action="pause" aria-label="Pause"></button></div>
-<div id="message">4 EIERBAHNEN<br>3 FEHLER ERLAUBT</div><button id="start" class="start-button">▶ SPIEL A STARTEN</button>
+<div id="message">SPIEL A: 3 BAHNEN<br>SPIEL B: 4 BAHNEN</div><button id="start" class="start-button">▶ SPIEL A STARTEN</button>
 </div><small id="footer">Eigenständige Hommage – keine offizielle Elektronika-Version.</small>
 <script>
 /* Eieralarm! — standalone deterministic arcade rules, ES modules. */
 const LANES = ['tl', 'tr', 'bl', 'br'];
 const MODE = Object.freeze({ classic: 'classic', turbo: 'turbo' });
 class EggGame {
-  constructor(random = Math.random) {
-    this.random = random;
-    this.reset();
-  }
+  constructor(random = Math.random) { this.random = random; this.reset(); }
   reset() {
-    this.status = 'ready'; this.mode = MODE.classic; this.score = 0;
-    this.misses = 0; this.caught = 0; this.combo = 0; this.maxCombo = 0;
-    this.lane = 'bl'; this.eggs = []; this.particles = [];
-    this.spawnClock = 0; this.elapsed = 0; this.lastSpawnLane = null;
-    this.events = []; this.nextId = 1;
+    this.status='ready'; this.mode=MODE.classic; this.score=0;
+    this.misses=0; this.missedEggs=0; this.caught=0; this.combo=0; this.maxCombo=0;
+    this.lane='bl'; this.eggs=[]; this.elapsed=0; this.spawnClock=0; this.lastSpawnLane=null;
+    this.hareVisible=false; this.chickUntil=0; this.chickLane=null;
+    this.events=[]; this.nextId=1;
   }
-  start(mode = MODE.classic) {
-    if (!Object.values(MODE).includes(mode)) throw new Error('Invalid mode');
-    this.reset(); this.mode = mode; this.status = 'running';
-    this.spawnClock = 360;
-    this.events.push({type:'start'});
+  start(mode=MODE.classic) {
+    if(!Object.values(MODE).includes(mode))throw new Error('Invalid mode');
+    this.reset();this.mode=mode;this.status='running';this.spawnClock=400;
+    this.events.push({type:'start',mode});
   }
   selectLane(lane) {
-    if (!LANES.includes(lane)) return false;
-    if (this.lane !== lane) {
-      this.lane = lane;
-      this.events.push({ type: 'move', lane });
-    }
+    if(!LANES.includes(lane))return false;
+    if(this.lane!==lane){this.lane=lane;this.events.push({type:'move',lane});}
     return true;
   }
-  togglePause() {
-    if (this.status === 'running') { this.status = 'paused'; this.events.push({type:'pause'}); }
-    else if (this.status === 'paused') { this.status = 'running'; this.events.push({type:'resume'}); }
+  togglePause(){
+    if(this.status==='running'){this.status='paused';this.events.push({type:'pause'});}
+    else if(this.status==='paused'){this.status='running';this.events.push({type:'resume'});}
     return this.status;
   }
+  activeLanes() {
+    if(this.mode===MODE.turbo)return LANES;
+    // Game A uses three chutes; the unused chute depends on the penalty tally.
+    const unused=this.misses===0?'bl':this.misses<=1?'br':this.misses<=2?'tl':'tr';
+    return LANES.filter(lane=>lane!==unused);
+  }
   spawnDelay() {
-    return Math.max(this.mode === MODE.turbo ? 555 : 690,
-      (this.mode === MODE.turbo ? 1080 : 1530) - Math.floor(this.score / 5) * 47);
+    // Ten-egg speed steps, with a short speed relief every 100 points.
+    const century=Math.floor(this.score/100),step=Math.floor((this.score%100)/10);
+    const base=this.mode===MODE.turbo?1180:1500;
+    return Math.max(this.mode===MODE.turbo?470:570,base-century*112-step*45);
   }
   travelTime() {
-    return Math.max(this.mode === MODE.turbo ? 1940 : 2310,
-      (this.mode === MODE.turbo ? 3040 : 3820) - Math.floor(this.score / 5) * 85);
+    const century=Math.floor(this.score/100),step=Math.floor((this.score%100)/10);
+    const base=this.mode===MODE.turbo?3040:3740;
+    return Math.max(this.mode===MODE.turbo?1500:1740,base-century*165-step*93);
   }
   chooseLane() {
-    const available = LANES.filter(l => l !== this.lastSpawnLane);
-    const roll = Math.min(0.999999999, Math.max(0, this.random()));
-    return available[Math.floor(roll * available.length)];
+    const active=this.activeLanes();
+    const options=active.filter(lane=>lane!==this.lastSpawnLane);
+    const lanes=options.length?options:active;
+    const roll=Math.max(0,Math.min(.999999999,Number(this.random())||0));
+    return lanes[Math.floor(roll*lanes.length)];
   }
-  spawnEgg(lane = this.chooseLane(), overrides = {}) {
-    if (!LANES.includes(lane)) throw new Error('Invalid lane');
-    const golden = false;
-    const egg = {
-      id: this.nextId++, lane, progress: overrides.progress ?? 0,
-      travelMs: overrides.travelMs ?? this.travelTime(), golden,
-    };
-    this.eggs.push(egg); this.lastSpawnLane = lane;
-    this.events.push({type:'spawn', lane});
+  spawnEgg(lane=this.chooseLane(),overrides={}) {
+    if(!LANES.includes(lane))throw new Error('Invalid lane');
+    const egg={id:this.nextId++,lane,progress:overrides.progress??0,
+      travelMs:overrides.travelMs??this.travelTime()};
+    this.eggs.push(egg);this.lastSpawnLane=lane;
+    this.events.push({type:'spawn',lane});
     return egg;
   }
   tick(deltaMs) {
-    if (this.status !== 'running') return;
-    const dt = Math.max(0, Math.min(250, Number(deltaMs) || 0));
-    this.elapsed += dt;
-    this.spawnClock += dt;
-    if (this.spawnClock >= this.spawnDelay() && this.eggs.length < 5) {
-      this.spawnClock -= this.spawnDelay();
-      this.spawnEgg();
+    if(this.status!=='running')return;
+    const dt=Math.max(0,Math.min(250,Number(deltaMs)||0));
+    this.elapsed+=dt;
+    const wasVisible=this.hareVisible;
+    // An occasional rabbit in the top-left window halves a missed-egg penalty.
+    const phase=this.elapsed%11900;
+    this.hareVisible=phase>=5500&&phase<8550;
+    if(wasVisible!==this.hareVisible)this.events.push({type:'hare',visible:this.hareVisible});
+    this.spawnClock+=dt;
+    const delay=this.spawnDelay();
+    if(this.spawnClock>=delay&&this.eggs.length<5){
+      this.spawnClock-=delay;this.spawnEgg();
     }
-    const remaining = [];
-    for (const egg of this.eggs) {
-      egg.progress += dt / egg.travelMs;
-      if (egg.progress < 1) { remaining.push(egg); continue; }
-      if (egg.lane === this.lane) {
-        this.caught++;
-        this.combo++;
-        this.maxCombo = Math.max(this.combo, this.maxCombo);
-        const earned = 1;
-        this.score += earned;
-        this.events.push({type:'catch', lane:egg.lane, earned, combo:this.combo});
+    const remaining=[];
+    for(const egg of this.eggs){
+      egg.progress+=dt/egg.travelMs;
+      if(egg.progress<1){remaining.push(egg);continue;}
+      if(egg.lane===this.lane){
+        this.caught++;this.combo++;this.maxCombo=Math.max(this.combo,this.maxCombo);
+        this.score++;
+        this.events.push({type:'catch',lane:egg.lane,earned:1,score:this.score});
+        if(this.score%1000===200||this.score%1000===500){
+          this.misses=0;this.events.push({type:'bonus',score:this.score});
+        }
       } else {
-        this.misses++;
-        this.combo = 0;
-        this.events.push({type:'miss', lane:egg.lane, misses:this.misses});
-        if (this.misses >= 3) {
-          this.status = 'over'; this.events.push({type:'gameover', score:this.score});
+        this.missedEggs++;this.combo=0;
+        const penalty=this.hareVisible?.5:1;
+        this.misses=Math.min(3,this.misses+penalty);
+        this.chickUntil=this.elapsed+800;this.chickLane=egg.lane;
+        this.events.push({type:'miss',lane:egg.lane,penalty,misses:this.misses});
+        if(this.misses>=3){
+          this.status='over';this.events.push({type:'gameover',score:this.score});
           break;
         }
       }
     }
-    this.eggs = this.status === 'over' ? [] : remaining;
+    this.eggs=this.status==='over'?[]:remaining;
   }
-  drainEvents() { return this.events.splice(0); }
+  drainEvents(){return this.events.splice(0);}
 }
 
 const game=new EggGame();const $=id=>document.getElementById(id);const lanes={tl:{start:[268,222],end:[458,294]},tr:{start:[813,222],end:[622,294]},bl:{start:[268,364],end:[458,403]},br:{start:[813,364],end:[622,403]}};
@@ -151,9 +159,43 @@ for(const el of document.querySelectorAll('.micro-button'))el.addEventListener('
 $('start').addEventListener('click',()=>{if(game.status==='paused'){game.togglePause();$('message').textContent='';$('start').hidden=true;draw()}else start(selectedMode)});
 window.addEventListener('keydown',e=>{const key=e.key.toLowerCase();const map={q:'tl',w:'tr',a:'bl',s:'br',arrowleft:game.lane[0]==='t'?'tl':'bl',arrowright:game.lane[0]==='t'?'tr':'br',arrowup:game.lane[1]==='l'?'tl':'tr',arrowdown:game.lane[1]==='l'?'bl':'br'};if(map[key]){e.preventDefault();position(map[key])}if(key===' '||key==='enter'){e.preventDefault();if(game.status==='ready'||game.status==='over')start();else if(game.status==='paused'){$('start').click();}}});
 const svgNS='http://www.w3.org/2000/svg';function node(tag,attr){const n=document.createElementNS(svgNS,tag);Object.entries(attr).forEach(([k,v])=>n.setAttribute(k,v));return n;}
-function draw(){const target=lanes[game.lane].end;const x=game.lane.endsWith('l')?target[0]+13:target[0]-13;const y=target[1]+5;const arm=$('arm');arm.setAttribute('d',`M${game.lane.endsWith('l')?516:565} 362 Q${game.lane.endsWith('l')?483:595} ${game.lane.startsWith('t')?326:393} ${x} ${y}`);$('basket').setAttribute('transform',`translate(${target[0]} ${target[1]})`);
- const eggs=$('eggs');eggs.replaceChildren();for(const egg of game.eggs){const c=lanes[egg.lane],s=Math.min(5,Math.max(0,Math.floor(egg.progress*6))),p=(s+.16)/6;const ex=c.start[0]+(c.end[0]-c.start[0])*p,ey=c.start[1]+(c.end[1]-c.start[1])*p-11;eggs.appendChild(node('ellipse',{cx:ex,cy:ey,rx:10.5,ry:14,fill:'#253c32',stroke:'#253c32','stroke-width':2,transform:`rotate(${egg.lane.endsWith('l')?'-25':'25'} ${ex} ${ey})`}))}
- $('lcdScore').textContent=String(game.score%1000).padStart(3,'0');$('lcdMode').textContent=game.mode===MODE.turbo?'SPIEL B':'SPIEL A';$('record').textContent='REKORD '+String(Math.max(best[selectedMode],game.score)).padStart(3,'0');const miss=$('missIcons');miss.replaceChildren();for(let i=0;i<game.misses;i++){miss.appendChild(node('path',{d:`M${i*28+448} 181 l5 -12 l5 12 l14 -1 l-10 9 l7 12 l-12 -7 l-12 7 l3 -12 l-9 -9 Z`,fill:'#3d5444',opacity:.85}))}for(const el of document.querySelectorAll('.face-button'))el.classList.toggle('selected',el.dataset.lane===game.lane);for(const el of document.querySelectorAll('.micro-button'))el.classList.toggle('active',el.dataset.action===selectedMode);}
+function draw(){
+ const left=game.lane.endsWith('l'),upper=game.lane.startsWith('t');
+ // The complete smaller wolf walks sideways and changes height. His basket
+ // sits at the corresponding end of the four original-style egg chutes.
+ const cx=left?506:574,cy=upper?337:388;
+ $('wolf').setAttribute('transform','translate('+cx+' '+cy+') scale('+(left?'.68':'-.68')+' .68) translate(-540 -365)');
+ $('arm').setAttribute('d',upper?'M516 365 Q493 343 472 316':'M516 365 Q493 380 472 380');
+ $('basket').setAttribute('transform','translate(470 '+(upper?303:388)+')');
+ $('hare').setAttribute('opacity',game.hareVisible?'1':'0');
+ const eggs=$('eggs');eggs.replaceChildren();
+ for(const egg of game.eggs){
+   const c=lanes[egg.lane],segment=Math.min(5,Math.max(0,Math.floor(egg.progress*6)));
+   const p=(segment+.58)/6;
+   const ex=c.start[0]+(c.end[0]-c.start[0])*p;
+   const ey=c.start[1]+(c.end[1]-c.start[1])*p-11;
+   eggs.appendChild(node('ellipse',{cx:ex,cy:ey,rx:10.5,ry:14,fill:'#253c32',stroke:'#253c32','stroke-width':2,transform:'rotate('+(egg.lane.endsWith('l')?'-25':'25')+' '+ex+' '+ey+')'}));
+ }
+ $('lcdScore').textContent=String(game.score%1000).padStart(3,'0');
+ $('lcdMode').textContent=game.mode===MODE.turbo?'SPIEL B':'SPIEL A';
+ $('record').textContent='REKORD '+String(Math.max(best[selectedMode],game.score)).padStart(3,'0');
+ const miss=$('missIcons');miss.replaceChildren();
+ for(let i=0;i<Math.ceil(game.misses);i++){
+   const half=i===Math.floor(game.misses) && game.misses%1!==0;
+   if(half&&Math.floor(game.elapsed/340)%2===1)continue;
+   const x=700+i*35,y=429;
+   miss.appendChild(node('path',{d:'M'+(x-9)+' '+(y+3)+' Q'+(x-18)+' '+(y-13)+' '+x+' '+(y-16)+' Q'+(x+13)+' '+(y-17)+' '+(x+12)+' '+y+' L'+(x+20)+' '+(y+3)+' L'+(x+10)+' '+(y+6)+' Q'+(x+11)+' '+(y+14)+' '+(x-8)+' '+(y+12)+' Z',fill:'#30463a'}));
+   miss.appendChild(node('circle',{cx:x+5,cy:y-7,r:2.1,fill:'#b9c9ae'}));
+ }
+ if(game.chickUntil>game.elapsed && game.status!=='ready'){
+   const c=lanes[game.chickLane];if(c){
+     const x=c.end[0]+(game.chickLane.endsWith('l')?-4:4),y=c.end[1]+20;
+     miss.appendChild(node('path',{d:'M'+(x-12)+' '+y+' q0 -17 13 -17 q14 0 12 14 l11 3 l-11 4 q-5 13 -18 2 Z',fill:'#354c3e'}));
+   }
+ }
+ for(const el of document.querySelectorAll('.face-button'))el.classList.toggle('selected',el.dataset.lane===game.lane);
+ for(const el of document.querySelectorAll('.micro-button'))el.classList.toggle('active',el.dataset.action===selectedMode);
+}
 let raf=0;function frame(t){if(!last)last=t;const dt=Math.max(0,Math.min(180,t-last));last=t;if(game.status==='running'){game.tick(dt);for(const evt of game.drainEvents()){if(evt.type==='catch')beep(760,.045);else if(evt.type==='miss')beep(210,.15);else if(evt.type==='gameover'){if(game.score>best[selectedMode]){best[selectedMode]=game.score;try{localStorage.setItem('eieralarm-lcd-best-'+selectedMode,best[selectedMode])}catch{}}$('message').innerHTML=`ENDE · ${game.score} PUNKTE<br>NOCH EINMAL?`;$('start').textContent='▶ NEUSTART';$('start').hidden=false;}}draw()}raf=requestAnimationFrame(frame);}raf=requestAnimationFrame(frame);document.addEventListener('visibilitychange',()=>{if(document.hidden&&game.status==='running'){game.togglePause();$('message').textContent='PAUSE';$('start').textContent='▶ WEITERSPIELEN';$('start').hidden=false;draw();}});
 // In Safari the screen orientation is not lockable without installing a PWA; the portrait gate guides rotation.
 window.addEventListener('pagehide',()=>{if(game.status==='running')game.togglePause()});draw();
