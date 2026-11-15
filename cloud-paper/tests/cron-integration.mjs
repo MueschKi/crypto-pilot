@@ -52,6 +52,23 @@ assert.equal(data.get('state')?.sequence,2,'fractional BTC SELL must persist');
 assert.equal(data.get('journal:2')?.fill.side,'SELL');
 assert.equal(Object.keys(data.get('state').positions).length,0);
 
+// Operator pause/resume is persisted and survives new Durable Object instances.
+data=new Map();
+const operator=async path=>ledger.fetch(new Request('https://internal.invalid/v1/paper/'+path,{method:'POST',headers:{'x-internal-paper-token-id':'test_operator'}}));
+assert.equal((await operator('pause')).status,200);
+assert.equal(data.get('cron:paused'),true);
+await storage.put('cron:last',{now:now-300000,prices:realistic,lastTradeMs:0});
+const restarted=new PaperLedger({storage},env);
+const paused=await restarted.fetch(new Request('https://internal.invalid/internal/cron',{method:'POST',headers:{'x-paper-cron-key':env.PAPER_CRON_KEY},body:JSON.stringify({now,prices:{...realistic,BTC:8600000}})}));
+assert.equal((await paused.json()).reason,'operator_paused');
+assert.equal(data.get('state'),undefined,'paused Cron must not trade');
+assert.equal((await operator('resume')).status,200);
+assert.equal(data.get('cron:paused'),false);
+assert.equal((await tick(now,{...realistic,BTC:8600000})).status,200);
+assert.equal(data.get('state')?.sequence,1,'resumed Cron should trade');
+assert.equal((await operator('halt')).status,200);
+assert.equal((await operator('resume')).status,503,'resume cannot override emergency halt');
+assert.equal(data.get('state')?.halted,true);
 // Smoke mode executes real persistent paper fills without artificial price changes.
 data=new Map();
 env.PAPER_SMOKE_TRADES_ENABLED='true';
