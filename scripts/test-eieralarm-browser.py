@@ -31,7 +31,8 @@ with sync_playwright() as p:
         assert landscape.locator('#hen-'+lane).count()==1, 'Hen '+lane+' missing'
         landscape.locator('[data-lane="'+lane+'"]').click()
         position=landscape.evaluate('''() => {
-          const p = new DOMPoint(0,0).matrixTransform(document.getElementById('artBasket').getCTM());
+          const svg=document.querySelector('#handheld svg');
+          const p = new DOMPoint(0,0).matrixTransform(document.getElementById('artBasket').getScreenCTM()).matrixTransform(svg.getScreenCTM().inverse());
           const t = lanes[game.lane].end;
           return {distance:Math.hypot(p.x-t[0], p.y-t[1]),x:p.x,y:p.y,target:t};
         }''')
