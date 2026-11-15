@@ -18,4 +18,16 @@ await assert.rejects(fetchPaperPrices(agedResponse),/stale market response/);
 await assert.rejects(fetchPaperPrices(cached('-1')),/invalid market cache age/);
 await assert.rejects(fetchPaperPrices(cached('garbled')),/invalid market cache age/);
 await assert.deepEqual(await fetchPaperPrices(cached('0')),{BTC:8500000,ETH:300000,SOL:15000});
+
+// Reject transport failures, exchange-side errors, and prices that cannot be
+// represented safely in integer cents. Never hand an ambiguous quote to Cron.
+const failedHttp=async()=>({ok:false,status:503});
+await assert.rejects(fetchPaperPrices(failedHttp),/market unavailable/);
+const exchangeError=async()=>({ok:true,headers:{get:k=>k==='date'?new Date().toUTCString():null},json:async()=>({error:['EGeneral:Temporary lockout'],result:values})});
+await assert.rejects(fetchPaperPrices(exchangeError),/market invalid/);
+await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['0']}})),/invalid price/);
+await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['Infinity']}})),/invalid price/);
+await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['100000000000000']}})),/invalid price/);
+const futureDate=new Date(Date.now()+300000).toUTCString();
+await assert.rejects(fetchPaperPrices(make(values,futureDate)),/stale market response/);
 console.log('Public quote freshness and ambiguity gates passed');
