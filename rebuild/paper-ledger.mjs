@@ -4,7 +4,7 @@ export function applyPaperOrder(state, order, policy = {}) {
   const slippageRate = policy.slippageRate ?? 0.001;
   const maxExposure = policy.maxExposure ?? 0.4;
   const maxAgeMs = policy.maxAgeMs ?? 120000;
-  const now = order.now;
+  const now = order?.now;
   if (!state || !Array.isArray(state.trades) || !Number.isFinite(state.cash) || state.cash < 0 ||
       !Number.isFinite(state.quantity) || state.quantity < 0 || !Number.isFinite(state.costBasis) || state.costBasis < 0)
     throw new Error("invalid wallet");
@@ -16,7 +16,8 @@ export function applyPaperOrder(state, order, policy = {}) {
       !Number.isFinite(order.quantity) || order.quantity <= 0 || !Number.isFinite(now) ||
       !Number.isFinite(order.priceTimestamp) || order.priceTimestamp > now ||
       now - order.priceTimestamp > maxAgeMs) throw new Error("invalid or stale quote/order");
-  if (![feeRate, slippageRate, maxExposure].every(Number.isFinite) ||
+  if (!Number.isSafeInteger(maxAgeMs) || maxAgeMs < 0 || maxAgeMs > 120000 ||
+      ![feeRate, slippageRate, maxExposure].every(Number.isFinite) ||
       feeRate < 0 || feeRate >= 1 || slippageRate < 0 || slippageRate >= 1 ||
       maxExposure <= 0 || maxExposure > 1) throw new Error("invalid policy");
   const executionPrice = order.price * (order.side === "BUY" ? 1 + slippageRate : 1 - slippageRate);
