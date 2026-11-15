@@ -16,7 +16,15 @@ export async function fetchPaperPrices(fetcher=fetch) {
   // historical response is fresh: reject a stale HTTP response Date when present.
   const responseDate=res.headers?.get?.('date');
   if(!responseDate)throw Error('market response date missing');
-  // A cache may refresh its Date while retaining an older origin response.\n  // Respect Age even when Date looks current; malformed cache metadata fails closed.\n  const ageHeader=res.headers?.get?.('age');\n  if(ageHeader!==null && ageHeader!==undefined){\n    if(!/^(0|[1-9][0-9]*)$/.test(ageHeader))throw Error('invalid market cache age');\n    const ageSeconds=Number(ageHeader);\n    if(!Number.isSafeInteger(ageSeconds)||ageSeconds>120)throw Error('stale market cache');\n  }\n  const servedAt=Date.parse(responseDate);
+  // A cache may refresh its Date while retaining an older origin response.
+  // Respect Age even when Date looks current; malformed cache metadata fails closed.
+  const ageHeader=res.headers?.get?.('age');
+  if(ageHeader!==null && ageHeader!==undefined){
+    if(!/^(0|[1-9][0-9]*)$/.test(ageHeader))throw Error('invalid market cache age');
+    const ageSeconds=Number(ageHeader);
+    if(!Number.isSafeInteger(ageSeconds)||ageSeconds>120)throw Error('stale market cache');
+  }
+  const servedAt=Date.parse(responseDate);
   if(!Number.isFinite(servedAt)||Math.abs(Date.now()-servedAt)>120000)throw Error('stale market response');
   const result={};
   for(const [key,value] of Object.entries(json.result)){
