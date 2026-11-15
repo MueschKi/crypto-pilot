@@ -52,6 +52,28 @@ assert.equal(data.get('state')?.sequence,2,'fractional BTC SELL must persist');
 assert.equal(data.get('journal:2')?.fill.side,'SELL');
 assert.equal(Object.keys(data.get('state').positions).length,0);
 
+// Checkpoint storage failure must never produce a paper fill.
+data=new Map();
+await storage.put('cron:last',{now:now-300000,prices:realistic,lastTradeMs:0});
+const originalPut=storage.put;
+storage.put=async (key,value)=>{
+  if(key==='cron:last')throw Error('simulated checkpoint outage');
+  return originalPut(key,value);
+};
+const checkpointFailure=await tick(now,{...realistic,BTC:8600000});
+assert.equal(checkpointFailure.status,503);
+assert.equal(data.get('state'),undefined,'no fill may precede checkpoint persistence');
+assert.equal(data.get('journal:1'),undefined,'no journal may precede checkpoint persistence');
+storage.put=originalPut;
+// A restarted object must recognize the persisted tick reservation.
+const recovered=await tick(now,{...realistic,BTC:8600000});
+assert.equal(recovered.status,200);
+assert.equal(data.get('state')?.sequence,1);
+const afterRestart=new PaperLedger({storage},env);
+const duplicate=await afterRestart.fetch(new Request('https://internal.invalid/internal/cron',{method:'POST',headers:{'x-paper-cron-key':env.PAPER_CRON_KEY},body:JSON.stringify({now,prices:{...realistic,BTC:8600000}})}));
+assert.equal(duplicate.status,200);
+assert.equal(data.get('state')?.sequence,1,'restart must not replay a committed tick');
+
 // Operator pause/resume is persisted and survives new Durable Object instances.
 data=new Map();
 const operator=async path=>ledger.fetch(new Request('https://internal.invalid/v1/paper/'+path,{method:'POST',headers:{'x-internal-paper-token-id':'test_operator'}}));
