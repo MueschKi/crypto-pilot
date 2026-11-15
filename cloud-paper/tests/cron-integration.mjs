@@ -14,6 +14,19 @@ const p0={BTC:100000,ETH:10000,SOL:1000};
 assert.equal((await tick(now,p0,'wrong')).status,401);
 assert.equal((await tick(now,p0)).status,200);
 assert.equal(data.get('state'),undefined);
+// Cron cadence must follow scheduled five-minute buckets, not exact elapsed time.
+// A previous tick 299 seconds earlier in the preceding bucket is due;
+// a duplicate within the current bucket is not.
+const boundaryNow=Math.floor(now/300000)*300000+1000;
+await storage.put('cron:last',{now:boundaryNow-299000,prices:p0,lastTradeMs:0});
+const boundaryTick=await tick(boundaryNow,p0);
+assert.equal(boundaryTick.status,200,await boundaryTick.clone().text());
+assert.notEqual((await boundaryTick.json()).reason,'not_due');
+assert.equal(data.get('cron:last')?.now,boundaryNow);
+const boundaryDuplicate=await tick(boundaryNow+1000,p0);
+assert.equal((await boundaryDuplicate.json()).reason,'not_due');
+data=new Map();
+
 assert.equal((await tick(now,p0)).status,200);
 assert.equal((await tick(now+300000,{...p0,BTC:101000})).status,400); // future clock rejected
 // Simulate elapsed ticks by supplying current-time checkpoint in storage.
