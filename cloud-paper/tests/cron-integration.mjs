@@ -82,6 +82,22 @@ for (const bad of [
   assert.equal(data.get('journal:1'),undefined);
 }
 
+// Corrupt persisted wallet state must fail closed before reserving a tick or filling.
+for (const corrupt of [
+  {sequence:0,cashCents:-1,positions:{},halted:false},
+  {sequence:0,cashCents:100000,positions:{BTC:{quantityUnits:-1,costCents:5000}},halted:false},
+  {sequence:0,cashCents:100000,positions:{},halted:'false'}
+]) {
+  data=new Map();
+  await storage.put('state',corrupt);
+  await storage.put('cron:last',{now:now-300000,prices:realistic,lastTradeMs:0});
+  const rejected=await tick(now,{...realistic,BTC:8600000});
+  assert.equal(rejected.status,409,'corrupt wallet must reject cron');
+  assert.deepEqual(data.get('state'),corrupt,'corrupt wallet must not be overwritten');
+  assert.equal(data.get('cron:last')?.now,now-300000,'corrupt wallet must not reserve tick');
+  assert.equal(data.get('journal:1'),undefined,'corrupt wallet must not fill');
+}
+
 // Checkpoint storage failure must never produce a paper fill.
 data=new Map();
 await storage.put('cron:last',{now:now-300000,prices:realistic,lastTradeMs:0});
