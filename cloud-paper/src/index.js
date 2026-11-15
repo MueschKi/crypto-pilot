@@ -171,7 +171,10 @@ export class PaperLedger {
         const wallet=await storage.get('state')||INITIAL;
         if(!validState(wallet)||wallet.halted)return response({error:'halted or corrupt wallet'},409);
         const last=await storage.get('cron:last');
-        if(last && (!Number.isSafeInteger(last.now)||last.now>now))return response({error:'invalid checkpoint'},503);
+        if(last && (!Number.isSafeInteger(last.now)||last.now<0||last.now>now
+          || !last.prices || ['BTC','ETH','SOL'].some(k=>!Number.isSafeInteger(last.prices[k])||last.prices[k]<=0)
+          || !Number.isSafeInteger(last.lastTradeMs) || last.lastTradeMs<0 || last.lastTradeMs>last.now))
+          return response({error:'invalid checkpoint'},503);
         // Compare five-minute UTC buckets rather than elapsed milliseconds: scheduled
         // invocations can arrive a few seconds early/late around a boundary.
         // A duplicate in the same bucket must never execute twice.
