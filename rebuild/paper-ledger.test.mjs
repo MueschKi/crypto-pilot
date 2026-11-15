@@ -24,3 +24,15 @@ test("limits, stop and disabled", () => {
  assert.equal(applyPaperOrder({...wallet(),enabled:false},buy).status,"disabled");
  assert.equal(applyPaperOrder({...wallet(),emergencyStop:true},buy).status,"disabled");
 });
+
+test("rejects unsafe quote freshness policy rather than disabling stale checks", () => {
+ for (const maxAgeMs of [NaN, Infinity, -1, 120001, "120000", 1.5]) {
+   assert.throws(() => applyPaperOrder(wallet(), buy, {maxAgeMs}));
+ }
+ assert.throws(() => applyPaperOrder(wallet(), {...buy, priceTimestamp: 0}, {maxAgeMs: 120000}));
+});
+test("malformed orders fail without creating a paper trade", () => {
+ assert.throws(() => applyPaperOrder(wallet(), null));
+ assert.throws(() => applyPaperOrder(wallet(), undefined));
+ assert.equal(wallet().trades.length, 0);
+});
