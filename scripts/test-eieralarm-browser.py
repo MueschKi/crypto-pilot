@@ -14,10 +14,10 @@ with sync_playwright() as p:
     assert "scale(" in first and ".68" in first, first
     landscape.locator('[data-lane="tr"]').click()
     upper_right=wolf.get_attribute("transform")
-    assert "574 337" in upper_right and "-.68" in upper_right, upper_right
+    assert "574 325" in upper_right and "-.68" in upper_right, upper_right
     landscape.locator('[data-lane="bl"]').click()
     lower_left=wolf.get_attribute("transform")
-    assert "506 388" in lower_left and ".68" in lower_left, lower_left
+    assert "506 356" in lower_left and ".68" in lower_left, lower_left
     assert first!=upper_right!=lower_left, "Wolf must change position"
     landscape.locator('[data-action="classic"]').click()
     assert landscape.evaluate("game.status")== "running"
@@ -25,6 +25,17 @@ with sync_playwright() as p:
     assert landscape.locator("#hare").get_attribute("opacity")=="1", "Hare should pop up"
     landscape.evaluate("game.elapsed=9000; game.spawnClock=0; game.tick(25); draw()")
     assert landscape.locator("#hare").get_attribute("opacity")=="0", "Hare should disappear"
+    assert landscape.locator('#artWolf').count()==1, 'New wolf figure missing'
+    assert landscape.locator('#rabbitBell').count()==1, 'Bell-carrying rabbit missing'
+    for lane in ['tl','tr','bl','br']:
+        assert landscape.locator('#hen-'+lane).count()==1, 'Hen '+lane+' missing'
+        landscape.locator('[data-lane="'+lane+'"]').click()
+        position=landscape.evaluate('''() => {
+          const p = new DOMPoint(0,0).matrixTransform(document.getElementById('artBasket').getCTM());
+          const t = lanes[game.lane].end;
+          return {distance:Math.hypot(p.x-t[0], p.y-t[1]),x:p.x,y:p.y,target:t};
+        }''')
+        assert position['distance'] < 3.1, (lane,position)
     assert not errors, errors
     portrait=browser.new_page(viewport={"width":390,"height":844},device_scale_factor=3,has_touch=True,is_mobile=True)
     portrait.goto(game_url)
