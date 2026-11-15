@@ -33,7 +33,8 @@ const score=g.score;g.tick(250);assert.equal(g.score,score);
 console.log('PASS: four catch positions, landscape, score, pause, misses, game over and modes');
 
 
-assert.match(html,/<g id="hare"/,'Rabbit sprite exists');
+assert.match(html,/<g id="hare"/,'Rabbit anchor exists');
+assert.match(html,/art\.js\?v=1\.3/,'Graphic bundle loads in Safari');
 assert.match(html,/translate\(-540 -365\)/,'Wolf moves as one scaled figure');
 assert.match(html,/scale\('/,'Wolf is resized in each catch position');
 
@@ -60,10 +61,12 @@ rabbit.tick(250);
 assert.equal(rabbit.misses,.5,'Miss while hare is visible counts half');
 assert.equal(rabbit.missedEggs,1,'Actual dropped eggs remain countable');
 assert.equal(rabbit.chickLane,'tl','Miss shows hatch effect');
+assert.ok(rabbit.chickUntil>rabbit.elapsed,'Rabbit-assisted miss hatches chick');
 rabbit.elapsed=9000;rabbit.spawnClock=0;rabbit.tick(25);
 assert.equal(rabbit.hareVisible,false,'Rabbit disappears after its display window');
 rabbit.spawnEgg('tr',{travelMs:250});rabbit.tick(250);
 assert.equal(rabbit.misses,1.5,'Miss without hare counts full point');
+assert.equal(rabbit.chickUntil,0,'Without rabbit, egg cracks without hatchling');
 
 const reset=new EggGame(()=>0);reset.start();
 reset.score=199;reset.misses=2.5;reset.spawnClock=0;reset.selectLane('tl');
