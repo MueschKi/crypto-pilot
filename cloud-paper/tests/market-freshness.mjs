@@ -8,6 +8,8 @@ await assert.rejects(fetchPaperPrices(make(values,null)),/market response date m
 await assert.rejects(fetchPaperPrices(make(values,'invalid-date')),/stale market response/);
 await assert.rejects(fetchPaperPrices(make({...values,XBTZEUR:{c:['86000']}})),/duplicate market symbol/);
 await assert.rejects(fetchPaperPrices(make({XXBTZEUR:values.XXBTZEUR})),/missing price/);
+// Never reinterpret an unrelated instrument whose name happens to contain BTC.
+await assert.rejects(fetchPaperPrices(make({BTCUSDT:values.XXBTZEUR,XETHZEUR:values.XETHZEUR,SOLEUR:values.SOLEUR})),/missing price/);
 await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['NaN']}})),/invalid price/);
 const cached=age=>async()=>({ok:true,headers:{get:k=>k==='date'?new Date().toUTCString():k==='age'?age:null},json:async()=>({error:[],result:values})});
 await assert.rejects(fetchPaperPrices(cached('121')),/stale market cache/);
