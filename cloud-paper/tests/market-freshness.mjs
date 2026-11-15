@@ -30,4 +30,15 @@ await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['Infinity']}}))
 await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['100000000000000']}})),/invalid price/);
 const futureDate=new Date(Date.now()+300000).toUTCString();
 await assert.rejects(fetchPaperPrices(make(values,futureDate)),/stale market response/);
+
+// Fail closed on absent transport metadata and ambiguous/unsafe Kraken payloads.
+const noHeaders=async()=>({ok:true,json:async()=>({error:[],result:values})});
+await assert.rejects(fetchPaperPrices(noHeaders),/market response date missing/);
+await assert.rejects(fetchPaperPrices(cached('999999999999999999999999999999')),/invalid market cache age/);
+await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:[]}})),/invalid price/);
+await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['-1']}})),/invalid price/);
+await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['1e309']}})),/invalid price/);
+const malformedJson=async()=>({ok:true,headers:{get:k=>k==='date'?new Date().toUTCString():null},json:async()=>{throw new SyntaxError('invalid JSON')}});
+await assert.rejects(fetchPaperPrices(malformedJson),/invalid JSON/);
+
 console.log('Public quote freshness and ambiguity gates passed');
