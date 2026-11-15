@@ -41,4 +41,15 @@ await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['1e309']}})),/i
 const malformedJson=async()=>({ok:true,headers:{get:k=>k==='date'?new Date().toUTCString():null},json:async()=>{throw new SyntaxError('invalid JSON')}});
 await assert.rejects(fetchPaperPrices(malformedJson),/invalid JSON/);
 
+
+// A malformed Kraken error envelope must never be accepted as success.
+for(const error of [undefined,null,{},'unexpected',0]) {
+  const malformed=async()=>({ok:true,headers:{get:k=>k==='date'?new Date().toUTCString():null},json:async()=>({error,result:values})});
+  await assert.rejects(fetchPaperPrices(malformed),/market invalid/);
+}
+for(const result of [null,[],42,'invalid']) {
+  const malformed=async()=>({ok:true,headers:{get:k=>k==='date'?new Date().toUTCString():null},json:async()=>({error:[],result})});
+  await assert.rejects(fetchPaperPrices(malformed),/market invalid/);
+}
+
 console.log('Public quote freshness and ambiguity gates passed');
