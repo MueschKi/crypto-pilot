@@ -19,13 +19,19 @@ export async function fetchPaperPrices(fetcher=fetch) {
   // A cache may refresh its Date while retaining an older origin response.
   // Respect Age even when Date looks current; malformed cache metadata fails closed.
   const ageHeader=res.headers?.get?.('age');
+  let cacheAgeMs=0;
   if(ageHeader!==null && ageHeader!==undefined){
     if(!/^(0|[1-9][0-9]*)$/.test(ageHeader))throw Error('invalid market cache age');
     const ageSeconds=Number(ageHeader);
     if(!Number.isSafeInteger(ageSeconds)||ageSeconds>120)throw Error('stale market cache');
+    cacheAgeMs=ageSeconds*1000;
   }
   const servedAt=Date.parse(responseDate);
-  if(!Number.isFinite(servedAt)||Math.abs(Date.now()-servedAt)>120000)throw Error('stale market response');
+  const responseAgeMs=Date.now()-servedAt;
+  // Date and Age are independent signals. A cache may report a recent Date
+  // for a response that has already spent time in an intermediary cache.
+  if(!Number.isFinite(servedAt)||responseAgeMs < -120000 ||
+     Math.max(0,responseAgeMs)+cacheAgeMs>120000)throw Error('stale market response');
   const result={};
   for(const [key,value] of Object.entries(json.result)){
     const symbol=key.includes('XBT')||key.includes('BTC')?'BTC':key.includes('ETH')?'ETH':key.includes('SOL')?'SOL':null;
