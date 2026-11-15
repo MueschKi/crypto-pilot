@@ -160,6 +160,12 @@ export class PaperLedger {
         if(last && now-last.now<300000)return response({reason:'not_due',mode:'PAPER_ONLY'});
         const {decidePaperTrade}=await import('./strategy.mjs');
         const signal=decidePaperTrade({prices,previousPrices:last?.prices,wallet,enabled:true,halted:wallet.halted,nowMs:now,lastTradeMs:last?.lastTradeMs||0,smokeMode:this.env.PAPER_SMOKE_TRADES_ENABLED==='true'});
+        // Persist the tick reservation BEFORE any virtual fill. If checkpoint
+        // storage fails, fail closed without trading. A crash after the fill
+        // cannot replay the same tick with a new order ID on restart.
+        // Reserving a signal that later fails is safe: it skips one opportunity
+        // instead of risking a duplicated trade.
+        await storage.put('cron:last',{now,prices,lastTradeMs:signal.action==='WAIT'?(last?.lastTradeMs||0):now});
         let trade=null;
         if(signal.action!=='WAIT'){
           const quotePrice=prices[signal.symbol];
@@ -197,7 +203,6 @@ export class PaperLedger {
             }
           }
         }
-        await storage.put('cron:last',{now,prices,lastTradeMs:trade?now:(last?.lastTradeMs||0)});
         return response({mode:'PAPER_ONLY',signal:signal.action,reason:signal.reason,trade});
       } catch(_){return response({error:'cron storage or market processing unavailable'},503);}
     }
