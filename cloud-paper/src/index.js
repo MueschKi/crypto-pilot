@@ -77,9 +77,9 @@ export default {
     if (!identityClaims) return denied();
     if (!env.PAPER_LEDGER || !env.PAPER_SESSIONS) return response({error:"storage unavailable"},503);
     const url = new URL(request.url);
-    if (!["/v1/paper/status","/v1/paper/journal","/v1/paper/halt","/v1/paper/pause","/v1/paper/resume","/v1/paper/fill","/v1/paper/revoke"].includes(url.pathname))
+    if (!["/v1/paper/status","/v1/paper/journal","/v1/paper/halt","/v1/paper/pause","/v1/paper/resume","/v1/paper/fill","/v1/paper/revoke","/v1/paper/cron/status","/v1/paper/cron/pause","/v1/paper/cron/resume","/v1/paper/cron/halt"].includes(url.pathname))
       return response({error:"not found"},404);
-    const method = ["/v1/paper/status","/v1/paper/journal"].includes(url.pathname)?"GET":"POST";
+    const method = ["/v1/paper/status","/v1/paper/journal","/v1/paper/cron/status"].includes(url.pathname)?"GET":"POST";
     if (request.method !== method) return response({error:"method not allowed"},405);
     if (request.method === "POST") {
       const size = Number(request.headers.get("content-length")||0);
@@ -97,8 +97,23 @@ export default {
       if(sessionRes.status===401)return denied();
       if(!sessionRes.ok)return response({error:"session storage unavailable",mode:"PAPER_ONLY",realTrading:false},503);
     } catch (_) {return response({error:"session storage unavailable",mode:"PAPER_ONLY",realTrading:false},503);}
-    const id = env.PAPER_LEDGER.idFromName("wallet:v1:"+identityClaims.subject);
+    // Operator Cron controls must address the SAME Durable Object as scheduled ticks.
+    // Ordinary per-subject wallets remain isolated; these explicit routes operate
+    // the autonomous wallet and retain the verified identity/session gate above.
+    const cronControl = url.pathname.startsWith("/v1/paper/cron/");
+    const walletName = cronControl ? "wallet:v1:cloud-cron" : "wallet:v1:"+identityClaims.subject;
+    const id = env.PAPER_LEDGER.idFromName(walletName);
     const forwarded = new Request(request);
+    if (cronControl) {
+      const action=url.pathname.slice("/v1/paper/cron/".length);
+      const target=new URL(forwarded.url);
+      target.pathname="/v1/paper/"+action;
+      // Reconstruct the request to preserve method and headers while changing path.
+      const rerouted=new Request(target,forwarded);
+      rerouted.headers.set("x-internal-paper-token-id",identityClaims.tokenId);
+      try { return await env.PAPER_LEDGER.get(id).fetch(rerouted); }
+      catch (_) { return response({error:"cron wallet storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
+    }
     forwarded.headers.set("x-internal-paper-token-id",identityClaims.tokenId);
     try { return await env.PAPER_LEDGER.get(id).fetch(forwarded); }
     catch (_) { return response({error:"paper storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
