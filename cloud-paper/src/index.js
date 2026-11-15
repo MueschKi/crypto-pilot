@@ -157,7 +157,10 @@ export class PaperLedger {
         if(!validState(wallet)||wallet.halted)return response({error:'halted or corrupt wallet'},409);
         const last=await storage.get('cron:last');
         if(last && (!Number.isSafeInteger(last.now)||last.now>now))return response({error:'invalid checkpoint'},503);
-        if(last && now-last.now<300000)return response({reason:'not_due',mode:'PAPER_ONLY'});
+        // Compare five-minute UTC buckets rather than elapsed milliseconds: scheduled
+        // invocations can arrive a few seconds early/late around a boundary.
+        // A duplicate in the same bucket must never execute twice.
+        if(last && Math.floor(now/300000)<=Math.floor(last.now/300000))return response({reason:'not_due',mode:'PAPER_ONLY'});
         const {decidePaperTrade}=await import('./strategy.mjs');
         const signal=decidePaperTrade({prices,previousPrices:last?.prices,wallet,enabled:true,halted:wallet.halted,nowMs:now,lastTradeMs:last?.lastTradeMs||0,smokeMode:this.env.PAPER_SMOKE_TRADES_ENABLED==='true'});
         // Persist the tick reservation BEFORE any virtual fill. If checkpoint
