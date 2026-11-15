@@ -159,7 +159,15 @@ export class PaperLedger {
         const signal=decidePaperTrade({prices,previousPrices:last?.prices,wallet,enabled:true,halted:wallet.halted,nowMs:now,lastTradeMs:last?.lastTradeMs||0,smokeMode:this.env.PAPER_SMOKE_TRADES_ENABLED==='true'});
         let trade=null;
         if(signal.action!=='WAIT'){
-          const price=prices[signal.symbol];
+          const quotePrice=prices[signal.symbol];
+          // Conservative paper execution: pay 0.1% above the quote on BUY,
+          // receive 0.1% below the quote on SELL. Keep settlement in integer cents.
+          // Reject unrepresentable adjusted prices rather than silently dropping costs.
+          const price=signal.action==='BUY'
+            ?Math.ceil(quotePrice*1001/1000)
+            :Math.floor(quotePrice*999/1000);
+          if(!Number.isSafeInteger(price)||price<=0)
+            return response({error:'invalid execution price'},503);
           // Crypto is fractional: round the cash value to cents, not the crypto quantity
           // to an exact-cent multiple (which makes €50 BTC orders impossible).
           const units=signal.action==='BUY'
