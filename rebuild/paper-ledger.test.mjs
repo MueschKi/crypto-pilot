@@ -36,3 +36,18 @@ test("malformed orders fail without creating a paper trade", () => {
  assert.throws(() => applyPaperOrder(wallet(), undefined));
  assert.equal(wallet().trades.length, 0);
 });
+
+test("fractional oversell cannot mint cash or create negative inventory", () => {
+ const state = {...wallet(), cash: 900, quantity: 0.1, costBasis: 10};
+ const result = applyPaperOrder(state, {...buy, id:"oversell", side:"SELL", quantity:0.1000000005});
+ assert.equal(result.status, "insufficient_position");
+ assert.strictEqual(result.state, state);
+ assert.equal(state.trades.length, 0);
+});
+test("fractional overdraft cannot make paper cash negative", () => {
+ const state = {...wallet(), cash: 100};
+ const quantity = 100 / (100 * 1.001 * 1.004) + 1e-11;
+ const result = applyPaperOrder(state, {...buy, id:"overdraft", quantity}, {maxExposure:1});
+ assert.equal(result.status, "insufficient_cash");
+ assert.strictEqual(result.state, state);
+});
