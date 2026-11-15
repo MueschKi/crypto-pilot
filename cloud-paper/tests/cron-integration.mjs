@@ -137,6 +137,28 @@ assert.equal((await smokeSell.json()).trade?.persisted,true);
 assert.equal(data.get('journal:2')?.fill.side,'SELL');
 assert.equal(data.get('state')?.sequence,2);
 env.PAPER_SMOKE_TRADES_ENABLED='false';
+// A failed atomic journal write must roll back the wallet and must not replay
+// the reserved cron bucket after recovery (fail closed rather than double-fill).
+data=new Map();
+await storage.put('cron:last',{now:now-300000,prices:realistic,lastTradeMs:0});
+const stableTransaction=storage.transaction;
+storage.transaction=async fn=>stableTransaction(async txn=>fn({
+  get:txn.get,
+  put:async (key,value)=>{
+    if(key==='journal:1')throw Error('simulated journal outage');
+    return txn.put(key,value);
+  }
+}));
+const failedJournal=await tick(now,{...realistic,BTC:8600000});
+assert.equal(failedJournal.status,503,'journal outage must reject the tick');
+assert.equal(data.get('state'),undefined,'failed transaction must not change wallet');
+assert.equal(data.get('journal:1'),undefined,'failed transaction must not leave journal');
+assert.equal(data.get('order:cron_'+Math.floor(now/300000)+'_BTC_BUY'),undefined);
+assert.equal(data.get('cron:last')?.now,now,'failed trade must retain reserved tick');
+storage.transaction=stableTransaction;
+const noReplay=await tick(now,{...realistic,BTC:8600000});
+assert.equal((await noReplay.json()).reason,'not_due','recovery must not replay failed bucket');
+assert.equal(data.get('state'),undefined);
 console.log('Cloud cron wallet integration passed');
 
 // Scheduled Worker must surface a rejected cron as an observable failure.
