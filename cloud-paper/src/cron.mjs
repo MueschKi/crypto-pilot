@@ -29,7 +29,8 @@ export async function fetchPaperPrices(fetcher=fetch) {
   if(ageHeader!==null && ageHeader!==undefined){
     if(!/^(0|[1-9][0-9]*)$/.test(ageHeader))throw Error('invalid market cache age');
     const ageSeconds=Number(ageHeader);
-    if(!Number.isSafeInteger(ageSeconds)||ageSeconds>120)throw Error('stale market cache');
+    if(!Number.isSafeInteger(ageSeconds))throw Error('invalid market cache age');
+    if(ageSeconds>120)throw Error('stale market cache');
     cacheAgeMs=ageSeconds*1000;
   }
   const servedAt=Date.parse(responseDate);
