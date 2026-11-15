@@ -11,7 +11,13 @@ export async function runPaperCron(env, now=Date.now()) {
 export async function fetchPaperPrices(fetcher=fetch) {
   const res=await fetcher('https://api.kraken.com/0/public/Ticker?pair=XBTEUR,ETHEUR,SOLEUR',{headers:{accept:'application/json','cache-control':'no-cache'},cache:'no-store',signal:AbortSignal.timeout(8000)});
   if(!res.ok)throw Error('market unavailable');
-  const json=await res.json();if(json.error?.length || !json.result)throw Error('market invalid');
+  const json=await res.json();
+  // Kraken's envelope must be well formed; malformed error fields must not
+  // accidentally be interpreted as a successful response.
+  if(!json || typeof json!=='object' || Array.isArray(json)
+    || !Array.isArray(json.error) || json.error.length!==0
+    || !json.result || typeof json.result!=='object' || Array.isArray(json.result))
+    throw Error('market invalid');
   // Kraken's public Ticker endpoint has no quote timestamp. Never claim a
   // historical response is fresh: reject a stale HTTP response Date when present.
   const responseDate=res.headers?.get?.('date');
