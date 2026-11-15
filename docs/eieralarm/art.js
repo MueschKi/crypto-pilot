@@ -142,6 +142,7 @@ wolf.innerHTML=`<g display="none">${prior}</g>
 
 const styled=document.createElement('style');styled.id='art-v13-style';styled.textContent=`
   #handheld .topbar{display:none}
+  #handheld #start,#handheld #message{display:none!important}
   .face-button{color:transparent!important;text-shadow:none!important}
   #handheld>svg [aria-label]{font-family:system-ui}
   #handheld .micro-button{background:linear-gradient(#d3d4cf,#989e9c 50%,#565d5e);border-color:#6d7270}
@@ -161,6 +162,13 @@ const logo=document.createElementNS(svgNS,'g'); logo.setAttribute('id','egg-bran
 logo.innerHTML='<ellipse cx="73" cy="73" rx="19" ry="26" fill="none" stroke="#575f58" stroke-width="4"/><path d="M62 79 q12 19 24 0" fill="none" stroke="#575f58" stroke-width="3"/><text x="108" y="79" font-size="15" fill="#575f58" font-weight="bold" letter-spacing="1">EI</text>';
 svg.appendChild(logo);
 
+const score=document.getElementById('lcdScore');
+if(score){score.setAttribute('x','545');score.setAttribute('y','174');score.setAttribute('font-size','42');}
+const modeText=document.getElementById('lcdMode');
+if(modeText){modeText.setAttribute('x','212');modeText.setAttribute('y','437');modeText.setAttribute('text-anchor','start');modeText.setAttribute('font-size','14');}
+for(const t of svg.querySelectorAll('text')){
+ if(t.getAttribute('x')==='685'&&t.textContent==='PUNKTE')t.textContent='';
+}
 const label=(x,y,string)=>[...svg.querySelectorAll('text')].find(el=>el.getAttribute('x')===String(x)&&el.getAttribute('y')===String(y))?.replaceChildren(document.createTextNode(string));
 label(545,84,'EIERALARM · LCD');label(545,505,'EIERSPIEL · RETRO');label(47,147,'');label(44,325,'');label(969,479,'v1.3');
 const heading=[...svg.querySelectorAll('text')].find(el=>el.getAttribute('x')==='545'&&el.getAttribute('y')==='84');
@@ -171,6 +179,10 @@ const oldDraw=window.draw;
 if(typeof oldDraw!=='function')return;
 window.draw=function(){
   oldDraw();
+  const scoreValue=document.getElementById('lcdScore');
+  if(game.status==='paused')scoreValue.textContent='PAUSE';
+  if(game.status==='ready')document.getElementById('lcdMode').textContent='SPIEL A / B';
+  if(game.status==='over')document.getElementById('lcdMode').textContent='ENDE';
   const left=game.lane.endsWith('l'),upper=game.lane.startsWith('t');
   // Four stable LCD frames with matched basket and track coordinates.
   const cx=left?506:574,cy=upper?325:356;
