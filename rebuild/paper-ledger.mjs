@@ -27,14 +27,14 @@ export function applyPaperOrder(state, order, policy = {}) {
   const next = { ...state, trades: [...state.trades] };
   if (order.side === "BUY") {
     const equity = state.cash + state.quantity * order.price;
-    if (notional + fee > state.cash + 1e-9) return { state, status: "insufficient_cash" };
+    if (notional + fee > state.cash) return { state, status: "insufficient_cash" };
     if ((state.quantity + order.quantity) * order.price > equity * maxExposure + 1e-9)
       return { state, status: "exposure_limit" };
     next.cash -= notional + fee;
     next.quantity += order.quantity;
     next.costBasis += notional + fee;
   } else {
-    if (order.quantity > state.quantity + 1e-9) return { state, status: "insufficient_position" };
+    if (order.quantity > state.quantity) return { state, status: "insufficient_position" };
     const basisRemoved = state.costBasis * (order.quantity / state.quantity);
     next.cash += notional - fee;
     next.quantity -= order.quantity;
