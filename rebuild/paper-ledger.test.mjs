@@ -212,3 +212,19 @@ test("zero-notional virtual orders fail closed", () => {
  assert.throws(() => applyPaperOrder(state, {...buy, id:"zero-notional", price:Number.MIN_VALUE, quantity:Number.MIN_VALUE}), /underflow/);
  assert.deepEqual(state, before);
 });
+
+test("persisted journal cannot run backward in time", () => {
+ const first = applyPaperOrder(wallet(), buy).state;
+ const second = applyPaperOrder(first, {...buy, id:"tick:2", now:100001, priceTimestamp:100001}).state;
+ const reversed = {...second, trades:[second.trades[1], second.trades[0]]};
+ const snapshot = structuredClone(reversed);
+ assert.throws(() => applyPaperOrder(reversed, {...buy, id:"tick:3", now:100002, priceTimestamp:100002}), /invalid wallet/);
+ assert.deepEqual(reversed, snapshot);
+});
+
+test("new paper order cannot predate latest persisted trade", () => {
+ const state = applyPaperOrder(wallet(), buy).state;
+ const snapshot = structuredClone(state);
+ assert.throws(() => applyPaperOrder(state, {...buy, id:"clock-rollback", now:99999, priceTimestamp:99999}), /clock precedes persisted journal/);
+ assert.deepEqual(state, snapshot);
+});
