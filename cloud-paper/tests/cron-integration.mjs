@@ -71,7 +71,11 @@ for (const bad of [
   {now:now-300000,prices:{...realistic,BTC:-1},lastTradeMs:0},
   {now:now-300000,prices:realistic,lastTradeMs:now+1},
   {now:now-300000,prices:realistic,lastTradeMs:NaN},
-  {now:-1,prices:realistic,lastTradeMs:0}
+  {now:-1,prices:realistic,lastTradeMs:0},
+  false,
+  0,
+  'invalid',
+  []
 ]) {
   data=new Map();
   await storage.put('cron:last',bad);
