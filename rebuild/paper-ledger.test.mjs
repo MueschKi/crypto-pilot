@@ -215,7 +215,7 @@ test("zero-notional virtual orders fail closed", () => {
 
 test("persisted journal cannot run backward in time", () => {
  const first = applyPaperOrder(wallet(), buy).state;
- const second = applyPaperOrder(first, {...buy, id:"tick:2", now:100001, priceTimestamp:100001}).state;
+ const second = applyPaperOrder(first, {...buy, id:"tick:2", side:"SELL", quantity:1, now:100001, priceTimestamp:100001}).state;
  const reversed = {...second, trades:[second.trades[1], second.trades[0]]};
  const snapshot = structuredClone(reversed);
  assert.throws(() => applyPaperOrder(reversed, {...buy, id:"tick:3", now:100002, priceTimestamp:100002}), /invalid wallet/);
