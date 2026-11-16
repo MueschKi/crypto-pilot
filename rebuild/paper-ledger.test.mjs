@@ -164,3 +164,16 @@ test("persisted inventory and cost basis must agree before paper fills", () => {
    assert.deepEqual(state, before);
  }
 });
+
+
+test("fractional sell retains sub-nanounit inventory and proportional basis", () => {
+ const state = {...wallet(), quantity:1e-10, costBasis:1e-8};
+ const before = structuredClone(state);
+ const result = applyPaperOrder(state, {...buy, id:"fractional-sell", side:"SELL", quantity:5e-11});
+ assert.equal(result.status, "filled");
+ assert.ok(result.state.quantity > 0);
+ assert.equal(result.state.quantity, 5e-11);
+ assert.equal(result.state.costBasis, 5e-9);
+ assert.equal(result.state.trades.length, 1);
+ assert.deepEqual(state, before);
+});
