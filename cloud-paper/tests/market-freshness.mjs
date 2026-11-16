@@ -52,4 +52,8 @@ for(const result of [null,[],42,'invalid']) {
   await assert.rejects(fetchPaperPrices(malformed),/market invalid/);
 }
 
+// Reject type coercion and ambiguous numeric encodings from the exchange.
+for(const bad of [true,false,null,1,{},'1e2','+150',' 150','0150']) {
+  await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:[bad]}})),/invalid price/);
+}
 console.log('Public quote freshness and ambiguity gates passed');
