@@ -77,3 +77,31 @@ console.log('Public quote freshness and ambiguity gates passed');
     assert.equal(ledgerCalls,0,'market outage must never reach the paper ledger');
   } finally { globalThis.fetch=priorFetch; }
 }
+
+// Missing or undersized Cron credentials must fail before fetching public prices
+// or touching persistent storage. A disabled deployment cannot trade.
+for (const key of [undefined, '', 'short']) {
+  const previousFetch=globalThis.fetch;
+  let marketCalls=0;
+  let ledgerCalls=0;
+  globalThis.fetch=async()=>{marketCalls++;throw Error('market must not be called');};
+  try {
+    const disabled=await runPaperCron({
+      PAPER_CRON_KEY:key,
+      PAPER_LEDGER:{idFromName:()=>{ledgerCalls++;return 'wallet';},get:()=>{ledgerCalls++;throw Error('ledger must not be called');}}
+    },Date.now());
+    assert.deepEqual(disabled,{ok:false,reason:'disabled'});
+    assert.equal(marketCalls,0);
+    assert.equal(ledgerCalls,0);
+  } finally { globalThis.fetch=previousFetch; }
+}
+// Missing Durable Object binding must also avoid an external market request.
+{
+  const previousFetch=globalThis.fetch;
+  let marketCalls=0;
+  globalThis.fetch=async()=>{marketCalls++;throw Error('market must not be called');};
+  try {
+    assert.deepEqual(await runPaperCron({PAPER_CRON_KEY:'x'.repeat(32)},Date.now()),{ok:false,reason:'unavailable'});
+    assert.equal(marketCalls,0);
+  } finally {globalThis.fetch=previousFetch;}
+}
