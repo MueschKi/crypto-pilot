@@ -28,7 +28,7 @@ export function applyPaperOrder(state, order, policy = {}) {
   if (state.trades.some(t => t.id === order.id)) return { state, status: "duplicate" };
   if (!["BUY", "SELL"].includes(order.side) || !Number.isFinite(order.price) || order.price <= 0 ||
       !Number.isFinite(order.quantity) || order.quantity <= 0 || !Number.isFinite(now) ||
-      !Number.isFinite(order.priceTimestamp) || order.priceTimestamp > now ||
+      !Number.isFinite(order.priceTimestamp) || order.priceTimestamp < 0 || now < 0 || order.priceTimestamp > now ||
       now - order.priceTimestamp > maxAgeMs) throw new Error("invalid or stale quote/order");
   const executionPrice = order.price * (order.side === "BUY" ? 1 + slippageRate : 1 - slippageRate);
   const notional = executionPrice * order.quantity;
