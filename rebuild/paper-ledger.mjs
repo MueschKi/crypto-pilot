@@ -34,7 +34,7 @@ export function applyPaperOrder(state, order, policy = {}) {
   const executionPrice = order.price * (order.side === "BUY" ? 1 + slippageRate : 1 - slippageRate);
   const notional = executionPrice * order.quantity;
   const fee = notional * feeRate;
-  if (![executionPrice, notional, fee].every(Number.isFinite)) throw new Error("overflow");
+  if (![executionPrice, notional, fee].every(Number.isFinite) || executionPrice <= 0 || notional <= 0) throw new Error("overflow or underflow");
   const next = { ...state, trades: [...state.trades] };
   if (order.side === "BUY") {
     const equity = state.cash + state.quantity * order.price;
@@ -59,6 +59,8 @@ export function applyPaperOrder(state, order, policy = {}) {
     next.costBasis -= basisRemoved;
     if (next.quantity === 0) next.costBasis = 0;
   }
+  if (next.quantity === state.quantity || (order.side === "BUY" && next.cash === state.cash) ||
+      (order.side === "SELL" && next.cash === state.cash)) throw new Error("wallet precision underflow");
   if (![next.cash, next.quantity, next.costBasis].every(Number.isFinite) ||
       next.cash < 0 || next.quantity < 0 || next.costBasis < 0)
     throw new Error("wallet arithmetic overflow");
