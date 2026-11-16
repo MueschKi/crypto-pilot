@@ -198,3 +198,17 @@ test("paper timestamps must be safe integer milliseconds", () => {
    }
  }
 });
+
+test("subnormal virtual fills cannot create journal entries without wallet movement", () => {
+ const state = wallet();
+ const before = structuredClone(state);
+ assert.throws(() => applyPaperOrder(state, {...buy, id:"tiny-buy", quantity:1e-320}), /underflow/);
+ assert.deepEqual(state, before);
+});
+
+test("zero-notional virtual orders fail closed", () => {
+ const state = wallet();
+ const before = structuredClone(state);
+ assert.throws(() => applyPaperOrder(state, {...buy, id:"zero-notional", price:Number.MIN_VALUE, quantity:Number.MIN_VALUE}), /underflow/);
+ assert.deepEqual(state, before);
+});
