@@ -60,3 +60,17 @@ test("rejects finite inputs that overflow wallet arithmetic", () => {
  assert.throws(() => applyPaperOrder(hugeSell, {...buy, id:"overflow-sell", side:"SELL", price:100, quantity:1e307}), /overflow/);
  assert.equal(hugeSell.trades.length, 0);
 });
+
+
+test("corrupt wallet controls and journal fail closed without changing balances", () => {
+ for (const patch of [
+   {enabled:"true"}, {enabled:1}, {emergencyStop:"false"}, {emergencyStop:null},
+   {trades:[null]}, {trades:[{}]}, {trades:[{id:"bad id"}]},
+   {trades:[{id:"same"},{id:"same"}]}
+ ]) {
+   const state={...wallet(),...patch};
+   const before=structuredClone(state);
+   assert.throws(()=>applyPaperOrder(state,buy),/invalid wallet/);
+   assert.deepEqual(state,before);
+ }
+});
