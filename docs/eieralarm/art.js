@@ -142,7 +142,7 @@ wolf.innerHTML=`<g display="none">${prior}</g>
 
 const styled=document.createElement('style');styled.id='art-v13-style';styled.textContent=`
   #handheld .topbar{display:none}
-  #handheld #start,#handheld #message{display:none!important}
+  #handheld #start:not([hidden]){display:block} #handheld #start[hidden]{display:none} #handheld #message:not(:empty){display:block} #handheld #message:empty{display:none}
   .face-button{color:transparent!important;text-shadow:none!important}
   #handheld>svg [aria-label]{font-family:system-ui}
   #handheld .micro-button{background:linear-gradient(#d3d4cf,#989e9c 50%,#565d5e);border-color:#6d7270}
