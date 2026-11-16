@@ -74,3 +74,10 @@ test("corrupt wallet controls and journal fail closed without changing balances"
    assert.deepEqual(state,before);
  }
 });
+
+test("projected position overflow fails closed without writing a trade", () => {
+ const state = {...wallet(), cash:1e308, quantity:1e308, costBasis:1e307};
+ const before = structuredClone(state);
+ assert.throws(() => applyPaperOrder(state, {...buy, id:"projected-overflow", price:0.1, quantity:1e308}, {maxExposure:1}), /exposure overflow/);
+ assert.deepEqual(state, before);
+});
