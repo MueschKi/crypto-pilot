@@ -14,7 +14,7 @@ export function applyPaperOrder(state, order, policy = {}) {
         !["BUY", "SELL"].includes(t.side) || !Number.isFinite(t.quantity) || t.quantity <= 0 ||
         !Number.isFinite(t.executionPrice) || t.executionPrice <= 0 ||
         !Number.isFinite(t.fee) || t.fee < 0 ||
-        !Number.isFinite(t.priceTimestamp) || !Number.isFinite(t.at) ||
+        !Number.isSafeInteger(t.priceTimestamp) || !Number.isSafeInteger(t.at) ||
         t.priceTimestamp < 0 || t.at < 0 || t.priceTimestamp > t.at ||
         (Number.isFinite(now) && t.at > now)) ||
       new Set(state.trades.map(t => t.id)).size !== state.trades.length)
@@ -28,8 +28,8 @@ export function applyPaperOrder(state, order, policy = {}) {
     throw new Error("invalid id");
   if (state.trades.some(t => t.id === order.id)) return { state, status: "duplicate" };
   if (!["BUY", "SELL"].includes(order.side) || !Number.isFinite(order.price) || order.price <= 0 ||
-      !Number.isFinite(order.quantity) || order.quantity <= 0 || !Number.isFinite(now) ||
-      !Number.isFinite(order.priceTimestamp) || order.priceTimestamp < 0 || now < 0 || order.priceTimestamp > now ||
+      !Number.isFinite(order.quantity) || order.quantity <= 0 || !Number.isSafeInteger(now) ||
+      !Number.isSafeInteger(order.priceTimestamp) || order.priceTimestamp < 0 || now < 0 || order.priceTimestamp > now ||
       now - order.priceTimestamp > maxAgeMs) throw new Error("invalid or stale quote/order");
   const executionPrice = order.price * (order.side === "BUY" ? 1 + slippageRate : 1 - slippageRate);
   const notional = executionPrice * order.quantity;
