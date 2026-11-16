@@ -17,7 +17,8 @@ export function applyPaperOrder(state, order, policy = {}) {
         !Number.isSafeInteger(t.priceTimestamp) || !Number.isSafeInteger(t.at) ||
         t.priceTimestamp < 0 || t.at < 0 || t.priceTimestamp > t.at ||
         (Number.isFinite(now) && t.at > now)) ||
-      new Set(state.trades.map(t => t.id)).size !== state.trades.length)
+      new Set(state.trades.map(t => t.id)).size !== state.trades.length ||
+      state.trades.some((t, i) => i > 0 && t.at < state.trades[i - 1].at))
     throw new Error("invalid wallet control or journal");
   if (!Number.isSafeInteger(maxAgeMs) || maxAgeMs < 0 || maxAgeMs > 120000 ||
       ![feeRate, slippageRate, maxExposure].every(Number.isFinite) ||
@@ -27,6 +28,8 @@ export function applyPaperOrder(state, order, policy = {}) {
   if (!order || typeof order.id !== "string" || !/^[a-zA-Z0-9:_-]{1,128}$/.test(order.id))
     throw new Error("invalid id");
   if (state.trades.some(t => t.id === order.id)) return { state, status: "duplicate" };
+  if (state.trades.length && Number.isSafeInteger(now) && now < state.trades[state.trades.length - 1].at)
+    throw new Error("order clock precedes persisted journal");
   if (!["BUY", "SELL"].includes(order.side) || !Number.isFinite(order.price) || order.price <= 0 ||
       !Number.isFinite(order.quantity) || order.quantity <= 0 || !Number.isSafeInteger(now) ||
       !Number.isSafeInteger(order.priceTimestamp) || order.priceTimestamp < 0 || now < 0 || order.priceTimestamp > now ||
