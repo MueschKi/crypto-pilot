@@ -27,11 +27,12 @@ export function applyPaperOrder(state, order, policy = {}) {
   const executionPrice = order.price * (order.side === "BUY" ? 1 + slippageRate : 1 - slippageRate);
   const notional = executionPrice * order.quantity;
   const fee = notional * feeRate;
-  if (!Number.isFinite(notional) || !Number.isFinite(fee)) throw new Error("overflow");
+  if (![executionPrice, notional, fee].every(Number.isFinite)) throw new Error("overflow");
   const next = { ...state, trades: [...state.trades] };
   if (order.side === "BUY") {
     const equity = state.cash + state.quantity * order.price;
     if (!Number.isFinite(equity)) throw new Error("wallet valuation overflow");
+    if (!Number.isFinite(notional + fee)) throw new Error("wallet debit overflow");
     if (notional + fee > state.cash) return { state, status: "insufficient_cash" };
     const projectedQuantity = state.quantity + order.quantity;
     const projectedExposure = projectedQuantity * order.price;
