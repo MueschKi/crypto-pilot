@@ -136,3 +136,17 @@ test("persisted journal timestamps cannot be negative or ahead of current tick",
    assert.deepEqual(state,before);
  }
 });
+
+
+test("negative order clock or quote timestamp cannot create virtual trades", () => {
+ for (const order of [
+   {...buy, now:-1, priceTimestamp:-2},
+   {...buy, now:100000, priceTimestamp:-1},
+   {...buy, now:-1, priceTimestamp:0}
+ ]) {
+   const state=wallet();
+   const before=structuredClone(state);
+   assert.throws(() => applyPaperOrder(state, order), /invalid or stale quote\/order/);
+   assert.deepEqual(state,before);
+ }
+});
