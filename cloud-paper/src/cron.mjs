@@ -46,7 +46,11 @@ export async function fetchPaperPrices(fetcher=fetch) {
     const symbol=({XXBTZEUR:'BTC',XBTZEUR:'BTC',XETHZEUR:'ETH',ETHEUR:'ETH',SOLEUR:'SOL'})[key]||null;
     if(!symbol)continue;
     if(Object.hasOwn(result,symbol))throw Error('duplicate market symbol');
-    const price=Number(value?.c?.[0]);
+    const rawPrice=value?.c?.[0];
+    // Kraken publishes decimal strings. Reject booleans, nulls and exponent
+    // notation rather than coercing malformed market payloads into prices.
+    if(typeof rawPrice!=='string'||!/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(rawPrice))throw Error('invalid price');
+    const price=Number(rawPrice);
     if(!Number.isFinite(price)||price<=0||!Number.isSafeInteger(Math.round(price*100)))throw Error('invalid price');
     result[symbol]=Math.round(price*100);
   }
