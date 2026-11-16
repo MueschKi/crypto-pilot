@@ -33,7 +33,12 @@ export function applyPaperOrder(state, order, policy = {}) {
     const equity = state.cash + state.quantity * order.price;
     if (!Number.isFinite(equity)) throw new Error("wallet valuation overflow");
     if (notional + fee > state.cash) return { state, status: "insufficient_cash" };
-    if ((state.quantity + order.quantity) * order.price > equity * maxExposure + 1e-9)
+    const projectedQuantity = state.quantity + order.quantity;
+    const projectedExposure = projectedQuantity * order.price;
+    const exposureCap = equity * maxExposure;
+    if (![projectedQuantity, projectedExposure, exposureCap].every(Number.isFinite))
+      throw new Error("wallet exposure overflow");
+    if (projectedExposure > exposureCap + 1e-9)
       return { state, status: "exposure_limit" };
     next.cash -= notional + fee;
     next.quantity += order.quantity;
