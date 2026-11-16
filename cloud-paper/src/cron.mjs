@@ -51,7 +51,7 @@ export async function fetchPaperPrices(fetcher=fetch) {
     // notation rather than coercing malformed market payloads into prices.
     if(typeof rawPrice!=='string'||!/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/.test(rawPrice))throw Error('invalid price');
     const price=Number(rawPrice);
-    if(!Number.isFinite(price)||price<=0||!Number.isSafeInteger(Math.round(price*100)))throw Error('invalid price');
+    if(!Number.isFinite(price)||price<=0||!Number.isSafeInteger(Math.round(price*100))||Math.round(price*100)<=0)throw Error('invalid price');
     result[symbol]=Math.round(price*100);
   }
   if(symbols.some(s=>!Number.isSafeInteger(result[s])||result[s]<=0))throw Error('missing price');
