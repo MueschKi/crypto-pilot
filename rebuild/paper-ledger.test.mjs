@@ -150,3 +150,17 @@ test("negative order clock or quote timestamp cannot create virtual trades", () 
    assert.deepEqual(state,before);
  }
 });
+
+test("persisted inventory and cost basis must agree before paper fills", () => {
+ for (const patch of [
+   {quantity:0, costBasis:1},
+   {quantity:0, costBasis:Number.MIN_VALUE},
+   {quantity:1, costBasis:0},
+   {quantity:Number.MIN_VALUE, costBasis:0}
+ ]) {
+   const state = {...wallet(), ...patch};
+   const before = structuredClone(state);
+   assert.throws(() => applyPaperOrder(state, buy), /invalid wallet/);
+   assert.deepEqual(state, before);
+ }
+});
