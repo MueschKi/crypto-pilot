@@ -81,3 +81,10 @@ test("projected position overflow fails closed without writing a trade", () => {
  assert.throws(() => applyPaperOrder(state, {...buy, id:"projected-overflow", price:0.1, quantity:1e308}, {maxExposure:1}), /exposure overflow/);
  assert.deepEqual(state, before);
 });
+
+test("execution-price overflow fails closed before journaling", () => {
+ const state = {...wallet(), cash:1e308};
+ const before = structuredClone(state);
+ assert.throws(() => applyPaperOrder(state, {...buy, id:"price-overflow", price:1e308, quantity:1e-300}, {slippageRate:0.9, maxExposure:1}), /overflow/);
+ assert.deepEqual(state, before);
+});
