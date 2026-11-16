@@ -177,3 +177,24 @@ test("fractional sell retains sub-nanounit inventory and proportional basis", ()
  assert.equal(result.state.trades.length, 1);
  assert.deepEqual(state, before);
 });
+
+
+test("paper timestamps must be safe integer milliseconds", () => {
+ const valid = applyPaperOrder(wallet(), buy).state.trades[0];
+ for (const timestamp of [1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+   for (const order of [
+     {...buy, now:timestamp},
+     {...buy, priceTimestamp:timestamp}
+   ]) {
+     const state = wallet();
+     assert.throws(() => applyPaperOrder(state, order));
+     assert.equal(state.trades.length, 0);
+   }
+   for (const patch of [{at:timestamp}, {priceTimestamp:timestamp}]) {
+     const state = {...wallet(), trades:[{...valid,...patch}]};
+     const before = structuredClone(state);
+     assert.throws(() => applyPaperOrder(state, {...buy,id:"next"}), /invalid wallet/);
+     assert.deepEqual(state, before);
+   }
+ }
+});
