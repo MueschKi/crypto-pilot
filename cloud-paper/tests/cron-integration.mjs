@@ -98,6 +98,18 @@ for (const corrupt of [
   assert.equal(data.get('journal:1'),undefined,'corrupt wallet must not fill');
 }
 
+// A malformed persisted pause flag must never silently enable automatic trading.
+for (const corruptPause of ['false', 0, {}, []]) {
+  data=new Map();
+  await storage.put('cron:paused',corruptPause);
+  await storage.put('cron:last',{now:now-300000,prices:realistic,lastTradeMs:0});
+  const rejected=await tick(now,{...realistic,BTC:8600000});
+  assert.equal(rejected.status,503,'corrupt pause state must fail closed');
+  assert.equal(data.get('state'),undefined,'corrupt pause state must not trade');
+  assert.equal(data.get('cron:last')?.now,now-300000,'corrupt pause state must not reserve tick');
+}
+data=new Map();
+
 // Checkpoint storage failure must never produce a paper fill.
 data=new Map();
 await storage.put('cron:last',{now:now-300000,prices:realistic,lastTradeMs:0});
