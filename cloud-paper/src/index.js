@@ -161,7 +161,12 @@ export class PaperLedger {
       if(typeof key!=='string'||key.length<32||request.headers.get('x-paper-cron-key')!==key)return denied();
       if(this.env.PAPER_AUTOTRADE_ENABLED!=='true')return response({enabled:false,mode:'PAPER_ONLY'});
       // Operator pause survives Worker restarts and never clears an emergency halt.
-      try { if(await this.state.storage.get('cron:paused')===true)return response({enabled:false,reason:'operator_paused',mode:'PAPER_ONLY'}); }
+      try {
+        const pauseState=await this.state.storage.get('cron:paused');
+        if(pauseState!==undefined && pauseState!==null && typeof pauseState!=='boolean')
+          return response({error:'invalid operator pause state',mode:'PAPER_ONLY'},503);
+        if(pauseState===true)return response({enabled:false,reason:'operator_paused',mode:'PAPER_ONLY'});
+      }
       catch (_) { return response({error:'cron control storage unavailable'},503); }
       try {
         const {now,prices}=await request.json();
