@@ -27,6 +27,7 @@ export function applyPaperOrder(state, order, policy = {}) {
   const next = { ...state, trades: [...state.trades] };
   if (order.side === "BUY") {
     const equity = state.cash + state.quantity * order.price;
+    if (!Number.isFinite(equity)) throw new Error("wallet valuation overflow");
     if (notional + fee > state.cash) return { state, status: "insufficient_cash" };
     if ((state.quantity + order.quantity) * order.price > equity * maxExposure + 1e-9)
       return { state, status: "exposure_limit" };
@@ -41,6 +42,9 @@ export function applyPaperOrder(state, order, policy = {}) {
     next.costBasis -= basisRemoved;
     if (next.quantity < 1e-9) { next.quantity = 0; next.costBasis = 0; }
   }
+  if (![next.cash, next.quantity, next.costBasis].every(Number.isFinite) ||
+      next.cash < 0 || next.quantity < 0 || next.costBasis < 0)
+    throw new Error("wallet arithmetic overflow");
   next.trades.push({ id: order.id, side: order.side, quantity: order.quantity, executionPrice, fee, priceTimestamp: order.priceTimestamp, at: now });
   return { state: next, status: "filled" };
 }
