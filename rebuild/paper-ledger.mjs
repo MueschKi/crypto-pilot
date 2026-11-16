@@ -57,7 +57,7 @@ export function applyPaperOrder(state, order, policy = {}) {
     next.cash += notional - fee;
     next.quantity -= order.quantity;
     next.costBasis -= basisRemoved;
-    if (next.quantity < 1e-9) { next.quantity = 0; next.costBasis = 0; }
+    if (next.quantity === 0) next.costBasis = 0;
   }
   if (![next.cash, next.quantity, next.costBasis].every(Number.isFinite) ||
       next.cash < 0 || next.quantity < 0 || next.costBasis < 0)
