@@ -103,3 +103,21 @@ test("corrupt persisted trade fields fail closed before any new order", () => {
    assert.deepEqual(state, before);
  }
 });
+
+test("invalid risk policy cannot bypass validation through disabled or duplicate orders", () => {
+ const filled = applyPaperOrder(wallet(), buy).state;
+ for (const state of [
+   {...wallet(), enabled:false},
+   {...wallet(), emergencyStop:true},
+   filled
+ ]) {
+   const before=structuredClone(state);
+   for (const policy of [
+     {maxAgeMs:NaN}, {feeRate:Infinity}, {slippageRate:-0.01},
+     {maxExposure:0}, {maxExposure:2}
+   ]) {
+     assert.throws(() => applyPaperOrder(state,buy,policy),/invalid policy/);
+     assert.deepEqual(state,before);
+   }
+ }
+});
