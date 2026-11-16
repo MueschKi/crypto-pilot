@@ -17,16 +17,25 @@ export function evaluatePaperOrder({ side, price, quantity, cash, assetQuantity,
   if (!(executionPrice > 0)) return { ok: false, reason: "INVALID_EXECUTION_PRICE" };
   const gross = executionPrice * quantity;
   const fee = gross * feeRate;
-  if (![gross, fee].every(Number.isFinite)) return { ok: false, reason: "OVERFLOW" };
+  if (![executionPrice, gross, fee].every(Number.isFinite)) return { ok: false, reason: "OVERFLOW" };
   if (side === "BUY") {
     const debit = gross + fee;
-    if (debit > cash - equity * minimumCashReserveFraction)
+    const reserve = equity * minimumCashReserveFraction;
+    const orderCap = equity * maxOrderFraction;
+    const exposure = (assetQuantity + quantity) * executionPrice;
+    const exposureCap = equity * maxExposureFraction;
+    if (![debit, reserve, orderCap, exposure, exposureCap].every(Number.isFinite))
+      return { ok: false, reason: "OVERFLOW" };
+    if (debit > cash - reserve)
       return { ok: false, reason: "INSUFFICIENT_CASH_OR_RESERVE" };
-    if (gross > equity * maxOrderFraction) return { ok: false, reason: "ORDER_LIMIT" };
-    if ((assetQuantity + quantity) * executionPrice > equity * maxExposureFraction)
+    if (gross > orderCap) return { ok: false, reason: "ORDER_LIMIT" };
+    if (exposure > exposureCap)
       return { ok: false, reason: "EXPOSURE_LIMIT" };
     return { ok: true, side, quantity, executionPrice, fee, cashDelta: -debit, assetDelta: quantity };
   }
   if (quantity > assetQuantity) return { ok: false, reason: "INSUFFICIENT_ASSET" };
-  return { ok: true, side, quantity, executionPrice, fee, cashDelta: gross - fee, assetDelta: -quantity };
+  const proceeds = gross - fee;
+  if (!Number.isFinite(proceeds) || !Number.isFinite(cash + proceeds))
+    return { ok: false, reason: "OVERFLOW" };
+  return { ok: true, side, quantity, executionPrice, fee, cashDelta: proceeds, assetDelta: -quantity };
 }
