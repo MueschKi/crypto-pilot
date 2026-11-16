@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {fetchPaperPrices} from '../src/cron.mjs';
+import {fetchPaperPrices, runPaperCron} from '../src/cron.mjs';
 const values={XXBTZEUR:{c:['85000']},XETHZEUR:{c:['3000']},SOLEUR:{c:['150']}};
 const make=(result,date=new Date().toUTCString())=>async()=>({ok:true,headers:{get:k=>k==='date'?date:null},json:async()=>({error:[],result})});
 assert.deepEqual(await fetchPaperPrices(make(values)),{BTC:8500000,ETH:300000,SOL:15000});
@@ -58,3 +58,22 @@ for(const bad of [true,false,null,1,{},'1e2','+150',' 150','0150']) {
   await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:[bad]}})),/invalid price/);
 }
 console.log('Public quote freshness and ambiguity gates passed');
+
+// Integration boundary: no Durable Object invocation or virtual fill may occur
+// if public market transport is unavailable. No private exchange credentials.
+{
+  const priorFetch=globalThis.fetch;
+  let ledgerCalls=0;
+  globalThis.fetch=async()=>({ok:false,status:503});
+  try {
+    const env={
+      PAPER_CRON_KEY:'test-cron-secret-0123456789abcdef0123456789',
+      PAPER_LEDGER:{
+        idFromName:()=>{ledgerCalls++;return 'wallet';},
+        get:()=>{ledgerCalls++;return {fetch:async()=>{ledgerCalls++;return new Response('unexpected');}};}
+      }
+    };
+    await assert.rejects(runPaperCron(env,Date.now()),/market unavailable/);
+    assert.equal(ledgerCalls,0,'market outage must never reach the paper ledger');
+  } finally { globalThis.fetch=priorFetch; }
+}
