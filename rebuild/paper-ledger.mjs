@@ -13,7 +13,9 @@ export function applyPaperOrder(state, order, policy = {}) {
         !["BUY", "SELL"].includes(t.side) || !Number.isFinite(t.quantity) || t.quantity <= 0 ||
         !Number.isFinite(t.executionPrice) || t.executionPrice <= 0 ||
         !Number.isFinite(t.fee) || t.fee < 0 ||
-        !Number.isFinite(t.priceTimestamp) || !Number.isFinite(t.at) || t.priceTimestamp > t.at) ||
+        !Number.isFinite(t.priceTimestamp) || !Number.isFinite(t.at) ||
+        t.priceTimestamp < 0 || t.at < 0 || t.priceTimestamp > t.at ||
+        (Number.isFinite(now) && t.at > now)) ||
       new Set(state.trades.map(t => t.id)).size !== state.trades.length)
     throw new Error("invalid wallet control or journal");
   if (!Number.isSafeInteger(maxAgeMs) || maxAgeMs < 0 || maxAgeMs > 120000 ||
