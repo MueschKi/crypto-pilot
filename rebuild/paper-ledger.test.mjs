@@ -88,3 +88,18 @@ test("execution-price overflow fails closed before journaling", () => {
  assert.throws(() => applyPaperOrder(state, {...buy, id:"price-overflow", price:1e308, quantity:1e-300}, {slippageRate:0.9, maxExposure:1}), /overflow/);
  assert.deepEqual(state, before);
 });
+
+test("corrupt persisted trade fields fail closed before any new order", () => {
+ const valid = applyPaperOrder(wallet(), buy).state.trades[0];
+ for (const patch of [
+   {side:"HOLD"}, {quantity:0}, {quantity:Infinity},
+   {executionPrice:NaN}, {executionPrice:-1},
+   {fee:-0.01}, {fee:Infinity}, {priceTimestamp:Infinity},
+   {at:NaN}, {priceTimestamp:valid.at+1}
+ ]) {
+   const state = {...wallet(), trades:[{...valid,...patch}]};
+   const before = structuredClone(state);
+   assert.throws(() => applyPaperOrder(state, {...buy,id:"next-tick"}), /invalid wallet/);
+   assert.deepEqual(state, before);
+ }
+});
