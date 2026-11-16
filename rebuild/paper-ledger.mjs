@@ -8,6 +8,10 @@ export function applyPaperOrder(state, order, policy = {}) {
   if (!state || !Array.isArray(state.trades) || !Number.isFinite(state.cash) || state.cash < 0 ||
       !Number.isFinite(state.quantity) || state.quantity < 0 || !Number.isFinite(state.costBasis) || state.costBasis < 0)
     throw new Error("invalid wallet");
+  if (typeof state.enabled !== "boolean" || typeof state.emergencyStop !== "boolean" ||
+      state.trades.some(t => !t || typeof t.id !== "string" || !/^[a-zA-Z0-9:_-]{1,128}$/.test(t.id)) ||
+      new Set(state.trades.map(t => t.id)).size !== state.trades.length)
+    throw new Error("invalid wallet control or journal");
   if (!state.enabled || state.emergencyStop) return { state, status: "disabled" };
   if (!order || typeof order.id !== "string" || !/^[a-zA-Z0-9:_-]{1,128}$/.test(order.id))
     throw new Error("invalid id");
