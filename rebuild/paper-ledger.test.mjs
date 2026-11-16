@@ -51,3 +51,12 @@ test("fractional overdraft cannot make paper cash negative", () => {
  assert.equal(result.status, "insufficient_cash");
  assert.strictEqual(result.state, state);
 });
+
+test("rejects finite inputs that overflow wallet arithmetic", () => {
+ const huge = {...wallet(), cash:1e308, quantity:1e308, costBasis:1e308};
+ assert.throws(() => applyPaperOrder(huge, {...buy, id:"overflow-buy", price:100, quantity:1}, {maxExposure:1}), /overflow/);
+ assert.equal(huge.trades.length, 0);
+ const hugeSell = {...wallet(), cash:1e308, quantity:1e308, costBasis:1e308};
+ assert.throws(() => applyPaperOrder(hugeSell, {...buy, id:"overflow-sell", side:"SELL", price:100, quantity:1e307}), /overflow/);
+ assert.equal(hugeSell.trades.length, 0);
+});
