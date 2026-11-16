@@ -121,3 +121,18 @@ test("invalid risk policy cannot bypass validation through disabled or duplicate
    }
  }
 });
+
+test("persisted journal timestamps cannot be negative or ahead of current tick", () => {
+ const valid = applyPaperOrder(wallet(), buy).state.trades[0];
+ for (const patch of [
+   {priceTimestamp:-1, at:valid.at},
+   {priceTimestamp:-1, at:-1},
+   {at:-1, priceTimestamp:-2},
+   {at:buy.now+1, priceTimestamp:buy.now+1}
+ ]) {
+   const state = {...wallet(), trades:[{...valid,...patch}]};
+   const before = structuredClone(state);
+   assert.throws(() => applyPaperOrder(state, {...buy,id:"later"}), /invalid wallet/);
+   assert.deepEqual(state,before);
+ }
+});
