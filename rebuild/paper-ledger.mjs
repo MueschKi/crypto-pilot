@@ -16,6 +16,10 @@ export function applyPaperOrder(state, order, policy = {}) {
         !Number.isFinite(t.priceTimestamp) || !Number.isFinite(t.at) || t.priceTimestamp > t.at) ||
       new Set(state.trades.map(t => t.id)).size !== state.trades.length)
     throw new Error("invalid wallet control or journal");
+  if (!Number.isSafeInteger(maxAgeMs) || maxAgeMs < 0 || maxAgeMs > 120000 ||
+      ![feeRate, slippageRate, maxExposure].every(Number.isFinite) ||
+      feeRate < 0 || feeRate >= 1 || slippageRate < 0 || slippageRate >= 1 ||
+      maxExposure <= 0 || maxExposure > 1) throw new Error("invalid policy");
   if (!state.enabled || state.emergencyStop) return { state, status: "disabled" };
   if (!order || typeof order.id !== "string" || !/^[a-zA-Z0-9:_-]{1,128}$/.test(order.id))
     throw new Error("invalid id");
@@ -24,10 +28,6 @@ export function applyPaperOrder(state, order, policy = {}) {
       !Number.isFinite(order.quantity) || order.quantity <= 0 || !Number.isFinite(now) ||
       !Number.isFinite(order.priceTimestamp) || order.priceTimestamp > now ||
       now - order.priceTimestamp > maxAgeMs) throw new Error("invalid or stale quote/order");
-  if (!Number.isSafeInteger(maxAgeMs) || maxAgeMs < 0 || maxAgeMs > 120000 ||
-      ![feeRate, slippageRate, maxExposure].every(Number.isFinite) ||
-      feeRate < 0 || feeRate >= 1 || slippageRate < 0 || slippageRate >= 1 ||
-      maxExposure <= 0 || maxExposure > 1) throw new Error("invalid policy");
   const executionPrice = order.price * (order.side === "BUY" ? 1 + slippageRate : 1 - slippageRate);
   const notional = executionPrice * order.quantity;
   const fee = notional * feeRate;
