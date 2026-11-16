@@ -26,6 +26,7 @@ await assert.rejects(fetchPaperPrices(failedHttp),/market unavailable/);
 const exchangeError=async()=>({ok:true,headers:{get:k=>k==='date'?new Date().toUTCString():null},json:async()=>({error:['EGeneral:Temporary lockout'],result:values})});
 await assert.rejects(fetchPaperPrices(exchangeError),/market invalid/);
 await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['0']}})),/invalid price/);
+await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['0.001']}})),/invalid price/); // positive but rounds to zero cents
 await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['Infinity']}})),/invalid price/);
 await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['100000000000000']}})),/invalid price/);
 const futureDate=new Date(Date.now()+300000).toUTCString();
