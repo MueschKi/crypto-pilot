@@ -29,3 +29,15 @@ test("cannot sell unowned units", () => {
 test("rejects zero-price execution and invalid risk", () => {
   assert.equal(order({ ...base, side: "SELL", assetQuantity: 1, risk: {feeRate:0,slippageRate:1,maxExposureFraction:0.4,maxOrderFraction:0.1,minimumCashReserveFraction:0.05} }).ok, false);
 });
+
+test("fails closed on finite values overflowing exposure and cash arithmetic", () => {
+  const cases = [
+    { ...base, side: "BUY", price: 1e308, quantity: 2, cash: 1e308, equity: 1e308 },
+    { ...base, side: "BUY", price: 1, quantity: 1, cash: 1e308, equity: 1e308, assetQuantity: 1e308 },
+    { ...base, side: "SELL", price: 1e308, quantity: 1, cash: 1e308, equity: 1e308, assetQuantity: 1 }
+  ];
+  for (const input of cases) {
+    const result = order(input);
+    assert.deepEqual(result, { ok: false, reason: "OVERFLOW" });
+  }
+});
