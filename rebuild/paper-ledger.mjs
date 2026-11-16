@@ -6,7 +6,8 @@ export function applyPaperOrder(state, order, policy = {}) {
   const maxAgeMs = policy.maxAgeMs ?? 120000;
   const now = order?.now;
   if (!state || !Array.isArray(state.trades) || !Number.isFinite(state.cash) || state.cash < 0 ||
-      !Number.isFinite(state.quantity) || state.quantity < 0 || !Number.isFinite(state.costBasis) || state.costBasis < 0)
+      !Number.isFinite(state.quantity) || state.quantity < 0 || !Number.isFinite(state.costBasis) || state.costBasis < 0 ||
+      (state.quantity === 0 && state.costBasis !== 0) || (state.quantity > 0 && state.costBasis === 0)
     throw new Error("invalid wallet");
   if (typeof state.enabled !== "boolean" || typeof state.emergencyStop !== "boolean" ||
       state.trades.some(t => !t || typeof t.id !== "string" || !/^[a-zA-Z0-9:_-]{1,128}$/.test(t.id) ||
