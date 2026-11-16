@@ -9,7 +9,11 @@ export function applyPaperOrder(state, order, policy = {}) {
       !Number.isFinite(state.quantity) || state.quantity < 0 || !Number.isFinite(state.costBasis) || state.costBasis < 0)
     throw new Error("invalid wallet");
   if (typeof state.enabled !== "boolean" || typeof state.emergencyStop !== "boolean" ||
-      state.trades.some(t => !t || typeof t.id !== "string" || !/^[a-zA-Z0-9:_-]{1,128}$/.test(t.id)) ||
+      state.trades.some(t => !t || typeof t.id !== "string" || !/^[a-zA-Z0-9:_-]{1,128}$/.test(t.id) ||
+        !["BUY", "SELL"].includes(t.side) || !Number.isFinite(t.quantity) || t.quantity <= 0 ||
+        !Number.isFinite(t.executionPrice) || t.executionPrice <= 0 ||
+        !Number.isFinite(t.fee) || t.fee < 0 ||
+        !Number.isFinite(t.priceTimestamp) || !Number.isFinite(t.at) || t.priceTimestamp > t.at) ||
       new Set(state.trades.map(t => t.id)).size !== state.trades.length)
     throw new Error("invalid wallet control or journal");
   if (!state.enabled || state.emergencyStop) return { state, status: "disabled" };
