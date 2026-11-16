@@ -33,7 +33,7 @@ test("rejects zero-price execution and invalid risk", () => {
 test("fails closed on finite values overflowing exposure and cash arithmetic", () => {
   const cases = [
     { ...base, side: "BUY", price: 1e308, quantity: 2, cash: 1e308, equity: 1e308 },
-    { ...base, side: "BUY", price: 1, quantity: 1, cash: 1e308, equity: 1e308, assetQuantity: 1e308 },
+    { ...base, side: "BUY", price: 10, quantity: 1, cash: 1e308, equity: 1e308, assetQuantity: 1e308 },
     { ...base, side: "SELL", price: 1e308, quantity: 1, cash: 1e308, equity: 1e308, assetQuantity: 1 }
   ];
   for (const input of cases) {
