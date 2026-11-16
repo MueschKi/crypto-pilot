@@ -187,6 +187,25 @@ storage.transaction=stableTransaction;
 const noReplay=await tick(now,{...realistic,BTC:8600000});
 assert.equal((await noReplay.json()).reason,'not_due','recovery must not replay failed bucket');
 assert.equal(data.get('state'),undefined);
+// Wallet-write failure must roll back the journal and order atomically.
+data=new Map();
+await storage.put('cron:last',{now:now-300000,prices:realistic,lastTradeMs:0});
+storage.transaction=async fn=>stableTransaction(async txn=>fn({
+  get:txn.get,
+  put:async (key,value)=>{
+    if(key==='state')throw Error('simulated wallet persistence outage');
+    return txn.put(key,value);
+  }
+}));
+const failedWalletWrite=await tick(now,{...realistic,BTC:8600000});
+assert.equal(failedWalletWrite.status,503,'wallet write outage must reject the tick');
+assert.equal(data.get('state'),undefined,'wallet write failure must not persist wallet');
+assert.equal(data.get('journal:1'),undefined,'wallet write failure must roll back journal');
+assert.equal(data.get('order:cron_'+Math.floor(now/300000)+'_BTC_BUY'),undefined,'wallet write failure must roll back order');
+assert.equal(data.get('cron:last')?.now,now,'failed wallet write must retain reserved tick');
+storage.transaction=stableTransaction;
+assert.equal((await (await tick(now,{...realistic,BTC:8600000})).json()).reason,'not_due','failed wallet write must not replay bucket');
+
 console.log('Cloud cron wallet integration passed');
 
 // Scheduled Worker must surface a rejected cron as an observable failure.
