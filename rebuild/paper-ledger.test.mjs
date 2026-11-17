@@ -309,3 +309,14 @@ test("adverse buy slippage counts toward maximum exposure", () => {
  assert.equal(allowed.status, "filled");
  assert.equal(allowed.state.trades.length, 1);
 });
+
+
+test("duplicate paper orders reject malformed replay clocks without wallet mutation", () => {
+ const state = applyPaperOrder(wallet(), buy).state;
+ const snapshot = structuredClone(state);
+ for (const now of [undefined, null, NaN, Infinity, -1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
+   assert.throws(() => applyPaperOrder(state, {...buy, now}), /invalid order clock/);
+   assert.deepEqual(state, snapshot);
+ }
+ assert.equal(applyPaperOrder(state, buy).status, "duplicate");
+});
