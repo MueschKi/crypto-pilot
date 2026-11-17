@@ -12,7 +12,9 @@ export function evaluatePaperOrder({ side, price, quantity, cash, assetQuantity,
       price === 0 || quantity === 0 || equity === 0) return { ok: false, reason: "INVALID_INPUT" };
   const { feeRate, slippageRate, maxExposureFraction, maxOrderFraction, minimumCashReserveFraction } = risk ?? {};
   if (![feeRate, slippageRate, maxExposureFraction, maxOrderFraction, minimumCashReserveFraction]
-      .every(x => finiteNonnegative(x) && x <= 1)) return { ok: false, reason: "INVALID_RISK" };
+      .every(x => finiteNonnegative(x) && x <= 1) ||
+      feeRate >= 1 || slippageRate >= 1 || maxExposureFraction === 0 || maxOrderFraction === 0)
+    return { ok: false, reason: "INVALID_RISK" };
   const executionPrice = price * (side === "BUY" ? 1 + slippageRate : 1 - slippageRate);
   if (!(executionPrice > 0)) return { ok: false, reason: "INVALID_EXECUTION_PRICE" };
   const gross = executionPrice * quantity;
