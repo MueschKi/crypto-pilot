@@ -14,22 +14,17 @@ if(!svg||!scene||!houses||!wolf||!hare)return;
 // Corner enclosures and game LCD occupy the same proportions as a handheld,
 // but the houses, animals and brand lettering are entirely original artwork.
 const henHouse=(id,x,y,mirror=false)=>`<g id="hen-${id}" transform="translate(${x} ${y}) scale(${mirror?-1:1} 1)">
-  <path d="M-34 32 V-23 L0 -49 L34 -23 V32" stroke="#8f5149" stroke-width="6" fill="none"/>
-  <path d="M-39 -24 L0 -54 L39 -24" stroke="#a15348" stroke-width="7" fill="none"/>
-  <path d="M-30 -16 V29 M29 -17 V27" stroke="#894f48" stroke-width="3" fill="none"/>
-  <path d="M-27 21 H25" stroke="#314b3f" stroke-width="2.8"/>
-  <g transform="translate(-3 5)">
-    <!-- high swept tail, thick haunches and double feather marking -->
-    <path d="M-25 10 Q-36 -6 -30 -18 Q-23 -18 -17 -9 Q-24 -26 -11 -25 L-5 -8 Q12 -20 22 -6 Q30 6 20 19 Q12 29 -7 23 Q-21 22 -25 10Z" fill="#53695a" stroke="#233a30" stroke-width="3.5"/>
-    <path d="M-13 8 Q-12 -5 4 -6 Q17 -5 13 8 Q10 22 -3 19 Q-11 16 -13 8Z" fill="#b3c3ac" stroke="#263b30" stroke-width="2.5"/>
-    <path d="M10 -9 L8 -21 Q13 -28 18 -21 Q17 -31 25 -28 Q29 -25 25 -17 Q32 -19 33 -13 L22 -8" fill="#9c5249" stroke="#314b3f" stroke-width="2"/>
-    <path d="M22 -6 L35 1 L21 6Z" fill="#95564b" stroke="#304436" stroke-width="1.5"/>
-    <circle cx="17" cy="-7" r="2.8" fill="#20352c"/><circle cx="18" cy="-8" r=".9" fill="#e0e7d5"/><path d="M-23 -2 Q-29 4 -24 12 M-18 -15 Q-25 -18 -27 -9" stroke="#243d31" stroke-width="2" fill="none"/>
-    <path d="M-4 24 v6 m8 -5 v5 m-12 1 h9 m2 0 h9" stroke="#253d32" stroke-width="2"/>
-    <path d="M-10 5 Q-6 1 -2 4 Q4 7 6 1" fill="none" stroke="#3d5c4b" stroke-width="2"/>
+  <path d="M-34 30 V-23 L0 -48 L34 -23 V30 M-39 -23 L0 -54 L39 -23" stroke="#465448" stroke-width="5" fill="none"/>
+  <path d="M-28 29 V-15 M28 29 V-15 M-27 22 H27" stroke="#465448" stroke-width="3" fill="none"/>
+  <g fill="#26392f" stroke="#26392f" stroke-linejoin="round">
+    <path d="M-29 9 Q-37 -2 -32 -18 L-20 -11 L-23 -24 L-9 -13 Q3 -20 15 -10 Q24 -7 25 4 Q27 18 10 21 L-8 21 Q-25 20 -29 9Z"/>
+    <path d="M14 -10 L12 -22 L19 -18 L22 -26 L28 -18 L27 -8Z"/>
+    <path d="M23 -4 L39 2 L23 8Z"/>
+    <path d="M-9 18 L-11 28 M4 18 L5 28 M-18 29 H-5 M-2 29 H12" stroke-width="3" fill="none"/>
   </g>
+  <path d="M-15 3 Q-9 -3 1 -2 Q9 1 8 11 Q-4 17 -15 3Z" fill="#c0c9b9"/>
+  <circle cx="17" cy="-5" r="2.5" fill="#c0c9b9"/>
 </g>`;
-
 houses.innerHTML=[
   henHouse('tl',249,189,false),
   henHouse('bl',249,344,false),
@@ -67,77 +62,47 @@ scene.insertBefore(tracks,hare);
 // shadow silhouette. Its opacity remains driven by the original rules engine.
 hare.setAttribute('transform','translate(325 205)');
 hare.innerHTML=`
- <g fill="#567362" stroke="#273c32" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
-  <path d="M-17 -32 Q-30 -77 -20 -85 Q-8 -90 -4 -48 L2 -84 Q13 -92 17 -79 Q19 -67 14 -36" fill="#819c86"/>
-  <path d="M-15 -39 L-18 -77 M6 -44 L8 -79" stroke="#304b3b" stroke-width="2" fill="none"/>
-  <path d="M-23 -31 Q-32 -8 -20 8 L-11 17 Q-7 34 9 29 Q34 23 30 -2 Q24 -25 7 -34 Q-4 -42 -23 -31Z" fill="#7f9985"/>
-  <path d="M-24 -1 Q-26 20 -13 28 L0 29 Q9 14 -5 0" fill="#bdcbb4" stroke-width="2"/>
-  <path d="M-5 29 Q-25 25 -30 39 L-2 39 Q14 33 10 25" fill="#4c6656"/>
-  <path d="M21 25 Q41 26 42 34 L16 39 L4 36" fill="#4e6958"/>
-  <path d="M10 -8 Q22 -9 28 1 Q16 14 4 8" fill="#c3d0b9" stroke-width="2"/>
-  <circle cx="7" cy="-20" r="4.5" fill="#d4dfc7" stroke-width="1.8"/>
-  <circle cx="8.5" cy="-19" r="1.7" fill="#263a30" stroke="none"/>
-  <circle cx="27" cy="0" r="3" fill="#273e33" stroke="none"/><circle cx="8" cy="-20" r=".8" fill="#fff" stroke="none"/><path d="M-20 -54 Q-19 -66 -17 -73 M8 -54 L9 -73" stroke="#d5dfc5" stroke-width="2" fill="none"/>
-  <path d="M-4 10 Q11 19 21 10 M20 10 l5 5 M11 10 l-1 4" fill="none" stroke-width="2"/>
-  <path d="M-9 8 Q-1 3 5 11" fill="none" stroke-width="2.3"/>
-  <path d="M-5 20 L32 17 L45 4" fill="none" stroke-width="8"/>
-  <path d="M37 4 l11 0" stroke-width="5"/>
-  <path d="M-19 15 L-13 24" stroke-width="5"/>
+ <g fill="#26392f" stroke="#26392f" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
+  <path d="M-20 -26 Q-31 -53 -29 -70 Q-25 -79 -17 -70 L-8 -42 Q-10 -72 -3 -83 Q4 -89 8 -77 L10 -42 Q28 -38 31 -18 Q38 2 22 15 L12 23 Q1 33 -14 24 Q-30 15 -28 -3 Q-27 -16 -20 -26Z"/>
+  <path d="M-22 11 Q-42 12 -46 27 L-22 25 L-8 19 M6 21 Q24 29 29 38 L9 37 L-5 28"/>
+  <path d="M23 -6 L37 0 L22 7Z"/>
+  <path d="M-7 23 L-3 36 L16 39 M-22 17 L-29 30 L-13 34" fill="none" stroke-width="6"/>
  </g>
- <g id="rabbitBell" transform="translate(48 5)" fill="#485f4f" stroke="#273c32" stroke-width="2.5" stroke-linejoin="round">
-   <path d="M-11 0 Q-15 -22 0 -22 Q14 -22 12 0 L18 7 H-17 Z"/>
-   <circle cx="0" cy="11" r="4"/><path d="M-7 -3 Q-9 -13 -4 -17 M-16 13 l-7 5 M16 13 l7 5" fill="none" stroke="#a9bea7" stroke-width="2"/>
-   <path d="M0 -21 v-6" fill="none"/>
+ <path d="M-22 -59 L-18 -43 M0 -68 L2 -45" stroke="#c0c9b9" stroke-width="3" fill="none"/>
+ <ellipse cx="12" cy="-16" rx="8" ry="10" fill="#c0c9b9"/>
+ <circle cx="15" cy="-17" r="3.4" fill="#26392f"/>
+ <path d="M17 7 Q23 12 29 5" stroke="#c0c9b9" stroke-width="2" fill="none"/>
+ <g id="rabbitBell" transform="translate(48 5)" fill="#26392f" stroke="#26392f" stroke-width="2">
+  <path d="M-11 0 Q-14 -20 0 -21 Q14 -20 11 0 L17 7 H-17Z"/>
+  <circle cx="0" cy="11" r="4"/>
  </g>`;
 
 // Keep original element IDs required by the core script; hide those originals
 // while rendering a clean, compact wolf silhouette with its own basket/arm.
 const prior=wolf.innerHTML;
 wolf.innerHTML=`<g display="none">${prior}</g>
-<g transform="translate(540 365)" id="artWolf" stroke="#243a30" stroke-linecap="round" stroke-linejoin="round">
-  <!-- fluffy sweeping tail, tucked behind body -->
-  <path d="M34 6 Q56 -6 76 -29 L65 -13 L90 -29 Q89 0 65 17 Q49 24 38 22Z" fill="#566e5d" stroke-width="5"/>
-  <path d="M43 9 Q64 11 77 -5" fill="none" stroke="#b8c4ae" stroke-width="3"/>
-  <!-- trouser legs: a running stance (not the original copyrighted wolf sprite) -->
-  <path d="M-18 47 Q-28 65 -36 80 L-55 108 L-31 110 L2 78 L14 54" fill="#5b7461" stroke-width="5"/>
-  <path d="M17 49 Q31 66 18 85 L44 111 L59 107 L42 74 L48 47" fill="#667f6d" stroke-width="5"/>
-  <path d="M-56 105 Q-71 111 -73 119 Q-57 125 -37 118 L-28 108 M41 107 Q57 97 69 105 L76 118 Q66 127 51 122 L37 115" fill="#283f33" stroke-width="4"/>
-  <!-- long torso with belly, belt and ragged jacket -->
-  <path d="M-31 -29 Q0 -48 28 -26 Q47 -11 42 17 L45 55 Q7 69 -37 53 L-37 10 Q-42 -10 -31 -29Z" fill="#708a73" stroke-width="5"/>
-  <path d="M-15 -30 Q9 -20 11 10 Q12 38 2 52 L-26 52 L-19 17" fill="#c7d0b8" stroke="none"/>
-  <path d="M-36 41 Q-2 51 44 42 L43 58 Q9 70 -35 58Z" fill="#3c5645" stroke-width="3"/>
-  <path d="M-18 41 V59 M6 45 V62 M25 45 V60" fill="none" stroke="#9c6b56" stroke-width="4"/>
-  <!-- ears and unmistakable long-nosed wolf head -->
-  <path d="M-31 -91 L-29 -139 L-8 -115 L13 -147 L25 -100 Q46 -88 43 -60 L34 -42 Q7 -21 -26 -46 Q-43 -63 -31 -91Z" fill="#627d69" stroke-width="5"/>
-  <path d="M-24 -97 L-23 -126 L-10 -108 M9 -112 L14 -135 L18 -101" fill="#bcc8af" stroke-width="3"/>
-  <path d="M-29 -64 Q-41 -54 -35 -46 L-23 -50 L-30 -38 L-12 -46" fill="#3c5848" stroke-width="3"/>
-  <!-- whiskers, big muzzle, chin and black tip of nose -->
-  <path d="M-21 -75 Q-42 -72 -52 -61 L-81 -55 Q-91 -48 -83 -40 Q-62 -35 -45 -40 L-17 -42 Q1 -51 -10 -70Z" fill="#c3ceb7" stroke-width="4"/>
-  <path d="M-84 -44 Q-74 -23 -47 -30 Q-33 -34 -27 -44" fill="#526e5c" stroke-width="4"/>
-  <ellipse cx="-84" cy="-51" rx="10" ry="7" fill="#22372e" stroke-width="1"/>
-  <path d="M-69 -36 Q-51 -32 -40 -41" fill="none" stroke-width="2.5"/>
-  <path d="M-48 -38 l6 4 6 -5" fill="#f0ead2" stroke-width="1.5"/>
-  <path d="M-53 -56 l-16 -2 M-50 -49 l-18 3" fill="none" stroke-width="1.7"/>
-  <path d="M-10 -78 Q-2 -88 8 -79 M22 -79 Q31 -90 39 -79" fill="none" stroke-width="3.3"/>
-  <ellipse cx="1" cy="-69" rx="8" ry="14" fill="#d5dfc5" stroke-width="2"/>
-  <ellipse cx="23" cy="-67" rx="7.5" ry="14" fill="#d5dfc5" stroke-width="2"/>
-  <ellipse cx="-1" cy="-66" rx="3.2" ry="5.2" fill="#1c3329" stroke="none"/><circle cx="-2" cy="-68" r="1" fill="#eef2dc" stroke="none"/>
-  <ellipse cx="21" cy="-63" rx="3.2" ry="5.2" fill="#1c3329" stroke="none"/><circle cx="20" cy="-65" r="1" fill="#eef2dc" stroke="none"/>
-  <path d="M5 -39 Q21 -35 30 -47" fill="none" stroke-width="2.5"/>
-  <path d="M17 -27 Q35 -24 36 -11" fill="none" stroke-width="5"/>
-  <!-- collar with small neckerchief in a muted second LCD color -->
-  <path d="M-16 -39 L4 -20 L25 -35 L12 -8 L-6 -15 L-22 -12Z" fill="#8b6153" stroke-width="3"/>
-  <!-- away arm and gripping paw -->
-  <path d="M28 -19 Q55 -10 53 15 L39 21 L26 0" fill="#607e69" stroke-width="5"/>
-  <circle cx="42" cy="19" r="9" fill="#c0cdb6" stroke-width="3"/>
-  <!-- arm and woven hand basket move together between upper/lower chutes -->
-  <path id="artArm" d="M-27 -19 Q-45 -18 -60 -41" fill="none" stroke="#263d32" stroke-width="15"/>
-  <path id="artArmInside" d="M-27 -19 Q-45 -18 -60 -41" fill="none" stroke="#829983" stroke-width="9"/>
-  <g id="artBasket" transform="translate(-70 -45)">
-     <path d="M-24 -6 H24 L17 21 Q0 33 -18 21Z" fill="#75917a" stroke="#243a30" stroke-width="3.8"/>
-     <path d="M-27 -8 H27 M-21 6 H21 M-16 18 H16 M-12 -5 L-8 25 M0 -5 V28 M12 -5 L9 25" stroke="#283d33" fill="none" stroke-width="2.4"/>
-     <path d="M-25 -7 Q-23 -30 0 -29 Q23 -30 25 -7" fill="none" stroke="#293f34" stroke-width="3"/>
-  </g>
+<g transform="translate(540 365)" id="artWolf" fill="#26392f" stroke="#26392f" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M25 22 Q58 10 72 -21 Q68 10 54 30 L38 41Z"/>
+ <path d="M-25 39 Q-36 61 -48 90 L-69 107 L-42 114 L-7 76 L8 53Z"/>
+ <path d="M9 47 Q29 70 24 88 L47 113 L72 110 L46 76 L41 39Z"/>
+ <path d="M-34 -24 Q0 -43 31 -20 L40 42 Q7 60 -33 43Z"/>
+ <path d="M-31 -85 L-34 -141 L-8 -112 L14 -146 L28 -98 Q48 -81 35 -52 Q12 -30 -22 -48Z"/>
+ <path d="M-27 -72 Q-50 -70 -64 -55 L-87 -51 Q-99 -44 -85 -35 Q-57 -30 -32 -44 L-14 -54Z"/>
+ <path d="M-39 -39 Q-55 -26 -73 -34" fill="none" stroke-width="4"/>
+ <path d="M25 -18 Q50 -8 48 20" fill="none" stroke-width="14"/>
+ <path id="artArm" d="M-25 -17 Q-45 -19 -59 -41" fill="none" stroke-width="15"/>
+ <path id="artArmInside" d="M-25 -17 Q-45 -19 -59 -41" fill="none" stroke="#26392f" stroke-width="8"/>
+ <g id="artBasket" transform="translate(-70 -45)">
+  <path d="M-27 -8 H27 L18 24 Q0 32 -18 24Z"/>
+  <path d="M-26 -8 Q-22 -31 0 -31 Q22 -31 26 -8" fill="none" stroke-width="4"/>
+  <path d="M-16 0 L-9 24 M0 0 V27 M16 0 L9 24 M-21 10 H21" fill="none" stroke="#c0c9b9" stroke-width="2.5"/>
+ </g>
+ <path d="M-20 -125 L-19 -113 M13 -129 L17 -110" fill="none" stroke="#c0c9b9" stroke-width="3"/>
+ <ellipse cx="-1" cy="-70" rx="9" ry="13" fill="#c0c9b9"/>
+ <ellipse cx="22" cy="-69" rx="8" ry="12" fill="#c0c9b9"/>
+ <circle cx="-3" cy="-69" r="3.5"/><circle cx="20" cy="-68" r="3.5"/>
+ <ellipse cx="-86" cy="-48" rx="7" ry="5"/>
+ <path d="M-30 -47 Q-17 -38 -9 -48" fill="none" stroke="#c0c9b9" stroke-width="2"/>
 </g>`;
 
 const styled=document.createElement('style');styled.id='art-v13-style';styled.textContent=`
