@@ -163,7 +163,7 @@ export class PaperLedger {
       // Operator pause survives Worker restarts and never clears an emergency halt.
       try {
         const pauseState=await this.state.storage.get('cron:paused');
-        if(pauseState!==undefined && pauseState!==null && typeof pauseState!=='boolean')
+        if(pauseState!==undefined && typeof pauseState!=='boolean')
           return response({error:'invalid operator pause state',mode:'PAPER_ONLY'},503);
         if(pauseState===true)return response({enabled:false,reason:'operator_paused',mode:'PAPER_ONLY'});
       }
@@ -253,7 +253,7 @@ export class PaperLedger {
           storage.get("state"),storage.get("cron:last"),storage.get("cron:paused")
         ]);
         const state=wallet===undefined?INITIAL:wallet;
-        if(!validState(state) || (paused!==undefined && paused!==null && typeof paused!=="boolean"))
+        if(!validState(state) || (paused!==undefined && typeof paused!=="boolean"))
           return response({error:"invalid cron state",mode:"PAPER_ONLY"},503);
         if(checkpoint!==undefined &&
            (!checkpoint || typeof checkpoint!=="object" || Array.isArray(checkpoint)
