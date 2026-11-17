@@ -273,3 +273,16 @@ test("persisted quote timestamps must be monotonic across journal entries", () =
  }), /invalid wallet/);
  assert.deepEqual(corrupt, before);
 });
+
+test("idempotency keys reject conflicting replays without changing the wallet", () => {
+ const first = applyPaperOrder(wallet(), buy).state;
+ const snapshot = structuredClone(first);
+ assert.equal(applyPaperOrder(first, buy).status, "duplicate");
+ for (const patch of [
+   {side:"SELL"}, {quantity:1}, {price:101},
+   {priceTimestamp:99998}, {price:NaN}
+ ]) {
+   assert.throws(() => applyPaperOrder(first, {...buy,...patch}), /conflicting idempotency key/);
+   assert.deepEqual(first, snapshot);
+ }
+});
