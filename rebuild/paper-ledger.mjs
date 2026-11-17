@@ -14,6 +14,8 @@ export function applyPaperOrder(state, order, policy = {}) {
         !["BUY", "SELL"].includes(t.side) || !Number.isFinite(t.quantity) || t.quantity <= 0 ||
         !Number.isFinite(t.executionPrice) || t.executionPrice <= 0 ||
         !Number.isFinite(t.fee) || t.fee < 0 ||
+        !Number.isFinite(t.executionPrice * t.quantity) ||
+        t.fee >= t.executionPrice * t.quantity ||
         !Number.isSafeInteger(t.priceTimestamp) || !Number.isSafeInteger(t.at) ||
         t.priceTimestamp < 0 || t.at < 0 || t.priceTimestamp > t.at ||
         (Number.isFinite(now) && t.at > now)) ||
