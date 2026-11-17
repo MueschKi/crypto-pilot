@@ -72,6 +72,20 @@ assert.equal(data.get('state')?.sequence,2,'fractional BTC SELL must persist');
 assert.equal(data.get('journal:2')?.fill.side,'SELL');
 assert.equal(Object.keys(data.get('state').positions).length,0);
 
+// Regression: an otherwise valid momentum signal with a price too large to
+// purchase even one micro-unit must fail visibly, without a phantom BUY.
+data=new Map();
+const hugePrices={BTC:6000000000,ETH:300000,SOL:15000};
+await storage.put('cron:last',{now:now-300000,prices:hugePrices,lastTradeMs:0});
+const unfillable=await tick(now,{...hugePrices,BTC:6100000000});
+assert.equal(unfillable.status,503,'unfillable BUY must fail, not report success');
+assert.match((await unfillable.json()).error,/invalid execution quantity/);
+assert.equal(data.get('state'),undefined,'unfillable BUY must not mutate wallet');
+assert.equal(data.get('journal:1'),undefined,'unfillable BUY must not write journal');
+assert.equal(data.get('cron:last')?.now,now,'failed execution must reserve tick to prevent replay');
+assert.equal((await (await tick(now,{...hugePrices,BTC:6100000000})).json()).reason,'not_due');
+data=new Map();
+
 // A corrupted persisted checkpoint must fail closed without overwriting it or trading.
 for (const bad of [
   {now:now-300000,prices:{...realistic,BTC:-1},lastTradeMs:0},
