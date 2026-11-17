@@ -51,3 +51,17 @@ test("rejects zero-limit and 100% fee/slippage risk policies", () => {
     }
   }
 });
+
+test("rejects fills that disappear through floating-point precision", () => {
+  const cases = [
+    { ...base, side: "BUY", price: 1e-300, quantity: 1e-300 },
+    { ...base, side: "BUY", price: 1, quantity: 1, cash: 1e30, equity: 1e30 },
+    { ...base, side: "BUY", price: 1, quantity: 1, assetQuantity: 1e30, equity: 1e32, cash: 1e32 },
+    { ...base, side: "SELL", price: 1e-300, quantity: 1e-300, assetQuantity: 1 },
+    { ...base, side: "SELL", price: 1, quantity: 1, assetQuantity: 1, cash: 1e30 },
+    { ...base, side: "SELL", price: 1, quantity: 1, assetQuantity: 1e30, cash: 0 }
+  ];
+  for (const input of cases) {
+    assert.deepEqual(order(input), { ok: false, reason: "OVERFLOW" });
+  }
+});
