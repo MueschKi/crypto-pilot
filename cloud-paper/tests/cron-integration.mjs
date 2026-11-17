@@ -93,6 +93,7 @@ for (const bad of [
   {now:now-300000,prices:realistic,lastTradeMs:NaN},
   {now:-1,prices:realistic,lastTradeMs:0},
   false,
+  null,
   0,
   'invalid',
   []
@@ -296,6 +297,15 @@ await storage.put('cron:paused','corrupt');
 assert.equal((await ledger.fetch(diagnosticRequest())).status,503);
 await storage.put('cron:paused',false);
 await storage.put('cron:last',{now:-1,prices:realistic,lastTradeMs:0});
+assert.equal((await ledger.fetch(diagnosticRequest())).status,503);
+
+// A null checkpoint is persisted corruption, not an absent first-run record.
+data=new Map();
+await storage.put('cron:last',null);
+const nullCheckpointTick=await tick(now,{...realistic,BTC:8600000});
+assert.equal(nullCheckpointTick.status,503);
+assert.equal(data.get('state'),undefined);
+assert.equal(data.get('journal:1'),undefined);
 assert.equal((await ledger.fetch(diagnosticRequest())).status,503);
 
 console.log('Cloud cron wallet integration passed');
