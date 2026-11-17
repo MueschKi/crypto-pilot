@@ -248,6 +248,21 @@ assert.equal(details.lastTickMs,now);
 assert.equal(details.lastTrade?.side,'BUY');
 assert.equal(details.lastTrade?.id,data.get('journal:1').fill.id);
 assert.equal(details.halted,false);
+// Verify the same diagnostics after a persisted SELL and a fresh DO instance.
+// Use an earlier checkpoint to simulate the next eligible market interval.
+await storage.put('cron:last',{now:now-300000,prices:{...realistic,BTC:8700000},lastTradeMs:0});
+const observedSell=await tick(now,{...realistic,BTC:8600000});
+assert.equal(observedSell.status,200,await observedSell.clone().text());
+assert.equal((await observedSell.json()).trade?.persisted,true);
+const sellDetails=await (await new PaperLedger({storage},env).fetch(diagnosticRequest())).json();
+assert.equal(sellDetails.persistedTrades,2);
+assert.equal(sellDetails.lastTrade?.side,'SELL');
+assert.equal(sellDetails.lastTrade?.id,data.get('journal:2').fill.id);
+assert.equal(sellDetails.realTrading,false);
+// Return to a single-trade fixture for the corruption checks below.
+data=new Map();
+await storage.put('cron:last',{now:now-300000,prices:realistic,lastTradeMs:0});
+assert.equal((await (await tick(now,{...realistic,BTC:8600000})).json()).trade?.persisted,true);
 // Diagnostics must not claim a verified trade if its persisted order is missing
 // or disagrees with the journal. A restart must preserve the verified result.
 const restartedDiagnostics=new PaperLedger({storage},env);
