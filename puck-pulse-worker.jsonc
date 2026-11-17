@@ -1,0 +1,12 @@
+{
+  "name": "puck-pulse",
+  "compatibility_date": "2026-11-17",
+  "workers_dev": true,
+  "assets": {
+    "directory": "./puck-pulse",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": false
+  }
+}
