@@ -49,7 +49,7 @@ export function applyPaperOrder(state, order, policy = {}) {
     const exposureCap = equity * maxExposure;
     if (![projectedQuantity, projectedExposure, exposureCap].every(Number.isFinite))
       throw new Error("wallet exposure overflow");
-    if (projectedExposure > exposureCap + 1e-9)
+    if (projectedExposure > exposureCap)
       return { state, status: "exposure_limit" };
     next.cash -= notional + fee;
     next.quantity += order.quantity;
