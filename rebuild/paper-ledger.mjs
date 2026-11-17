@@ -18,7 +18,8 @@ export function applyPaperOrder(state, order, policy = {}) {
         t.priceTimestamp < 0 || t.at < 0 || t.priceTimestamp > t.at ||
         (Number.isFinite(now) && t.at > now)) ||
       new Set(state.trades.map(t => t.id)).size !== state.trades.length ||
-      state.trades.some((t, i) => i > 0 && t.at < state.trades[i - 1].at))
+      state.trades.some((t, i) => i > 0 && (t.at < state.trades[i - 1].at ||
+        t.priceTimestamp < state.trades[i - 1].priceTimestamp)))
     throw new Error("invalid wallet control or journal");
   if (!Number.isSafeInteger(maxAgeMs) || maxAgeMs < 0 || maxAgeMs > 120000 ||
       ![feeRate, slippageRate, maxExposure].every(Number.isFinite) ||
