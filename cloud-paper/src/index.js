@@ -282,7 +282,8 @@ export class PaperLedger {
     }
     if (path === "/v1/paper/status" && request.method === "GET") {
       try {
-        const state = await this.state.storage.get("state") || INITIAL;
+        const storedState = await this.state.storage.get("state");
+        const state = storedState===undefined?INITIAL:storedState;
         if (!validState(state)) return response({error:"invalid paper state",mode:"PAPER_ONLY",realTrading:false},503);
         return response({...state, mode:"PAPER_ONLY", realTrading:false});
       } catch (_) { return response({error:"paper storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
@@ -290,7 +291,8 @@ export class PaperLedger {
     if (path === "/v1/paper/journal" && request.method === "GET") {
       // Bounded, chronological, server-persisted history; missing entries fail closed.
       try {
-        const current = await this.state.storage.get("state") || INITIAL;
+        const storedState = await this.state.storage.get("state");
+        const current = storedState===undefined?INITIAL:storedState;
         if (!validState(current))
           return response({error:"invalid journal state",mode:"PAPER_ONLY",realTrading:false},503);
         const start = Math.max(1,current.sequence-49);
