@@ -237,7 +237,7 @@ test("small paper wallets enforce the exact exposure cap", () => {
  assert.equal(result.status, "exposure_limit");
  assert.strictEqual(result.state, state);
  assert.deepEqual(state, before);
- const atLimit = applyPaperOrder(state, {...order, id:"micro-at-limit", quantity:4e-10});
+ const atLimit = applyPaperOrder(state, {...order, id:"micro-at-limit", quantity:3.99e-10});
  assert.equal(atLimit.status, "filled");
  assert.equal(atLimit.state.trades.length, 1);
 });
@@ -293,4 +293,19 @@ test("partial sell rejects cost-basis precision underflow without wallet mutatio
  const before = structuredClone(state);
  assert.throws(() => applyPaperOrder(state, {...buy, id:"basis-underflow", side:"SELL", quantity:0.5}), /cost basis precision underflow/);
  assert.deepEqual(state, before);
+});
+
+
+test("adverse buy slippage counts toward maximum exposure", () => {
+ const state = wallet();
+ const before = structuredClone(state);
+ // Mark-price exposure is exactly 40%, but the executable buy costs more.
+ const order = {...buy, id:"slippage-exposure", quantity:4};
+ const rejected = applyPaperOrder(state, order);
+ assert.equal(rejected.status, "exposure_limit");
+ assert.strictEqual(rejected.state, state);
+ assert.deepEqual(state, before);
+ const allowed = applyPaperOrder(state, {...order, id:"slippage-safe", quantity:3.99});
+ assert.equal(allowed.status, "filled");
+ assert.equal(allowed.state.trades.length, 1);
 });
