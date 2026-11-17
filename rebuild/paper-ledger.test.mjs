@@ -354,3 +354,19 @@ test("persisted paper journal rejects impossible fees and overflowed notionals",
    assert.deepEqual(corrupt, snapshot);
  }
 });
+
+
+test("persisted paper fills with stale quotes fail closed after restart", () => {
+ const valid = applyPaperOrder(wallet(), buy).state;
+ const stale = structuredClone(valid);
+ stale.trades[0].priceTimestamp = stale.trades[0].at - 120001;
+ const snapshot = structuredClone(stale);
+ assert.throws(() => applyPaperOrder(stale, {...buy, id:"after-restart", now:100001, priceTimestamp:100001}), /invalid wallet/);
+ assert.deepEqual(stale, snapshot);
+ // Exactly at the hard 120-second ceiling remains structurally valid.
+ const boundary = structuredClone(valid);
+ boundary.trades[0].at = 220000;
+ boundary.trades[0].priceTimestamp = 100000;
+ const next = applyPaperOrder(boundary, {...buy, id:"boundary-next", side:"SELL", quantity:1, now:220001, priceTimestamp:220001});
+ assert.equal(next.status, "filled");
+});
