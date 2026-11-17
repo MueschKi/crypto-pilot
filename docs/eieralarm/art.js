@@ -26,10 +26,10 @@ const henHouse=(id,x,y,mirror=false)=>`<g id="hen-${id}" transform="translate(${
   <circle cx="17" cy="-5" r="2.5" fill="#c0c9b9"/>
 </g>`;
 houses.innerHTML=[
-  henHouse('tl',249,189,false),
-  henHouse('bl',249,344,false),
-  henHouse('tr',835,189,true),
-  henHouse('br',835,344,true)
+  henHouse('tl',225,189,false),
+  henHouse('bl',225,344,false),
+  henHouse('tr',860,189,true),
+  henHouse('br',860,344,true)
 ].join('');
 
 // Remove old oversized rails. Keep the four distinct LCD rolling lanes and
@@ -60,7 +60,7 @@ scene.insertBefore(tracks,hare);
 
 // Long-eared rabbit with a head, paws, feet and a hand bell, not a generic
 // shadow silhouette. Its opacity remains driven by the original rules engine.
-hare.setAttribute('transform','translate(325 205)');
+hare.setAttribute('transform','translate(305 185)');
 hare.innerHTML=`
  <g fill="#26392f" stroke="#26392f" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round">
   <path d="M-20 -26 Q-31 -53 -29 -70 Q-25 -79 -17 -70 L-8 -42 Q-10 -72 -3 -83 Q4 -89 8 -77 L10 -42 Q28 -38 31 -18 Q38 2 22 15 L12 23 Q1 33 -14 24 Q-30 15 -28 -3 Q-27 -16 -20 -26Z"/>
