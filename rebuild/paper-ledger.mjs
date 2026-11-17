@@ -30,7 +30,7 @@ export function applyPaperOrder(state, order, policy = {}) {
     throw new Error("invalid id");
   // Even idempotent replays must carry a valid clock; malformed ticks must fail closed.
   if (!Number.isSafeInteger(now) || now < 0) throw new Error("invalid order clock");
-  const previous = state.trades.find(t => t.id === order.id);
+  // A replay cannot bypass the persisted clock monotonicity guard.\n  if (state.trades.length && now < state.trades[state.trades.length - 1].at)\n    throw new Error("order clock precedes persisted journal");\n  const previous = state.trades.find(t => t.id === order.id);
   if (previous) {
     // Idempotency must not silently accept a conflicting order under an old key.
     const expectedPrice = order.price * (order.side === "BUY" ? 1 + slippageRate : 1 - slippageRate);
