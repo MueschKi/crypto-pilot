@@ -41,3 +41,13 @@ test("fails closed on finite values overflowing exposure and cash arithmetic", (
     assert.deepEqual(result, { ok: false, reason: "OVERFLOW" });
   }
 });
+
+test("rejects zero-limit and 100% fee/slippage risk policies", () => {
+  const valid = { feeRate: 0.004, slippageRate: 0.001, maxExposureFraction: 0.4, maxOrderFraction: 0.1, minimumCashReserveFraction: 0.05 };
+  for (const patch of [{feeRate:1}, {slippageRate:1}, {maxExposureFraction:0}, {maxOrderFraction:0}]) {
+    for (const side of ["BUY", "SELL"]) {
+      assert.deepEqual(order({ ...base, side, assetQuantity: 1, risk: {...valid, ...patch} }),
+        {ok:false, reason:"INVALID_RISK"});
+    }
+  }
+});
