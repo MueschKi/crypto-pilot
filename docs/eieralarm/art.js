@@ -39,23 +39,46 @@ for(const child of [...scene.children]){
 }
 const tracks=document.createElementNS(svgNS,'g');tracks.id='lcd-art-tracks';
 tracks.innerHTML=`
-<g fill="none" stroke-linejoin="round" stroke-linecap="round">
- <path d="M281 225 L459 293 M803 225 L622 293 M281 363 L459 402 M803 363 L622 402" stroke="#95594e" stroke-width="5.2"/>
- <path d="M283 230 L459 298 M801 230 L622 298 M283 368 L459 407 M801 368 L622 407" stroke="#344c40" stroke-width="2"/>
- <path d="M280 224 L280 235 M803 224 L803 235 M280 361 L280 373 M803 361 L803 373" stroke="#283d34" stroke-width="2.5"/>
+<!-- Four separate diagonal trays and their support posts, as on the LCD reference -->
+<g fill="none" stroke-linecap="square" stroke-linejoin="miter">
+ <path d="M272 223 L459 293 M811 223 L622 293 M272 363 L459 402 M811 363 L622 402" stroke="#88623b" stroke-width="7"/>
+ <path d="M272 229 L459 299 M811 229 L622 299 M272 369 L459 408 M811 369 L622 408" stroke="#26392f" stroke-width="2.4"/>
+ <path d="M294 238 V273 M785 238 V273 M314 373 V411 M765 373 V411" stroke="#88623b" stroke-width="6"/>
+ <path d="M284 378 V403 M800 378 V403" stroke="#88623b" stroke-width="4"/>
 </g>
-<g fill="#345947" opacity=".95">
-  <path d="M207 410 l17 -4 7 5 21 -4 8 7 15 -4 10 7 -5 5 -22 -2 -12 6 -24 -6 -15 2Z"/>
-  <path d="M316 433 l15 -6 17 4 12 -5 13 6 22 -5 10 7 -7 5 -23 -2 -14 6 -16 -6 -13 4Z"/>
-  <path d="M664 430 l18 -6 16 4 12 -5 21 5 13 -4 13 7 -11 6 -21 -1 -13 6 -17 -4 -23 2Z"/>
-  <path d="M790 411 l15 -8 20 4 14 -6 17 8 17 -2 7 11 -19 -2 -21 7 -16 -5 -13 4Z"/>
-  <path d="M786 159 l17 5 13 -7 13 5 9 -5 16 4 14 -6 12 8 -10 8 -20 -1 -14 10 -17 -5 -16 4Z"/>
-  <path d="M206 381 l15 -4 8 6 18 -3 6 5 -7 5 -27 -2 -14 3Z"/>
-  <path d="M809 384 l17 -4 12 3 18 -3 6 8 -18 -2 -13 5 -18 -2Z"/>
+<!-- Discrete, empty LCD rolling positions; live eggs are drawn on top -->
+<g fill="#bac7b7" stroke="#26392f" stroke-width="3.5">
+ <ellipse cx="310" cy="232" rx="11" ry="8" transform="rotate(-23 310 232)"/>
+ <ellipse cx="346" cy="246" rx="11" ry="8" transform="rotate(-23 346 246)"/>
+ <ellipse cx="383" cy="261" rx="11" ry="8" transform="rotate(-23 383 261)"/>
+ <ellipse cx="421" cy="276" rx="11" ry="8" transform="rotate(-23 421 276)"/>
+ <ellipse cx="773" cy="232" rx="11" ry="8" transform="rotate(23 773 232)"/>
+ <ellipse cx="737" cy="246" rx="11" ry="8" transform="rotate(23 737 246)"/>
+ <ellipse cx="700" cy="261" rx="11" ry="8" transform="rotate(23 700 261)"/>
+ <ellipse cx="662" cy="276" rx="11" ry="8" transform="rotate(23 662 276)"/>
+ <ellipse cx="310" cy="370" rx="11" ry="8" transform="rotate(-18 310 370)"/>
+ <ellipse cx="348" cy="378" rx="11" ry="8" transform="rotate(-18 348 378)"/>
+ <ellipse cx="386" cy="386" rx="11" ry="8" transform="rotate(-18 386 386)"/>
+ <ellipse cx="423" cy="394" rx="11" ry="8" transform="rotate(-18 423 394)"/>
+ <ellipse cx="773" cy="370" rx="11" ry="8" transform="rotate(18 773 370)"/>
+ <ellipse cx="735" cy="378" rx="11" ry="8" transform="rotate(18 735 378)"/>
+ <ellipse cx="697" cy="386" rx="11" ry="8" transform="rotate(18 697 386)"/>
+ <ellipse cx="660" cy="394" rx="11" ry="8" transform="rotate(18 660 394)"/>
 </g>
-<g stroke="#273e32" stroke-width="2" fill="none" opacity=".75">
- <path d="M214 423 h35 m89 15 h40 m315 -1 h44 m85 -17 h40"/>
-</g>`;
+<!-- Sparse LCD shrubs and ground, no painted scenery -->
+<g fill="#314b24">
+ <path d="M202 414 l12 -12 12 6 13 -9 10 9 14 -4 10 13 -4 8 -67 0Z"/>
+ <path d="M279 432 l9 -12 10 5 13 -8 13 10 14 -5 10 12 -69 3Z"/>
+ <path d="M381 430 l12 -8 10 6 14 -10 13 10 18 -5 10 10 -77 3Z"/>
+ <path d="M638 431 l10 -10 13 7 12 -9 12 9 17 -6 12 12 -76 2Z"/>
+ <path d="M751 429 l10 -10 12 8 12 -11 12 10 17 -7 11 13 -74 2Z"/>
+ <path d="M817 413 l10 -10 12 7 13 -10 12 9 12 -5 13 12 -72 4Z"/>
+ <path d="M814 151 l16 -8 15 5 10 -10 17 8 13 -6 10 11 -10 9 -71 0Z"/>
+</g>
+<g fill="#26392f">
+ <path d="M235 424 l-4 -12 7 5 4 -11 5 11 8 -5 -5 12Z"/>
+ <path d="M836 424 l-4 -12 7 5 4 -11 5 11 8 -5 -5 12Z"/>
+</g>`
 scene.insertBefore(tracks,hare);
 
 // Long-eared rabbit with a head, paws, feet and a hand bell, not a generic
@@ -128,7 +151,7 @@ logo.innerHTML='<ellipse cx="73" cy="73" rx="19" ry="26" fill="none" stroke="#57
 svg.appendChild(logo);
 
 const score=document.getElementById('lcdScore');
-if(score){score.setAttribute('x','545');score.setAttribute('y','174');score.setAttribute('font-size','42');}
+if(score){score.setAttribute('x','715');score.setAttribute('y','177');score.setAttribute('font-size','48');}
 const modeText=document.getElementById('lcdMode');
 if(modeText){modeText.setAttribute('x','212');modeText.setAttribute('y','437');modeText.setAttribute('text-anchor','start');modeText.setAttribute('font-size','14');}
 for(const t of svg.querySelectorAll('text')){
