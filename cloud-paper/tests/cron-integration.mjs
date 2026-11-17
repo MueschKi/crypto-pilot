@@ -216,6 +216,32 @@ assert.equal(data.get('cron:last')?.now,now,'failed wallet write must retain res
 storage.transaction=stableTransaction;
 assert.equal((await (await tick(now,{...realistic,BTC:8600000})).json()).reason,'not_due','failed wallet write must not replay bucket');
 
+// Authenticated Cron status must expose real persisted evidence, not a separate user wallet.
+data=new Map();
+await storage.put('cron:last',{now:now-300000,prices:realistic,lastTradeMs:0});
+const observedFill=await tick(now,{...realistic,BTC:8600000});
+assert.equal((await observedFill.json()).trade?.persisted,true);
+const diagnosticRequest=()=>new Request('https://internal.invalid/internal/cron/status',{
+  method:'GET',headers:{'x-internal-paper-token-id':'test_operator'}
+});
+const diagnostics=await ledger.fetch(diagnosticRequest());
+assert.equal(diagnostics.status,200,await diagnostics.clone().text());
+const details=await diagnostics.json();
+assert.equal(details.mode,'PAPER_ONLY');
+assert.equal(details.realTrading,false);
+assert.equal(details.persistedTrades,1);
+assert.equal(details.lastTickMs,now);
+assert.equal(details.lastTrade?.side,'BUY');
+assert.equal(details.lastTrade?.id,data.get('journal:1').fill.id);
+assert.equal(details.halted,false);
+await storage.put('cron:paused',true);
+assert.equal((await (await ledger.fetch(diagnosticRequest())).json()).paused,true);
+await storage.put('cron:paused','corrupt');
+assert.equal((await ledger.fetch(diagnosticRequest())).status,503);
+await storage.put('cron:paused',false);
+await storage.put('cron:last',{now:-1,prices:realistic,lastTradeMs:0});
+assert.equal((await ledger.fetch(diagnosticRequest())).status,503);
+
 console.log('Cloud cron wallet integration passed');
 
 // Scheduled Worker must surface a rejected cron as an observable failure.
