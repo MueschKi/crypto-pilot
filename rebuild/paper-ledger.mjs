@@ -28,7 +28,17 @@ export function applyPaperOrder(state, order, policy = {}) {
   if (!state.enabled || state.emergencyStop) return { state, status: "disabled" };
   if (!order || typeof order.id !== "string" || !/^[a-zA-Z0-9:_-]{1,128}$/.test(order.id))
     throw new Error("invalid id");
-  if (state.trades.some(t => t.id === order.id)) return { state, status: "duplicate" };
+  const previous = state.trades.find(t => t.id === order.id);
+  if (previous) {
+    // Idempotency must not silently accept a conflicting order under an old key.
+    const expectedPrice = order.price * (order.side === "BUY" ? 1 + slippageRate : 1 - slippageRate);
+    if (order.side !== previous.side || order.quantity !== previous.quantity ||
+        order.priceTimestamp !== previous.priceTimestamp ||
+        !Number.isFinite(expectedPrice) || expectedPrice !== previous.executionPrice ||
+        expectedPrice * order.quantity * feeRate !== previous.fee)
+      throw new Error("conflicting idempotency key");
+    return { state, status: "duplicate" };
+  }
   if (state.trades.length && Number.isSafeInteger(now) && now < state.trades[state.trades.length - 1].at)
     throw new Error("order clock precedes persisted journal");
   // Never accept an older quote than the last persisted fill, even if it
