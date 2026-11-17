@@ -329,3 +329,12 @@ test("buy refuses a cost-basis rounding no-op without mutating wallet", () => {
  assert.deepEqual(state, before);
  assert.equal(state.trades.length, 0);
 });
+
+test("duplicate replay cannot roll clock back behind a later persisted fill", () => {
+ const first = applyPaperOrder(wallet(), buy).state;
+ const later = applyPaperOrder(first, {...buy, id:"tick:2", side:"SELL", quantity:1, now:100010, priceTimestamp:100010}).state;
+ const before = structuredClone(later);
+ assert.throws(() => applyPaperOrder(later, buy), /clock precedes persisted journal/);
+ assert.deepEqual(later, before);
+ assert.equal(applyPaperOrder(later, {...buy, now:100010}).status, "duplicate");
+});
