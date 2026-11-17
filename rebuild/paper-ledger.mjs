@@ -18,6 +18,8 @@ export function applyPaperOrder(state, order, policy = {}) {
         t.fee >= t.executionPrice * t.quantity ||
         !Number.isSafeInteger(t.priceTimestamp) || !Number.isSafeInteger(t.at) ||
         t.priceTimestamp < 0 || t.at < 0 || t.priceTimestamp > t.at ||
+        // A persisted fill must never contain a quote older than the hard freshness ceiling.
+        t.at - t.priceTimestamp > 120000 ||
         (Number.isFinite(now) && t.at > now)) ||
       new Set(state.trades.map(t => t.id)).size !== state.trades.length ||
       state.trades.some((t, i) => i > 0 && (t.at < state.trades[i - 1].at ||
