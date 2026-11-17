@@ -248,6 +248,18 @@ assert.equal(details.lastTickMs,now);
 assert.equal(details.lastTrade?.side,'BUY');
 assert.equal(details.lastTrade?.id,data.get('journal:1').fill.id);
 assert.equal(details.halted,false);
+// Diagnostics must not claim a verified trade if its persisted order is missing
+// or disagrees with the journal. A restart must preserve the verified result.
+const restartedDiagnostics=new PaperLedger({storage},env);
+assert.equal((await (await restartedDiagnostics.fetch(diagnosticRequest())).json()).persistedTrades,1);
+const originalOrder=structuredClone(data.get('order:'+details.lastTrade.id));
+data.delete('order:'+details.lastTrade.id);
+assert.equal((await ledger.fetch(diagnosticRequest())).status,503);
+data.set('order:'+details.lastTrade.id,{fill:{...originalOrder.fill,feeCents:originalOrder.fill.feeCents+1}});
+assert.equal((await ledger.fetch(diagnosticRequest())).status,503);
+data.set('order:'+details.lastTrade.id,originalOrder);
+assert.equal((await ledger.fetch(diagnosticRequest())).status,200);
+
 await storage.put('cron:paused',true);
 assert.equal((await (await ledger.fetch(diagnosticRequest())).json()).paused,true);
 await storage.put('cron:paused','corrupt');
