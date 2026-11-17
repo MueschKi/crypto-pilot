@@ -320,3 +320,12 @@ test("duplicate paper orders reject malformed replay clocks without wallet mutat
  }
  assert.equal(applyPaperOrder(state, buy).status, "duplicate");
 });
+
+
+test("buy refuses a cost-basis rounding no-op without mutating wallet", () => {
+ const state = {...wallet(), cash:1000, quantity:1, costBasis:1e308};
+ const before = structuredClone(state);
+ assert.throws(() => applyPaperOrder(state, {...buy, id:"basis-buy-underflow", quantity:1}, {maxExposure:1}), /cost basis precision underflow/);
+ assert.deepEqual(state, before);
+ assert.equal(state.trades.length, 0);
+});
