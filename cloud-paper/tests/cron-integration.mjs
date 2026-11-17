@@ -107,6 +107,19 @@ for (const bad of [
   assert.equal(data.get('journal:1'),undefined);
 }
 
+// Null wallet must fail closed on every authenticated read, not just Cron.
+data=new Map();
+await storage.put('state',null);
+for(const endpoint of ['/v1/paper/status','/v1/paper/journal']){
+  const res=await ledger.fetch(new Request('https://internal.invalid'+endpoint,{
+    method:'GET',headers:{'x-internal-paper-token-id':'test_operator'}
+  }));
+  assert.equal(res.status,503,endpoint+' must reject a persisted null wallet');
+  assert.equal((await res.json()).mode,'PAPER_ONLY');
+  assert.equal(data.get('state'),null,'read must not reset corrupt wallet');
+}
+data=new Map();
+
 // Explicitly persisted null must not be interpreted as a fresh €1,000 wallet.
 data=new Map();
 await storage.put('state',null);
