@@ -73,6 +73,11 @@ export function applyPaperOrder(state, order, policy = {}) {
   } else {
     if (order.quantity > state.quantity) return { state, status: "insufficient_position" };
     const basisRemoved = state.costBasis * (order.quantity / state.quantity);
+    // A partial sale must actually reduce its recorded basis. Otherwise tiny
+    // fills silently leave an inconsistent cost basis after persistence.
+    if (order.quantity < state.quantity && (basisRemoved <= 0 || !Number.isFinite(basisRemoved) ||
+        state.costBasis - basisRemoved === state.costBasis))
+      throw new Error("cost basis precision underflow");
     next.cash += notional - fee;
     next.quantity -= order.quantity;
     next.costBasis -= basisRemoved;
