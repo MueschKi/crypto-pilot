@@ -107,7 +107,7 @@ export default {
     if (cronControl) {
       const action=url.pathname.slice("/v1/paper/cron/".length);
       const target=new URL(forwarded.url);
-      target.pathname="/v1/paper/"+action;
+      target.pathname=action==="status"?"/internal/cron/status":"/v1/paper/"+action;
       // Reconstruct the request to preserve method and headers while changing path.
       const rerouted=new Request(target,forwarded);
       rerouted.headers.set("x-internal-paper-token-id",identityClaims.tokenId);
@@ -237,6 +237,39 @@ export class PaperLedger {
     if (!tokenId) return denied();
     try { if (await this.state.storage.get("revoked:"+tokenId)) return denied(); }
     catch (_) { return response({error:"paper storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
+    // Authenticated operator diagnostics for the actual autonomous Cron wallet.
+    // No public route, keys, or private exchange data are exposed.
+    if (path === "/internal/cron/status" && request.method === "GET") {
+      try {
+        const storage=this.state.storage;
+        const [wallet,checkpoint,paused]=await Promise.all([
+          storage.get("state"),storage.get("cron:last"),storage.get("cron:paused")
+        ]);
+        const state=wallet||INITIAL;
+        if(!validState(state) || (paused!==undefined && paused!==null && typeof paused!=="boolean"))
+          return response({error:"invalid cron state",mode:"PAPER_ONLY"},503);
+        if(checkpoint!==undefined && checkpoint!==null &&
+           (!checkpoint || typeof checkpoint!=="object" || Array.isArray(checkpoint)
+            || !Number.isSafeInteger(checkpoint.now) || checkpoint.now<0
+            || !Number.isSafeInteger(checkpoint.lastTradeMs) || checkpoint.lastTradeMs<0
+            || checkpoint.lastTradeMs>checkpoint.now
+            || !checkpoint.prices || ["BTC","ETH","SOL"].some(
+              symbol=>!Number.isSafeInteger(checkpoint.prices[symbol])||checkpoint.prices[symbol]<=0)))
+          return response({error:"invalid cron checkpoint",mode:"PAPER_ONLY"},503);
+        let lastTrade=null;
+        if(state.sequence>0){
+          const entry=await storage.get("journal:"+state.sequence);
+          if(!entry || entry.sequence!==state.sequence || !validFill(entry.fill))
+            return response({error:"invalid cron journal",mode:"PAPER_ONLY"},503);
+          lastTrade={id:entry.fill.id,side:entry.fill.side,symbol:entry.fill.symbol};
+        }
+        return response({mode:"PAPER_ONLY",realTrading:false,
+          enabled:this.env.PAPER_AUTOTRADE_ENABLED==="true",
+          paused:paused===true,halted:state.halted,
+          lastTickMs:checkpoint?.now??null,lastTradeMs:checkpoint?.lastTradeMs??null,
+          persistedTrades:state.sequence,lastTrade});
+      } catch (_) {return response({error:"cron diagnostics unavailable",mode:"PAPER_ONLY"},503);}
+    }
     if (path === "/v1/paper/status" && request.method === "GET") {
       try {
         const state = await this.state.storage.get("state") || INITIAL;
