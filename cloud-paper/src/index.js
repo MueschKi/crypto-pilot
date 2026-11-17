@@ -208,10 +208,16 @@ export class PaperLedger {
           const units=signal.action==='BUY'
             ?Math.floor(signal.notionalCents*1000000/price)
             :signal.quantityUnits;
-          if(Number.isSafeInteger(units)&&units>0){
+          // A signalled BUY/SELL must never report HTTP 200 if execution
+          // quantization fails. Operators must see a failed tick, not a phantom signal.
+          if(!Number.isSafeInteger(units)||units<=0)
+            return response({error:'invalid execution quantity',mode:'PAPER_ONLY'},503);
+          {
             const product=units*price;
             const notional=Math.round(product/1000000);
-            if(Number.isSafeInteger(product)&&Number.isSafeInteger(notional)&&notional>0){
+            if(!Number.isSafeInteger(product)||!Number.isSafeInteger(notional)||notional<=0)
+              return response({error:'invalid execution notional',mode:'PAPER_ONLY'},503);
+            {
               const fee=Math.max(1,Math.ceil(notional*0.0026));
               const fill={id:'cron_'+Math.floor(now/300000)+'_'+signal.symbol+'_'+signal.action,sequence:wallet.sequence+1,symbol:signal.symbol,side:signal.action,quantityUnits:units,priceCentsPerUnit:price,feeCents:fee};
               const filled=await this.fetch(new Request('https://internal.invalid/v1/paper/fill',{method:'POST',headers:{'x-internal-paper-token-id':'cloud_cron_internal'},body:JSON.stringify(fill)}));
