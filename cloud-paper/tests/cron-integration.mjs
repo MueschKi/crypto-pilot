@@ -139,7 +139,7 @@ for (const corrupt of [
 }
 
 // A malformed persisted pause flag must never silently enable automatic trading.
-for (const corruptPause of ['false', 0, {}, []]) {
+for (const corruptPause of [null, 'false', 0, {}, []]) {
   data=new Map();
   await storage.put('cron:paused',corruptPause);
   await storage.put('cron:last',{now:now-300000,prices:realistic,lastTradeMs:0});
@@ -293,6 +293,8 @@ assert.equal((await ledger.fetch(diagnosticRequest())).status,200);
 
 await storage.put('cron:paused',true);
 assert.equal((await (await ledger.fetch(diagnosticRequest())).json()).paused,true);
+await storage.put('cron:paused',null);
+assert.equal((await ledger.fetch(diagnosticRequest())).status,503);
 await storage.put('cron:paused','corrupt');
 assert.equal((await ledger.fetch(diagnosticRequest())).status,503);
 await storage.put('cron:paused',false);
