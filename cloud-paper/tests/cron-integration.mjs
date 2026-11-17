@@ -106,6 +106,21 @@ for (const bad of [
   assert.equal(data.get('journal:1'),undefined);
 }
 
+// Explicitly persisted null must not be interpreted as a fresh €1,000 wallet.
+data=new Map();
+await storage.put('state',null);
+await storage.put('cron:last',{now:now-300000,prices:realistic,lastTradeMs:0});
+const nullWalletTick=await tick(now,{...realistic,BTC:8600000});
+assert.equal(nullWalletTick.status,409);
+assert.equal(data.get('state'),null);
+assert.equal(data.get('cron:last').now,now-300000);
+assert.equal(data.get('journal:1'),undefined);
+const nullWalletDiagnostics=await ledger.fetch(new Request('https://internal.invalid/internal/cron/status',{
+  method:'GET',headers:{'x-internal-paper-token-id':'test_operator'}
+}));
+assert.equal(nullWalletDiagnostics.status,503);
+data=new Map();
+
 // Corrupt persisted wallet state must fail closed before reserving a tick or filling.
 for (const corrupt of [
   {sequence:0,cashCents:-1,positions:{},halted:false},
