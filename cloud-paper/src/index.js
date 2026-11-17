@@ -267,6 +267,9 @@ export class PaperLedger {
           const entry=await storage.get("journal:"+state.sequence);
           if(!entry || entry.sequence!==state.sequence || !validFill(entry.fill))
             return response({error:"invalid cron journal",mode:"PAPER_ONLY"},503);
+          const order=await storage.get("order:"+entry.fill.id);
+          if(!order || JSON.stringify(order.fill)!==JSON.stringify(entry.fill))
+            return response({error:"invalid cron order record",mode:"PAPER_ONLY"},503);
           lastTrade={id:entry.fill.id,side:entry.fill.side,symbol:entry.fill.symbol};
         }
         return response({mode:"PAPER_ONLY",realTrading:false,
