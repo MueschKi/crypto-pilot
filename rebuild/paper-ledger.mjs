@@ -73,6 +73,8 @@ export function applyPaperOrder(state, order, policy = {}) {
     next.cash -= notional + fee;
     next.quantity += order.quantity;
     next.costBasis += notional + fee;
+    // A filled BUY must increase recorded cost basis, even on large wallets.
+    if (next.costBasis === state.costBasis) throw new Error("cost basis precision underflow");
   } else {
     if (order.quantity > state.quantity) return { state, status: "insufficient_position" };
     const basisRemoved = state.costBasis * (order.quantity / state.quantity);
