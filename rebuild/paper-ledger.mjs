@@ -28,6 +28,8 @@ export function applyPaperOrder(state, order, policy = {}) {
   if (!state.enabled || state.emergencyStop) return { state, status: "disabled" };
   if (!order || typeof order.id !== "string" || !/^[a-zA-Z0-9:_-]{1,128}$/.test(order.id))
     throw new Error("invalid id");
+  // Even idempotent replays must carry a valid clock; malformed ticks must fail closed.
+  if (!Number.isSafeInteger(now) || now < 0) throw new Error("invalid order clock");
   const previous = state.trades.find(t => t.id === order.id);
   if (previous) {
     // Idempotency must not silently accept a conflicting order under an old key.
