@@ -41,30 +41,13 @@ const tracks=document.createElementNS(svgNS,'g');tracks.id='lcd-art-tracks';
 tracks.innerHTML=`
 <!-- Four separate diagonal trays and their support posts, as on the LCD reference -->
 <g fill="none" stroke-linecap="square" stroke-linejoin="miter">
- <path d="M272 223 L459 293 M811 223 L622 293 M272 363 L459 402 M811 363 L622 402" stroke="#88623b" stroke-width="7"/>
+ <path d="M272 223 L459 293 M811 223 L622 293 M272 363 L459 402 M811 363 L622 402" stroke="#80613d" stroke-width="7"/>
  <path d="M272 229 L459 299 M811 229 L622 299 M272 369 L459 408 M811 369 L622 408" stroke="#26392f" stroke-width="2.4"/>
  <path d="M294 238 V273 M785 238 V273 M314 373 V411 M765 373 V411" stroke="#88623b" stroke-width="6"/>
  <path d="M284 378 V403 M800 378 V403" stroke="#88623b" stroke-width="4"/>
 </g>
-<!-- Discrete, empty LCD rolling positions; live eggs are drawn on top -->
-<g fill="#bac7b7" stroke="#26392f" stroke-width="3.5">
- <ellipse cx="310" cy="232" rx="11" ry="8" transform="rotate(-23 310 232)"/>
- <ellipse cx="346" cy="246" rx="11" ry="8" transform="rotate(-23 346 246)"/>
- <ellipse cx="383" cy="261" rx="11" ry="8" transform="rotate(-23 383 261)"/>
- <ellipse cx="421" cy="276" rx="11" ry="8" transform="rotate(-23 421 276)"/>
- <ellipse cx="773" cy="232" rx="11" ry="8" transform="rotate(23 773 232)"/>
- <ellipse cx="737" cy="246" rx="11" ry="8" transform="rotate(23 737 246)"/>
- <ellipse cx="700" cy="261" rx="11" ry="8" transform="rotate(23 700 261)"/>
- <ellipse cx="662" cy="276" rx="11" ry="8" transform="rotate(23 662 276)"/>
- <ellipse cx="310" cy="370" rx="11" ry="8" transform="rotate(-18 310 370)"/>
- <ellipse cx="348" cy="378" rx="11" ry="8" transform="rotate(-18 348 378)"/>
- <ellipse cx="386" cy="386" rx="11" ry="8" transform="rotate(-18 386 386)"/>
- <ellipse cx="423" cy="394" rx="11" ry="8" transform="rotate(-18 423 394)"/>
- <ellipse cx="773" cy="370" rx="11" ry="8" transform="rotate(18 773 370)"/>
- <ellipse cx="735" cy="378" rx="11" ry="8" transform="rotate(18 735 378)"/>
- <ellipse cx="697" cy="386" rx="11" ry="8" transform="rotate(18 697 386)"/>
- <ellipse cx="660" cy="394" rx="11" ry="8" transform="rotate(18 660 394)"/>
-</g>
+<!-- LCD egg segments are not permanently inked: active rolling eggs appear only
+     when the game engine illuminates their current positions. -->
 <!-- Sparse LCD shrubs and ground, no painted scenery -->
 <g fill="#314b24">
  <path d="M202 414 l12 -12 12 6 13 -9 10 9 14 -4 10 13 -4 8 -67 0Z"/>
@@ -130,6 +113,9 @@ wolf.innerHTML=`<g display="none">${prior}</g>
 
 const styled=document.createElement('style');styled.id='art-v13-style';styled.textContent=`
   #handheld .topbar{display:none}
+  /* Monochrome LCD ink, with only restrained color on rails and vegetation. */
+  #handheld #lcd-scene{stroke-linejoin:round}
+  #handheld #eggs ellipse{shape-rendering:geometricPrecision}
   #handheld #start:not([hidden]){display:block} #handheld #start[hidden]{display:none} #handheld #message:not(:empty){display:block} #handheld #message:empty{display:none}
   .face-button{color:transparent!important;text-shadow:none!important}
   #handheld>svg [aria-label]{font-family:system-ui}
@@ -151,7 +137,7 @@ logo.innerHTML='<ellipse cx="73" cy="73" rx="19" ry="26" fill="none" stroke="#57
 svg.appendChild(logo);
 
 const score=document.getElementById('lcdScore');
-if(score){score.setAttribute('x','715');score.setAttribute('y','177');score.setAttribute('font-size','48');}
+if(score){score.setAttribute('x','715');score.setAttribute('y','177');score.setAttribute('font-size','48');score.setAttribute('font-family','monospace');}
 const modeText=document.getElementById('lcdMode');
 if(modeText){modeText.setAttribute('x','212');modeText.setAttribute('y','437');modeText.setAttribute('text-anchor','start');modeText.setAttribute('font-size','14');}
 for(const t of svg.querySelectorAll('text')){
@@ -183,10 +169,14 @@ window.draw=function(){
   // The originals used discrete, unfilled LCD segments for the rolling eggs.
   const eggs=document.getElementById('eggs');
   for(const egg of eggs.children){
-    egg.setAttribute('fill','#aebfab');
-    egg.setAttribute('stroke','#23382f');
-    egg.setAttribute('stroke-width','3.3');
-    egg.setAttribute('rx','8.5');egg.setAttribute('ry','11');
+    // Solid LCD egg silhouette: one lit segment per egg, not a permanent row.
+    egg.setAttribute('fill','#26392f');
+    egg.setAttribute('stroke','#26392f');
+    egg.setAttribute('stroke-width','1.5');
+    egg.setAttribute('rx','11');egg.setAttribute('ry','8');
+    const cx=Number(egg.getAttribute('cx')),cy=Number(egg.getAttribute('cy'));
+    const angle=egg.getAttribute('transform')?.includes('-25')?-22:22;
+    egg.setAttribute('transform',`rotate(${angle} ${cx} ${cy})`);
   }
   // Tiny chicks indicate penalty marks like an etched LCD handheld.
   const penalties=document.getElementById('missIcons');penalties.replaceChildren();
