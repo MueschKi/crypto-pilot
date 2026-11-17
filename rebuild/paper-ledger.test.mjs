@@ -241,3 +241,18 @@ test("small paper wallets enforce the exact exposure cap", () => {
  assert.equal(atLimit.status, "filled");
  assert.equal(atLimit.state.trades.length, 1);
 });
+
+test("restarted wallet rejects quote rollback without mutating persisted balances", () => {
+ const first = applyPaperOrder(wallet(), buy).state;
+ const before = structuredClone(first);
+ assert.throws(() => applyPaperOrder(first, {
+   ...buy, id:"quote-rollback", side:"SELL", quantity:1,
+   now:100001, priceTimestamp:99998
+ }), /quote precedes persisted journal/);
+ assert.deepEqual(first, before);
+ const forward = applyPaperOrder(first, {
+   ...buy, id:"quote-forward", side:"SELL", quantity:1,
+   now:100001, priceTimestamp:99999
+ });
+ assert.equal(forward.status, "filled");
+});
