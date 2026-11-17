@@ -173,7 +173,8 @@ export class PaperLedger {
         if(!Number.isSafeInteger(now)||Math.abs(Date.now()-now)>120000)return response({error:'invalid clock'},400);
         if(!prices||['BTC','ETH','SOL'].some(k=>!Number.isSafeInteger(prices[k])||prices[k]<=0))return response({error:'invalid prices'},400);
         const storage=this.state.storage;
-        const wallet=await storage.get('state')||INITIAL;
+        const storedWallet=await storage.get('state');
+        const wallet=storedWallet===undefined?INITIAL:storedWallet;
         if(!validState(wallet)||wallet.halted)return response({error:'halted or corrupt wallet'},409);
         const last=await storage.get('cron:last');
         if(last!==undefined && last!==null && (!last || typeof last!=='object' || Array.isArray(last) || !Number.isSafeInteger(last.now)||last.now<0||last.now>now
@@ -251,7 +252,7 @@ export class PaperLedger {
         const [wallet,checkpoint,paused]=await Promise.all([
           storage.get("state"),storage.get("cron:last"),storage.get("cron:paused")
         ]);
-        const state=wallet||INITIAL;
+        const state=wallet===undefined?INITIAL:wallet;
         if(!validState(state) || (paused!==undefined && paused!==null && typeof paused!=="boolean"))
           return response({error:"invalid cron state",mode:"PAPER_ONLY"},503);
         if(checkpoint!==undefined && checkpoint!==null &&
