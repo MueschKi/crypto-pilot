@@ -177,7 +177,7 @@ export class PaperLedger {
         const wallet=storedWallet===undefined?INITIAL:storedWallet;
         if(!validState(wallet)||wallet.halted)return response({error:'halted or corrupt wallet'},409);
         const last=await storage.get('cron:last');
-        if(last!==undefined && last!==null && (!last || typeof last!=='object' || Array.isArray(last) || !Number.isSafeInteger(last.now)||last.now<0||last.now>now
+        if(last!==undefined && (!last || typeof last!=='object' || Array.isArray(last) || !Number.isSafeInteger(last.now)||last.now<0||last.now>now
           || !last.prices || ['BTC','ETH','SOL'].some(k=>!Number.isSafeInteger(last.prices[k])||last.prices[k]<=0)
           || !Number.isSafeInteger(last.lastTradeMs) || last.lastTradeMs<0 || last.lastTradeMs>last.now))
           return response({error:'invalid checkpoint'},503);
@@ -255,7 +255,7 @@ export class PaperLedger {
         const state=wallet===undefined?INITIAL:wallet;
         if(!validState(state) || (paused!==undefined && paused!==null && typeof paused!=="boolean"))
           return response({error:"invalid cron state",mode:"PAPER_ONLY"},503);
-        if(checkpoint!==undefined && checkpoint!==null &&
+        if(checkpoint!==undefined &&
            (!checkpoint || typeof checkpoint!=="object" || Array.isArray(checkpoint)
             || !Number.isSafeInteger(checkpoint.now) || checkpoint.now<0
             || !Number.isSafeInteger(checkpoint.lastTradeMs) || checkpoint.lastTradeMs<0
