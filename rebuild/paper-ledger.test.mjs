@@ -228,3 +228,16 @@ test("new paper order cannot predate latest persisted trade", () => {
  assert.throws(() => applyPaperOrder(state, {...buy, id:"clock-rollback", now:99999, priceTimestamp:99999}), /clock precedes persisted journal/);
  assert.deepEqual(state, snapshot);
 });
+
+test("small paper wallets enforce the exact exposure cap", () => {
+ const state = {...wallet(), cash:1e-7};
+ const before = structuredClone(state);
+ const order = {...buy, id:"micro-exposure", quantity:4.0001e-10};
+ const result = applyPaperOrder(state, order);
+ assert.equal(result.status, "exposure_limit");
+ assert.strictEqual(result.state, state);
+ assert.deepEqual(state, before);
+ const atLimit = applyPaperOrder(state, {...order, id:"micro-at-limit", quantity:4e-10});
+ assert.equal(atLimit.status, "filled");
+ assert.equal(atLimit.state.trades.length, 1);
+});
