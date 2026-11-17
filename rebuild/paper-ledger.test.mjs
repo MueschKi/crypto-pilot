@@ -256,3 +256,20 @@ test("restarted wallet rejects quote rollback without mutating persisted balance
  });
  assert.equal(forward.status, "filled");
 });
+
+test("persisted quote timestamps must be monotonic across journal entries", () => {
+ const first = applyPaperOrder(wallet(), buy).state;
+ const second = applyPaperOrder(first, {
+   ...buy, id:"tick:2", side:"SELL", quantity:1,
+   now:100002, priceTimestamp:100001
+ }).state;
+ const corrupt = structuredClone(second);
+ corrupt.trades[0].priceTimestamp = 100000;
+ corrupt.trades[1].priceTimestamp = 99999;
+ const before = structuredClone(corrupt);
+ assert.throws(() => applyPaperOrder(corrupt, {
+   ...buy, id:"tick:3", side:"SELL", quantity:1,
+   now:100003, priceTimestamp:100003
+ }), /invalid wallet/);
+ assert.deepEqual(corrupt, before);
+});
