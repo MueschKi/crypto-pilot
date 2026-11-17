@@ -24,7 +24,7 @@ const henHouse=(id,x,y,mirror=false)=>`<g id="hen-${id}" transform="translate(${
     <path d="M-13 8 Q-12 -5 4 -6 Q17 -5 13 8 Q10 22 -3 19 Q-11 16 -13 8Z" fill="#b3c3ac" stroke="#263b30" stroke-width="2.5"/>
     <path d="M10 -9 L8 -21 Q13 -28 18 -21 Q17 -31 25 -28 Q29 -25 25 -17 Q32 -19 33 -13 L22 -8" fill="#9c5249" stroke="#314b3f" stroke-width="2"/>
     <path d="M22 -6 L35 1 L21 6Z" fill="#95564b" stroke="#304436" stroke-width="1.5"/>
-    <circle cx="17" cy="-7" r="2.8" fill="#20352c"/>
+    <circle cx="17" cy="-7" r="2.8" fill="#20352c"/><circle cx="18" cy="-8" r=".9" fill="#e0e7d5"/><path d="M-23 -2 Q-29 4 -24 12 M-18 -15 Q-25 -18 -27 -9" stroke="#243d31" stroke-width="2" fill="none"/>
     <path d="M-4 24 v6 m8 -5 v5 m-12 1 h9 m2 0 h9" stroke="#253d32" stroke-width="2"/>
     <path d="M-10 5 Q-6 1 -2 4 Q4 7 6 1" fill="none" stroke="#3d5c4b" stroke-width="2"/>
   </g>
@@ -77,7 +77,7 @@ hare.innerHTML=`
   <path d="M10 -8 Q22 -9 28 1 Q16 14 4 8" fill="#c3d0b9" stroke-width="2"/>
   <circle cx="7" cy="-20" r="4.5" fill="#d4dfc7" stroke-width="1.8"/>
   <circle cx="8.5" cy="-19" r="1.7" fill="#263a30" stroke="none"/>
-  <circle cx="27" cy="0" r="3" fill="#273e33" stroke="none"/>
+  <circle cx="27" cy="0" r="3" fill="#273e33" stroke="none"/><circle cx="8" cy="-20" r=".8" fill="#fff" stroke="none"/><path d="M-20 -54 Q-19 -66 -17 -73 M8 -54 L9 -73" stroke="#d5dfc5" stroke-width="2" fill="none"/>
   <path d="M-4 10 Q11 19 21 10 M20 10 l5 5 M11 10 l-1 4" fill="none" stroke-width="2"/>
   <path d="M-9 8 Q-1 3 5 11" fill="none" stroke-width="2.3"/>
   <path d="M-5 20 L32 17 L45 4" fill="none" stroke-width="8"/>
@@ -86,7 +86,7 @@ hare.innerHTML=`
  </g>
  <g id="rabbitBell" transform="translate(48 5)" fill="#485f4f" stroke="#273c32" stroke-width="2.5" stroke-linejoin="round">
    <path d="M-11 0 Q-15 -22 0 -22 Q14 -22 12 0 L18 7 H-17 Z"/>
-   <circle cx="0" cy="11" r="4"/>
+   <circle cx="0" cy="11" r="4"/><path d="M-7 -3 Q-9 -13 -4 -17 M-16 13 l-7 5 M16 13 l7 5" fill="none" stroke="#a9bea7" stroke-width="2"/>
    <path d="M0 -21 v-6" fill="none"/>
  </g>`;
 
@@ -121,8 +121,8 @@ wolf.innerHTML=`<g display="none">${prior}</g>
   <path d="M-10 -78 Q-2 -88 8 -79 M22 -79 Q31 -90 39 -79" fill="none" stroke-width="3.3"/>
   <ellipse cx="1" cy="-69" rx="8" ry="14" fill="#d5dfc5" stroke-width="2"/>
   <ellipse cx="23" cy="-67" rx="7.5" ry="14" fill="#d5dfc5" stroke-width="2"/>
-  <ellipse cx="-1" cy="-66" rx="3.2" ry="5.2" fill="#1c3329" stroke="none"/>
-  <ellipse cx="21" cy="-63" rx="3.2" ry="5.2" fill="#1c3329" stroke="none"/>
+  <ellipse cx="-1" cy="-66" rx="3.2" ry="5.2" fill="#1c3329" stroke="none"/><circle cx="-2" cy="-68" r="1" fill="#eef2dc" stroke="none"/>
+  <ellipse cx="21" cy="-63" rx="3.2" ry="5.2" fill="#1c3329" stroke="none"/><circle cx="20" cy="-65" r="1" fill="#eef2dc" stroke="none"/>
   <path d="M5 -39 Q21 -35 30 -47" fill="none" stroke-width="2.5"/>
   <path d="M17 -27 Q35 -24 36 -11" fill="none" stroke-width="5"/>
   <!-- collar with small neckerchief in a muted second LCD color -->
