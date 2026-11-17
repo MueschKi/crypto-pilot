@@ -338,3 +338,19 @@ test("duplicate replay cannot roll clock back behind a later persisted fill", ()
  assert.deepEqual(later, before);
  assert.equal(applyPaperOrder(later, {...buy, now:100010}).status, "duplicate");
 });
+
+
+test("persisted paper journal rejects impossible fees and overflowed notionals", () => {
+ const filled = applyPaperOrder(wallet(), buy).state;
+ const original = filled.trades[0];
+ for (const patch of [
+   {fee: original.executionPrice * original.quantity},
+   {fee: original.executionPrice * original.quantity + 1},
+   {executionPrice: 1e308, quantity: 1e308, fee: 1}
+ ]) {
+   const corrupt = {...filled, trades: [{...original, ...patch}]};
+   const snapshot = structuredClone(corrupt);
+   assert.throws(() => applyPaperOrder(corrupt, {...buy, id:"next", side:"SELL", quantity:1, now:100001}), /invalid wallet/);
+   assert.deepEqual(corrupt, snapshot);
+ }
+});
