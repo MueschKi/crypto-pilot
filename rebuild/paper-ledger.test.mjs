@@ -286,3 +286,11 @@ test("idempotency keys reject conflicting replays without changing the wallet", 
    assert.deepEqual(first, snapshot);
  }
 });
+
+
+test("partial sell rejects cost-basis precision underflow without wallet mutation", () => {
+ const state = {...wallet(), quantity:1, costBasis:Number.MIN_VALUE};
+ const before = structuredClone(state);
+ assert.throws(() => applyPaperOrder(state, {...buy, id:"basis-underflow", side:"SELL", quantity:0.5}), /cost basis precision underflow/);
+ assert.deepEqual(state, before);
+});
