@@ -30,6 +30,11 @@ export function applyPaperOrder(state, order, policy = {}) {
   if (state.trades.some(t => t.id === order.id)) return { state, status: "duplicate" };
   if (state.trades.length && Number.isSafeInteger(now) && now < state.trades[state.trades.length - 1].at)
     throw new Error("order clock precedes persisted journal");
+  // Never accept an older quote than the last persisted fill, even if it
+  // remains within the normal freshness window after a restart.
+  if (state.trades.length && Number.isSafeInteger(order.priceTimestamp) &&
+      order.priceTimestamp < state.trades[state.trades.length - 1].priceTimestamp)
+    throw new Error("quote precedes persisted journal");
   if (!["BUY", "SELL"].includes(order.side) || !Number.isFinite(order.price) || order.price <= 0 ||
       !Number.isFinite(order.quantity) || order.quantity <= 0 || !Number.isSafeInteger(now) ||
       !Number.isSafeInteger(order.priceTimestamp) || order.priceTimestamp < 0 || now < 0 || order.priceTimestamp > now ||
