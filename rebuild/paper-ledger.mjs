@@ -61,7 +61,8 @@ export function applyPaperOrder(state, order, policy = {}) {
     if (!Number.isFinite(notional + fee)) throw new Error("wallet debit overflow");
     if (notional + fee > state.cash) return { state, status: "insufficient_cash" };
     const projectedQuantity = state.quantity + order.quantity;
-    const projectedExposure = projectedQuantity * order.price;
+    // Include adverse execution slippage when enforcing the exposure cap.
+    const projectedExposure = projectedQuantity * executionPrice;
     const exposureCap = equity * maxExposure;
     if (![projectedQuantity, projectedExposure, exposureCap].every(Number.isFinite))
       throw new Error("wallet exposure overflow");
