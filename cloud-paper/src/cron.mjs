@@ -3,9 +3,12 @@ const symbols=['BTC','ETH','SOL'];
 export async function runPaperCron(env, now=Date.now()) {
   if(!env?.PAPER_LEDGER || typeof env.PAPER_LEDGER.idFromName!=='function' || typeof env.PAPER_LEDGER.get!=='function' || !Number.isSafeInteger(now) || now < 0) return {ok:false,reason:'unavailable'};
   if(typeof env.PAPER_CRON_KEY!=='string'||env.PAPER_CRON_KEY.length<32)return {ok:false,reason:'disabled'};
-  const prices=await fetchPaperPrices();
+  // Resolve the persistent wallet binding before external market I/O.
+  // A broken Durable Object binding must not trigger unnecessary network calls.
   const id=env.PAPER_LEDGER.idFromName('wallet:v1:cloud-cron');
   const stub=env.PAPER_LEDGER.get(id);
+  if(!stub || typeof stub.fetch!=='function') return {ok:false,reason:'unavailable'};
+  const prices=await fetchPaperPrices();
   return stub.fetch(new Request('https://internal.invalid/internal/cron',{method:'POST',headers:{'x-paper-cron-key':env.PAPER_CRON_KEY||''},body:JSON.stringify({now,prices})}));
 }
 export async function fetchPaperPrices(fetcher=fetch) {
