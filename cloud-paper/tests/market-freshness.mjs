@@ -67,6 +67,21 @@ for (const age of ['01', '+1', '1.5', ' 1', '1 ', '1e2', 'Infinity', 'NaN']) {
 // anything beyond it must never be treated as a fresh market observation.
 await assert.rejects(fetchPaperPrices(cached('120')),/stale market response|stale market cache/);
 
+
+// Public quote fetches must never follow HTTP redirects to another host.
+// A redirect rejection must propagate without accepting a quote.
+{
+  let requested=0;
+  const redirecting=async (url,options)=>{
+    requested++;
+    assert.equal(url,'https://api.kraken.com/0/public/Ticker?pair=XBTEUR,ETHEUR,SOLEUR');
+    assert.equal(options.redirect,'error','external quote redirects must be disabled');
+    throw new TypeError('simulated redirect blocked');
+  };
+  await assert.rejects(fetchPaperPrices(redirecting),/simulated redirect blocked/);
+  assert.equal(requested,1,'redirect failure must not retry another host');
+}
+
 console.log('Public quote freshness and ambiguity gates passed');
 
 // Integration boundary: no Durable Object invocation or virtual fill may occur
