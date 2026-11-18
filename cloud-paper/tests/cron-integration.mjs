@@ -17,6 +17,22 @@ for (const invalidKey of [undefined, null, '', 'short', 123, {}]) {
     assert.deepEqual(result,{ok:false,reason:'disabled'});
   } finally {globalThis.fetch=originalFetch;}
 }
+// A public-market network outage must fail before touching the persistent wallet.
+// The scheduled handler will report this rejection; it must never synthesize a quote.
+{
+  const originalFetch=globalThis.fetch;
+  let attempts=0;
+  globalThis.fetch=async()=>{attempts++;throw Error('simulated public ticker outage');};
+  try {
+    const result=runPaperCron({
+      PAPER_LEDGER:{idFromName(){throw Error('unexpected storage access');}},
+      PAPER_CRON_KEY:'0123456789abcdef0123456789abcdef'
+    },Date.now());
+    await assert.rejects(result,/simulated public ticker outage/);
+    assert.equal(attempts,1,'network outage must not trigger unbounded retries');
+  } finally {globalThis.fetch=originalFetch;}
+}
+
 import {readFile} from 'node:fs/promises';
 const strategy=await readFile(new URL('../src/strategy.mjs',import.meta.url),'utf8');
 let source=await readFile(new URL('../src/index.js',import.meta.url),'utf8');
