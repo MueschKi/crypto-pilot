@@ -57,6 +57,16 @@ for(const result of [null,[],42,'invalid']) {
 for(const bad of [true,false,null,1,{},'1e2','+150',' 150','0150']) {
   await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:[bad]}})),/invalid price/);
 }
+
+// Reject an exchange response that appears fresh but carries malformed HTTP
+// cache metadata. No quote may reach the persistent wallet in these cases.
+for (const age of ['01', '+1', '1.5', ' 1', '1 ', '1e2', 'Infinity', 'NaN']) {
+  await assert.rejects(fetchPaperPrices(cached(age)),/invalid market cache age/);
+}
+// A cache Age of exactly two minutes is the upper permitted boundary;
+// anything beyond it must never be treated as a fresh market observation.
+await assert.rejects(fetchPaperPrices(cached('120')),/stale market response|stale market cache/);
+
 console.log('Public quote freshness and ambiguity gates passed');
 
 // Integration boundary: no Durable Object invocation or virtual fill may occur
