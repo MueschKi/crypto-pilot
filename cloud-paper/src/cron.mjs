@@ -1,7 +1,7 @@
 // Autonomous paper-only cron engine. No exchange credentials, real orders or user endpoints.
 const symbols=['BTC','ETH','SOL'];
 export async function runPaperCron(env, now=Date.now()) {
-  if(!env?.PAPER_LEDGER || typeof env.PAPER_LEDGER.idFromName!=='function' || typeof env.PAPER_LEDGER.get!=='function' || !Number.isSafeInteger(now) || now < 0) return {ok:false,reason:'unavailable'};
+  if(!env?.PAPER_LEDGER || typeof env.PAPER_LEDGER.idFromName!=='function' || typeof env.PAPER_LEDGER.get!=='function' || !Number.isSafeInteger(now) || now < 0 || now > Date.now()+120000) return {ok:false,reason:'unavailable'};
   if(typeof env.PAPER_CRON_KEY!=='string'||env.PAPER_CRON_KEY.length<32 || !/\S/.test(env.PAPER_CRON_KEY))return {ok:false,reason:'disabled'};
   // Resolve the persistent wallet binding before external market I/O.
   // A broken Durable Object binding must not trigger unnecessary network calls.
