@@ -40,7 +40,7 @@ for (const brokenStub of [undefined, null, {}, {fetch:42}]) {
   globalThis.fetch=async()=>{attempts++;throw Error('simulated public ticker outage');};
   try {
     const result=runPaperCron({
-      PAPER_LEDGER:{idFromName(){throw Error('unexpected storage access');}},
+      PAPER_LEDGER:{idFromName(){return 'wallet-id';},get(){return {fetch(){throw Error('unexpected wallet request');}};}},
       PAPER_CRON_KEY:'0123456789abcdef0123456789abcdef'
     },Date.now());
     await assert.rejects(result,/simulated public ticker outage/);
