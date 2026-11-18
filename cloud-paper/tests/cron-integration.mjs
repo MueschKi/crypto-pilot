@@ -5,6 +5,18 @@ for (const badClock of [-1, -300000, NaN, Infinity, 1.5]) {
   const result = await runPaperCron({PAPER_LEDGER:{idFromName(){throw Error('unexpected storage access');}}, PAPER_CRON_KEY:'0123456789abcdef0123456789abcdef'}, badClock);
   assert.deepEqual(result,{ok:false,reason:'unavailable'});
 }
+// Missing or malformed credentials must stop before fetching public prices.
+for (const invalidKey of [undefined, null, '', 'short', 123, {}]) {
+  const originalFetch=globalThis.fetch;
+  globalThis.fetch=async()=>{throw Error('unexpected market request');};
+  try {
+    const result=await runPaperCron({
+      PAPER_LEDGER:{idFromName(){throw Error('unexpected durable object access');}},
+      PAPER_CRON_KEY:invalidKey
+    },Date.now());
+    assert.deepEqual(result,{ok:false,reason:'disabled'});
+  } finally {globalThis.fetch=originalFetch;}
+}
 import {readFile} from 'node:fs/promises';
 const strategy=await readFile(new URL('../src/strategy.mjs',import.meta.url),'utf8');
 let source=await readFile(new URL('../src/index.js',import.meta.url),'utf8');
