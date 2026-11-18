@@ -132,6 +132,26 @@ for(const endpoint of ['/v1/paper/status','/v1/paper/journal']){
 }
 data=new Map();
 
+// Corrupt null wallets must also block operator controls and direct fills.
+data=new Map();
+await storage.put('state',null);
+for (const path of ['pause','resume','halt']) {
+  const rejected=await ledger.fetch(new Request('https://internal.invalid/v1/paper/'+path,{
+    method:'POST',headers:{'x-internal-paper-token-id':'test_operator'}
+  }));
+  assert.equal(rejected.status,503,'null wallet must block '+path);
+  assert.equal(data.get('state'),null,'operator control must not reset null wallet');
+}
+const rejectedFill=await ledger.fetch(new Request('https://internal.invalid/v1/paper/fill',{
+  method:'POST',headers:{'x-internal-paper-token-id':'test_operator'},
+  body:JSON.stringify({id:'null_wallet_fill',sequence:1,symbol:'BTC',side:'BUY',quantityUnits:1000,priceCentsPerUnit:8500000,feeCents:1})
+}));
+assert.notEqual(rejectedFill.status,200,'null wallet must block direct fill');
+assert.equal(data.get('state'),null);
+assert.equal(data.get('journal:1'),undefined);
+assert.equal(data.get('order:null_wallet_fill'),undefined);
+data=new Map();
+
 // Explicitly persisted null must not be interpreted as a fresh €1,000 wallet.
 data=new Map();
 await storage.put('state',null);
