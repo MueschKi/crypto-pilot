@@ -18,7 +18,7 @@ export async function runPaperCron(env, now=Date.now()) {
   return stub.fetch(new Request('https://internal.invalid/internal/cron',{method:'POST',headers:{'x-paper-cron-key':env.PAPER_CRON_KEY||''},body:JSON.stringify({now,prices})}));
 }
 export async function fetchPaperPrices(fetcher=fetch) {
-  const res=await fetcher('https://api.kraken.com/0/public/Ticker?pair=XBTEUR,ETHEUR,SOLEUR',{headers:{accept:'application/json','cache-control':'no-cache'},cache:'no-store',signal:AbortSignal.timeout(8000)});
+  const res=await fetcher('https://api.kraken.com/0/public/Ticker?pair=XBTEUR,ETHEUR,SOLEUR',{headers:{accept:'application/json','cache-control':'no-cache'},cache:'no-store',redirect:'error',signal:AbortSignal.timeout(8000)});
   if(!res.ok)throw Error('market unavailable');
   const json=await res.json();
   // Kraken's envelope must be well formed; malformed error fields must not
