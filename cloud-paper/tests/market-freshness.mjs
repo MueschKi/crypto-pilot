@@ -23,6 +23,10 @@ await assert.deepEqual(await fetchPaperPrices(cached('0')),{BTC:8500000,ETH:3000
 // represented safely in integer cents. Never hand an ambiguous quote to Cron.
 const failedHttp=async()=>({ok:false,status:503});
 await assert.rejects(fetchPaperPrices(failedHttp),/market unavailable/);
+// A 206 response can contain a truncated or incomplete market snapshot even
+// when the JSON body looks plausible. It must not reach the paper wallet.
+const partialHttp=async()=>({ok:true,status:206,headers:{get:k=>k==='date'?new Date().toUTCString():null},json:async()=>({error:[],result:values})});
+await assert.rejects(fetchPaperPrices(partialHttp),/market unavailable/);
 const exchangeError=async()=>({ok:true,headers:{get:k=>k==='date'?new Date().toUTCString():null},json:async()=>({error:['EGeneral:Temporary lockout'],result:values})});
 await assert.rejects(fetchPaperPrices(exchangeError),/market invalid/);
 await assert.rejects(fetchPaperPrices(make({...values,SOLEUR:{c:['0']}})),/invalid price/);
