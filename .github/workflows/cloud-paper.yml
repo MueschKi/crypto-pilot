@@ -3,11 +3,13 @@ on:
   push:
     paths:
       - 'cloud-paper/**'
+      - 'rebuild/**'
       - '.github/workflows/cloud-paper.yml'
       - '.github/workflows/paper-cron-diagnostics.yml'
   pull_request:
     paths:
       - 'cloud-paper/**'
+      - 'rebuild/**'
       - '.github/workflows/cloud-paper.yml'
       - '.github/workflows/paper-cron-diagnostics.yml'
   workflow_dispatch:
@@ -43,12 +45,18 @@ jobs:
         run: node cloud-paper/tests/checkpoint.mjs
       - name: Verify market quote safety gate
         run: node cloud-paper/tests/market-guard.mjs
+      - name: Verify fresh and unambiguous public market quotes
+        run: node cloud-paper/tests/market-freshness.mjs
       - name: Verify persistent cron execution and duplicate safety
         run: node cloud-paper/tests/cron-integration.mjs
       - name: Verify private cron diagnostic summaries
         run: node cloud-paper/tests/diagnostics.mjs
       - name: Verify paper strategy risk gates
         run: node cloud-paper/tests/strategy.mjs
+      - name: Verify rebuilt paper-only risk and ledger regression suites
+        run: |
+          node --test rebuild/paper-risk.test.mjs
+          node --test rebuild/paper-ledger.test.mjs
       - name: Confirm private preview configuration
         shell: bash
         run: |
@@ -57,6 +65,8 @@ jobs:
           grep -Fxq '[triggers]' cloud-paper/wrangler.toml
           grep -Fxq 'crons = ["*/5 * * * *"]' cloud-paper/wrangler.toml
           grep -Fxq 'PAPER_AUTOTRADE_ENABLED = "true"' cloud-paper/wrangler.toml
+          # Never deploy synthetic BUY/SELL smoke trades in the scheduled worker.
+          grep -Fxq 'PAPER_SMOKE_TRADES_ENABLED = "false"' cloud-paper/wrangler.toml
           ! grep -Eiq '(kraken.*(private|order)|api[_-]?secret)' cloud-paper/wrangler.toml
   deploy-preview:
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.deploy_preview == true))

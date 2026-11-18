@@ -77,9 +77,9 @@ export default {
     if (!identityClaims) return denied();
     if (!env.PAPER_LEDGER || !env.PAPER_SESSIONS) return response({error:"storage unavailable"},503);
     const url = new URL(request.url);
-    if (!["/v1/paper/status","/v1/paper/journal","/v1/paper/halt","/v1/paper/fill","/v1/paper/revoke"].includes(url.pathname))
+    if (!["/v1/paper/status","/v1/paper/journal","/v1/paper/halt","/v1/paper/pause","/v1/paper/resume","/v1/paper/fill","/v1/paper/revoke","/v1/paper/cron/status","/v1/paper/cron/pause","/v1/paper/cron/resume","/v1/paper/cron/halt"].includes(url.pathname))
       return response({error:"not found"},404);
-    const method = ["/v1/paper/status","/v1/paper/journal"].includes(url.pathname)?"GET":"POST";
+    const method = ["/v1/paper/status","/v1/paper/journal","/v1/paper/cron/status"].includes(url.pathname)?"GET":"POST";
     if (request.method !== method) return response({error:"method not allowed"},405);
     if (request.method === "POST") {
       const size = Number(request.headers.get("content-length")||0);
@@ -97,8 +97,23 @@ export default {
       if(sessionRes.status===401)return denied();
       if(!sessionRes.ok)return response({error:"session storage unavailable",mode:"PAPER_ONLY",realTrading:false},503);
     } catch (_) {return response({error:"session storage unavailable",mode:"PAPER_ONLY",realTrading:false},503);}
-    const id = env.PAPER_LEDGER.idFromName("wallet:v1:"+identityClaims.subject);
+    // Operator Cron controls must address the SAME Durable Object as scheduled ticks.
+    // Ordinary per-subject wallets remain isolated; these explicit routes operate
+    // the autonomous wallet and retain the verified identity/session gate above.
+    const cronControl = url.pathname.startsWith("/v1/paper/cron/");
+    const walletName = cronControl ? "wallet:v1:cloud-cron" : "wallet:v1:"+identityClaims.subject;
+    const id = env.PAPER_LEDGER.idFromName(walletName);
     const forwarded = new Request(request);
+    if (cronControl) {
+      const action=url.pathname.slice("/v1/paper/cron/".length);
+      const target=new URL(forwarded.url);
+      target.pathname=action==="status"?"/internal/cron/status":"/v1/paper/"+action;
+      // Reconstruct the request to preserve method and headers while changing path.
+      const rerouted=new Request(target,forwarded);
+      rerouted.headers.set("x-internal-paper-token-id",identityClaims.tokenId);
+      try { return await env.PAPER_LEDGER.get(id).fetch(rerouted); }
+      catch (_) { return response({error:"cron wallet storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
+    }
     forwarded.headers.set("x-internal-paper-token-id",identityClaims.tokenId);
     try { return await env.PAPER_LEDGER.get(id).fetch(forwarded); }
     catch (_) { return response({error:"paper storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
@@ -145,30 +160,65 @@ export class PaperLedger {
       const key=this.env?.PAPER_CRON_KEY;
       if(typeof key!=='string'||key.length<32||request.headers.get('x-paper-cron-key')!==key)return denied();
       if(this.env.PAPER_AUTOTRADE_ENABLED!=='true')return response({enabled:false,mode:'PAPER_ONLY'});
+      // Operator pause survives Worker restarts and never clears an emergency halt.
+      try {
+        const pauseState=await this.state.storage.get('cron:paused');
+        if(pauseState!==undefined && typeof pauseState!=='boolean')
+          return response({error:'invalid operator pause state',mode:'PAPER_ONLY'},503);
+        if(pauseState===true)return response({enabled:false,reason:'operator_paused',mode:'PAPER_ONLY'});
+      }
+      catch (_) { return response({error:'cron control storage unavailable'},503); }
       try {
         const {now,prices}=await request.json();
         if(!Number.isSafeInteger(now)||Math.abs(Date.now()-now)>120000)return response({error:'invalid clock'},400);
         if(!prices||['BTC','ETH','SOL'].some(k=>!Number.isSafeInteger(prices[k])||prices[k]<=0))return response({error:'invalid prices'},400);
         const storage=this.state.storage;
-        const wallet=await storage.get('state')||INITIAL;
+        const storedWallet=await storage.get('state');
+        const wallet=storedWallet===undefined?INITIAL:storedWallet;
         if(!validState(wallet)||wallet.halted)return response({error:'halted or corrupt wallet'},409);
         const last=await storage.get('cron:last');
-        if(last && (!Number.isSafeInteger(last.now)||last.now>now))return response({error:'invalid checkpoint'},503);
-        if(last && now-last.now<300000)return response({reason:'not_due',mode:'PAPER_ONLY'});
+        if(last!==undefined && (!last || typeof last!=='object' || Array.isArray(last) || !Number.isSafeInteger(last.now)||last.now<0||last.now>now
+          || !last.prices || ['BTC','ETH','SOL'].some(k=>!Number.isSafeInteger(last.prices[k])||last.prices[k]<=0)
+          || !Number.isSafeInteger(last.lastTradeMs) || last.lastTradeMs<0 || last.lastTradeMs>last.now))
+          return response({error:'invalid checkpoint'},503);
+        // Compare five-minute UTC buckets rather than elapsed milliseconds: scheduled
+        // invocations can arrive a few seconds early/late around a boundary.
+        // A duplicate in the same bucket must never execute twice.
+        if(last && Math.floor(now/300000)<=Math.floor(last.now/300000))return response({reason:'not_due',mode:'PAPER_ONLY'});
         const {decidePaperTrade}=await import('./strategy.mjs');
         const signal=decidePaperTrade({prices,previousPrices:last?.prices,wallet,enabled:true,halted:wallet.halted,nowMs:now,lastTradeMs:last?.lastTradeMs||0,smokeMode:this.env.PAPER_SMOKE_TRADES_ENABLED==='true'});
+        // Persist the tick reservation BEFORE any virtual fill. If checkpoint
+        // storage fails, fail closed without trading. A crash after the fill
+        // cannot replay the same tick with a new order ID on restart.
+        // Reserving a signal that later fails is safe: it skips one opportunity
+        // instead of risking a duplicated trade.
+        await storage.put('cron:last',{now,prices,lastTradeMs:signal.action==='WAIT'?(last?.lastTradeMs||0):now});
         let trade=null;
         if(signal.action!=='WAIT'){
-          const price=prices[signal.symbol];
+          const quotePrice=prices[signal.symbol];
+          // Conservative paper execution: pay 0.1% above the quote on BUY,
+          // receive 0.1% below the quote on SELL. Keep settlement in integer cents.
+          // Reject unrepresentable adjusted prices rather than silently dropping costs.
+          const price=signal.action==='BUY'
+            ?Math.ceil(quotePrice*1001/1000)
+            :Math.floor(quotePrice*999/1000);
+          if(!Number.isSafeInteger(price)||price<=0)
+            return response({error:'invalid execution price'},503);
           // Crypto is fractional: round the cash value to cents, not the crypto quantity
           // to an exact-cent multiple (which makes €50 BTC orders impossible).
           const units=signal.action==='BUY'
             ?Math.floor(signal.notionalCents*1000000/price)
             :signal.quantityUnits;
-          if(Number.isSafeInteger(units)&&units>0){
+          // A signalled BUY/SELL must never report HTTP 200 if execution
+          // quantization fails. Operators must see a failed tick, not a phantom signal.
+          if(!Number.isSafeInteger(units)||units<=0)
+            return response({error:'invalid execution quantity',mode:'PAPER_ONLY'},503);
+          {
             const product=units*price;
             const notional=Math.round(product/1000000);
-            if(Number.isSafeInteger(product)&&Number.isSafeInteger(notional)&&notional>0){
+            if(!Number.isSafeInteger(product)||!Number.isSafeInteger(notional)||notional<=0)
+              return response({error:'invalid execution notional',mode:'PAPER_ONLY'},503);
+            {
               const fee=Math.max(1,Math.ceil(notional*0.0026));
               const fill={id:'cron_'+Math.floor(now/300000)+'_'+signal.symbol+'_'+signal.action,sequence:wallet.sequence+1,symbol:signal.symbol,side:signal.action,quantityUnits:units,priceCentsPerUnit:price,feeCents:fee};
               const filled=await this.fetch(new Request('https://internal.invalid/v1/paper/fill',{method:'POST',headers:{'x-internal-paper-token-id':'cloud_cron_internal'},body:JSON.stringify(fill)}));
@@ -186,7 +236,6 @@ export class PaperLedger {
             }
           }
         }
-        await storage.put('cron:last',{now,prices,lastTradeMs:trade?now:(last?.lastTradeMs||0)});
         return response({mode:'PAPER_ONLY',signal:signal.action,reason:signal.reason,trade});
       } catch(_){return response({error:'cron storage or market processing unavailable'},503);}
     }
@@ -195,9 +244,46 @@ export class PaperLedger {
     if (!tokenId) return denied();
     try { if (await this.state.storage.get("revoked:"+tokenId)) return denied(); }
     catch (_) { return response({error:"paper storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
+    // Authenticated operator diagnostics for the actual autonomous Cron wallet.
+    // No public route, keys, or private exchange data are exposed.
+    if (path === "/internal/cron/status" && request.method === "GET") {
+      try {
+        const storage=this.state.storage;
+        const [wallet,checkpoint,paused]=await Promise.all([
+          storage.get("state"),storage.get("cron:last"),storage.get("cron:paused")
+        ]);
+        const state=wallet===undefined?INITIAL:wallet;
+        if(!validState(state) || (paused!==undefined && typeof paused!=="boolean"))
+          return response({error:"invalid cron state",mode:"PAPER_ONLY"},503);
+        if(checkpoint!==undefined &&
+           (!checkpoint || typeof checkpoint!=="object" || Array.isArray(checkpoint)
+            || !Number.isSafeInteger(checkpoint.now) || checkpoint.now<0
+            || !Number.isSafeInteger(checkpoint.lastTradeMs) || checkpoint.lastTradeMs<0
+            || checkpoint.lastTradeMs>checkpoint.now
+            || !checkpoint.prices || ["BTC","ETH","SOL"].some(
+              symbol=>!Number.isSafeInteger(checkpoint.prices[symbol])||checkpoint.prices[symbol]<=0)))
+          return response({error:"invalid cron checkpoint",mode:"PAPER_ONLY"},503);
+        let lastTrade=null;
+        if(state.sequence>0){
+          const entry=await storage.get("journal:"+state.sequence);
+          if(!entry || entry.sequence!==state.sequence || !validFill(entry.fill))
+            return response({error:"invalid cron journal",mode:"PAPER_ONLY"},503);
+          const order=await storage.get("order:"+entry.fill.id);
+          if(!order || JSON.stringify(order.fill)!==JSON.stringify(entry.fill))
+            return response({error:"invalid cron order record",mode:"PAPER_ONLY"},503);
+          lastTrade={id:entry.fill.id,side:entry.fill.side,symbol:entry.fill.symbol};
+        }
+        return response({mode:"PAPER_ONLY",realTrading:false,
+          enabled:this.env.PAPER_AUTOTRADE_ENABLED==="true",
+          paused:paused===true,halted:state.halted,
+          lastTickMs:checkpoint?.now??null,lastTradeMs:checkpoint?.lastTradeMs??null,
+          persistedTrades:state.sequence,lastTrade});
+      } catch (_) {return response({error:"cron diagnostics unavailable",mode:"PAPER_ONLY"},503);}
+    }
     if (path === "/v1/paper/status" && request.method === "GET") {
       try {
-        const state = await this.state.storage.get("state") || INITIAL;
+        const storedState = await this.state.storage.get("state");
+        const state = storedState===undefined?INITIAL:storedState;
         if (!validState(state)) return response({error:"invalid paper state",mode:"PAPER_ONLY",realTrading:false},503);
         return response({...state, mode:"PAPER_ONLY", realTrading:false});
       } catch (_) { return response({error:"paper storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
@@ -205,7 +291,8 @@ export class PaperLedger {
     if (path === "/v1/paper/journal" && request.method === "GET") {
       // Bounded, chronological, server-persisted history; missing entries fail closed.
       try {
-        const current = await this.state.storage.get("state") || INITIAL;
+        const storedState = await this.state.storage.get("state");
+        const current = storedState===undefined?INITIAL:storedState;
         if (!validState(current))
           return response({error:"invalid journal state",mode:"PAPER_ONLY",realTrading:false},503);
         const start = Math.max(1,current.sequence-49);
@@ -235,10 +322,28 @@ export class PaperLedger {
       catch (_) { return response({error:"paper storage unavailable",mode:"PAPER_ONLY",realTrading:false},503); }
       return response({revoked:true,mode:"PAPER_ONLY",realTrading:false});
     }
+    if (path === "/v1/paper/pause" || path === "/v1/paper/resume") {
+      // Authenticated operator control; storage failures fail closed. A halt is
+      // irreversible via resume and must be handled by an explicit recovery plan.
+      try {
+        const paused = await this.state.storage.transaction(async txn => {
+          const storedWallet=await txn.get("state");
+          const wallet=storedWallet===undefined?INITIAL:storedWallet;
+          if(!validState(wallet) || wallet.halted)throw new PaperRuleViolation("halted or invalid wallet");
+          const next=path==="/v1/paper/pause";
+          await txn.put("cron:paused",next);
+          return next;
+        });
+        return response({enabled:!paused,paused,mode:"PAPER_ONLY",realTrading:false});
+      } catch(e) {
+        return response({error:e?.name==="PaperRuleViolation"?"halted or invalid wallet":"control storage unavailable",mode:"PAPER_ONLY",realTrading:false},503);
+      }
+    }
     if (path === "/v1/paper/halt") {
       let state;
       try { state = await this.state.storage.transaction(async txn => {
-        const prior = await txn.get("state") || INITIAL;
+        const storedPrior = await txn.get("state");
+        const prior = storedPrior===undefined?INITIAL:storedPrior;
         if (!validState(prior)) throw new PaperRuleViolation("invalid stored state");
         const next = {...prior,halted:true};
         await txn.put("state",next);
@@ -252,7 +357,8 @@ export class PaperLedger {
     if (!validFill(fill)) return response({error:"invalid fill"},400);
     try {
       const result = await this.state.storage.transaction(async txn => {
-        const state = await txn.get("state") || INITIAL;
+        const storedState = await txn.get("state");
+        const state = storedState===undefined?INITIAL:storedState;
         if (!validState(state)) throw new PaperRuleViolation("invalid stored state");
         if (state.halted) throw new PaperRuleViolation("paper halted");
         const previous = await txn.get("order:"+fill.id);

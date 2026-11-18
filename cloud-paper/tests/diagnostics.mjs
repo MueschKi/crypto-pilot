@@ -37,3 +37,9 @@ assert.match(nonJson.stdout,/"inputLines":1/);
 assert.match(nonJson.stdout,/"invalidJsonLines":1/);
 assert.doesNotMatch(nonJson.stdout,/Connected to tail stream/);
 assert.match(missing.stdout,/"inputLines":0/);
+
+const statusLine=spawnSync(process.execPath,[path],{input:'Connected to tail stream\nother diagnostic text\n',encoding:'utf8'});
+assert.equal(statusLine.status,2);
+assert.match(statusLine.stdout,/"wranglerStatusLines":1/);
+assert.match(statusLine.stdout,/"otherNonJsonLines":1/);
+assert.doesNotMatch(statusLine.stdout,/other diagnostic text/);
