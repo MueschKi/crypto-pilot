@@ -17,6 +17,24 @@ for (const invalidKey of [undefined, null, '', 'short', 123, {}]) {
     assert.deepEqual(result,{ok:false,reason:'disabled'});
   } finally {globalThis.fetch=originalFetch;}
 }
+// Durable Object lookup exceptions must fail closed without fetching market data.
+for (const brokenStage of ['idFromName','get']) {
+  const originalFetch=globalThis.fetch;
+  let marketRequests=0;
+  globalThis.fetch=async()=>{marketRequests++;throw Error('unexpected market request');};
+  try {
+    const result=await runPaperCron({
+      PAPER_LEDGER:{
+        idFromName(){if(brokenStage==='idFromName')throw Error('binding lookup failed');return 'wallet-id';},
+        get(){if(brokenStage==='get')throw Error('binding stub failed');return {fetch(){throw Error('unexpected wallet call');}};}
+      },
+      PAPER_CRON_KEY:'0123456789abcdef0123456789abcdef'
+    },Date.now());
+    assert.deepEqual(result,{ok:false,reason:'unavailable'});
+    assert.equal(marketRequests,0);
+  } finally {globalThis.fetch=originalFetch;}
+}
+
 // Broken Durable Object stubs fail before any public market request.
 for (const brokenStub of [undefined, null, {}, {fetch:42}]) {
   const originalFetch=globalThis.fetch;
