@@ -17,6 +17,21 @@ for (const invalidKey of [undefined, null, '', 'short', 123, {}]) {
     assert.deepEqual(result,{ok:false,reason:'disabled'});
   } finally {globalThis.fetch=originalFetch;}
 }
+// Broken Durable Object stubs fail before any public market request.
+for (const brokenStub of [undefined, null, {}, {fetch:42}]) {
+  const originalFetch=globalThis.fetch;
+  let requests=0;
+  globalThis.fetch=async()=>{requests++;throw Error('unexpected market request');};
+  try {
+    const result=await runPaperCron({
+      PAPER_LEDGER:{idFromName:()=> 'wallet-id',get:()=>brokenStub},
+      PAPER_CRON_KEY:'0123456789abcdef0123456789abcdef'
+    },Date.now());
+    assert.deepEqual(result,{ok:false,reason:'unavailable'});
+    assert.equal(requests,0,'invalid persistent wallet binding must not fetch prices');
+  } finally {globalThis.fetch=originalFetch;}
+}
+
 // A public-market network outage must fail before touching the persistent wallet.
 // The scheduled handler will report this rejection; it must never synthesize a quote.
 {
