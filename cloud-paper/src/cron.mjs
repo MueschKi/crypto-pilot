@@ -1,7 +1,7 @@
 // Autonomous paper-only cron engine. No exchange credentials, real orders or user endpoints.
 const symbols=['BTC','ETH','SOL'];
 export async function runPaperCron(env, now=Date.now()) {
-  if(!env?.PAPER_LEDGER || !Number.isSafeInteger(now) || now < 0) return {ok:false,reason:'unavailable'};
+  if(!env?.PAPER_LEDGER || typeof env.PAPER_LEDGER.idFromName!=='function' || typeof env.PAPER_LEDGER.get!=='function' || !Number.isSafeInteger(now) || now < 0) return {ok:false,reason:'unavailable'};
   if(typeof env.PAPER_CRON_KEY!=='string'||env.PAPER_CRON_KEY.length<32)return {ok:false,reason:'disabled'};
   const prices=await fetchPaperPrices();
   const id=env.PAPER_LEDGER.idFromName('wallet:v1:cloud-cron');
