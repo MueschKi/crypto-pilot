@@ -19,7 +19,8 @@ export async function runPaperCron(env, now=Date.now()) {
 }
 export async function fetchPaperPrices(fetcher=fetch) {
   const res=await fetcher('https://api.kraken.com/0/public/Ticker?pair=XBTEUR,ETHEUR,SOLEUR',{headers:{accept:'application/json','cache-control':'no-cache'},cache:'no-store',redirect:'error',signal:AbortSignal.timeout(8000)});
-  if(!res.ok)throw Error('market unavailable');
+  // A partial HTTP response must never be accepted as a complete market snapshot.
+  if(!res.ok || (typeof res.status === 'number' && res.status !== 200))throw Error('market unavailable');
   const json=await res.json();
   // Kraken's envelope must be well formed; malformed error fields must not
   // accidentally be interpreted as a successful response.
