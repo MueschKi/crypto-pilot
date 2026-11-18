@@ -6,7 +6,7 @@ for (const badClock of [-1, -300000, NaN, Infinity, 1.5]) {
   assert.deepEqual(result,{ok:false,reason:'unavailable'});
 }
 // Missing or malformed credentials must stop before fetching public prices.
-for (const invalidKey of [undefined, null, '', 'short', 123, {}]) {
+for (const invalidKey of [undefined, null, '', 'short', ' '.repeat(32), '\t'.repeat(32), 123, {}]) {
   const originalFetch=globalThis.fetch;
   globalThis.fetch=async()=>{throw Error('unexpected market request');};
   try {
