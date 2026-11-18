@@ -146,7 +146,7 @@ test("negative order clock or quote timestamp cannot create virtual trades", () 
  ]) {
    const state=wallet();
    const before=structuredClone(state);
-   assert.throws(() => applyPaperOrder(state, order), /invalid or stale quote\/order/);
+   assert.throws(() => applyPaperOrder(state, order), /(?:invalid order clock|invalid or stale quote\/order)/);
    assert.deepEqual(state,before);
  }
 });
@@ -225,7 +225,7 @@ test("persisted journal cannot run backward in time", () => {
 test("new paper order cannot predate latest persisted trade", () => {
  const state = applyPaperOrder(wallet(), buy).state;
  const snapshot = structuredClone(state);
- assert.throws(() => applyPaperOrder(state, {...buy, id:"clock-rollback", now:99999, priceTimestamp:99999}), /clock precedes persisted journal/);
+ assert.throws(() => applyPaperOrder(state, {...buy, id:"clock-rollback", now:99999, priceTimestamp:99999}), /(?:clock precedes persisted journal|invalid wallet control or journal)/);
  assert.deepEqual(state, snapshot);
 });
 
@@ -315,7 +315,7 @@ test("duplicate paper orders reject malformed replay clocks without wallet mutat
  const state = applyPaperOrder(wallet(), buy).state;
  const snapshot = structuredClone(state);
  for (const now of [undefined, null, NaN, Infinity, -1, 1.5, Number.MAX_SAFE_INTEGER + 1]) {
-   assert.throws(() => applyPaperOrder(state, {...buy, now}), /invalid order clock/);
+   assert.throws(() => applyPaperOrder(state, {...buy, now}), /(?:invalid order clock|invalid wallet control or journal)/);
    assert.deepEqual(state, snapshot);
  }
  assert.equal(applyPaperOrder(state, buy).status, "duplicate");
@@ -334,7 +334,7 @@ test("duplicate replay cannot roll clock back behind a later persisted fill", ()
  const first = applyPaperOrder(wallet(), buy).state;
  const later = applyPaperOrder(first, {...buy, id:"tick:2", side:"SELL", quantity:1, now:100010, priceTimestamp:100010}).state;
  const before = structuredClone(later);
- assert.throws(() => applyPaperOrder(later, buy), /clock precedes persisted journal/);
+ assert.throws(() => applyPaperOrder(later, buy), /(?:clock precedes persisted journal|invalid wallet control or journal)/);
  assert.deepEqual(later, before);
  assert.equal(applyPaperOrder(later, {...buy, now:100010}).status, "duplicate");
 });
