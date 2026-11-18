@@ -88,6 +88,25 @@ console.log('Public quote freshness and ambiguity gates passed');
   } finally { globalThis.fetch=priorFetch; }
 }
 
+// A rejected network request (timeout, DNS or TLS failure) must also stop
+// before opening the Durable Object. This differs from an HTTP 503 response.
+{
+  const previousFetch=globalThis.fetch;
+  let ledgerCalls=0;
+  globalThis.fetch=async()=>{throw new TypeError('simulated network failure');};
+  try {
+    const env={
+      PAPER_CRON_KEY:'test-cron-secret-0123456789abcdef0123456789',
+      PAPER_LEDGER:{
+        idFromName:()=>{ledgerCalls++;throw Error('unexpected ledger access');},
+        get:()=>{ledgerCalls++;throw Error('unexpected ledger access');}
+      }
+    };
+    await assert.rejects(runPaperCron(env,Date.now()),/simulated network failure/);
+    assert.equal(ledgerCalls,0,'network failure must not access persisted wallet');
+  } finally {globalThis.fetch=previousFetch;}
+}
+
 // Missing or undersized Cron credentials must fail before fetching public prices
 // or touching persistent storage. A disabled deployment cannot trade.
 for (const key of [undefined, '', 'short']) {
