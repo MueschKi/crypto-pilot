@@ -327,7 +327,8 @@ export class PaperLedger {
       // irreversible via resume and must be handled by an explicit recovery plan.
       try {
         const paused = await this.state.storage.transaction(async txn => {
-          const wallet=await txn.get("state") || INITIAL;
+          const storedWallet=await txn.get("state");
+          const wallet=storedWallet===undefined?INITIAL:storedWallet;
           if(!validState(wallet) || wallet.halted)throw new PaperRuleViolation("halted or invalid wallet");
           const next=path==="/v1/paper/pause";
           await txn.put("cron:paused",next);
@@ -341,7 +342,8 @@ export class PaperLedger {
     if (path === "/v1/paper/halt") {
       let state;
       try { state = await this.state.storage.transaction(async txn => {
-        const prior = await txn.get("state") || INITIAL;
+        const storedPrior = await txn.get("state");
+        const prior = storedPrior===undefined?INITIAL:storedPrior;
         if (!validState(prior)) throw new PaperRuleViolation("invalid stored state");
         const next = {...prior,halted:true};
         await txn.put("state",next);
@@ -355,7 +357,8 @@ export class PaperLedger {
     if (!validFill(fill)) return response({error:"invalid fill"},400);
     try {
       const result = await this.state.storage.transaction(async txn => {
-        const state = await txn.get("state") || INITIAL;
+        const storedState = await txn.get("state");
+        const state = storedState===undefined?INITIAL:storedState;
         if (!validState(state)) throw new PaperRuleViolation("invalid stored state");
         if (state.halted) throw new PaperRuleViolation("paper halted");
         const previous = await txn.get("order:"+fill.id);
