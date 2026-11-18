@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {runPaperCron} from '../src/cron.mjs';
 // Invalid scheduled clocks fail before network I/O or Durable Object access.
-for (const badClock of [-1, -300000, NaN, Infinity, 1.5, Date.now()+300000]) {
+for (const badClock of [-1, -300000, 0, Date.now()-300000, NaN, Infinity, 1.5, Date.now()+300000]) {
   const result = await runPaperCron({PAPER_LEDGER:{idFromName(){throw Error('unexpected storage access');}}, PAPER_CRON_KEY:'0123456789abcdef0123456789abcdef'}, badClock);
   assert.deepEqual(result,{ok:false,reason:'unavailable'});
 }
