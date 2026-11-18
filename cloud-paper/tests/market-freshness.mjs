@@ -134,3 +134,16 @@ for (const key of [undefined, '', 'short']) {
     assert.equal(marketCalls,0);
   } finally {globalThis.fetch=previousFetch;}
 }
+
+// A malformed Durable Object binding must fail before public network I/O.
+// This protects deployments with incomplete or accidentally changed bindings.
+for (const binding of [{}, {idFromName:()=> 'wallet'}, {get:()=>({})}, {idFromName:'invalid',get:()=>({})}]) {
+  const previousFetch=globalThis.fetch;
+  let marketCalls=0;
+  globalThis.fetch=async()=>{marketCalls++;throw Error('unexpected market fetch');};
+  try {
+    const result=await runPaperCron({PAPER_CRON_KEY:'x'.repeat(32),PAPER_LEDGER:binding},Date.now());
+    assert.deepEqual(result,{ok:false,reason:'unavailable'});
+    assert.equal(marketCalls,0,'invalid storage binding must not fetch quotes');
+  } finally {globalThis.fetch=previousFetch;}
+}
