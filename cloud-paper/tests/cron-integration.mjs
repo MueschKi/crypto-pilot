@@ -11,7 +11,7 @@ for (const invalidKey of [undefined, null, '', 'short', 123, {}]) {
   globalThis.fetch=async()=>{throw Error('unexpected market request');};
   try {
     const result=await runPaperCron({
-      PAPER_LEDGER:{idFromName(){throw Error('unexpected durable object access');}},
+      PAPER_LEDGER:{idFromName(){throw Error('unexpected durable object access');},get(){throw Error('unexpected durable object access');}},
       PAPER_CRON_KEY:invalidKey
     },Date.now());
     assert.deepEqual(result,{ok:false,reason:'disabled'});
