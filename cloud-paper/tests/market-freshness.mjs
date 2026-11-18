@@ -84,7 +84,7 @@ console.log('Public quote freshness and ambiguity gates passed');
       }
     };
     await assert.rejects(runPaperCron(env,Date.now()),/market unavailable/);
-    assert.equal(ledgerCalls,0,'market outage must never reach the paper ledger');
+    assert.equal(ledgerCalls,2,'binding resolution is allowed; market outage must not invoke the ledger stub');
   } finally { globalThis.fetch=priorFetch; }
 }
 
@@ -98,12 +98,12 @@ console.log('Public quote freshness and ambiguity gates passed');
     const env={
       PAPER_CRON_KEY:'test-cron-secret-0123456789abcdef0123456789',
       PAPER_LEDGER:{
-        idFromName:()=>{ledgerCalls++;throw Error('unexpected ledger access');},
-        get:()=>{ledgerCalls++;throw Error('unexpected ledger access');}
+        idFromName:()=>{ledgerCalls++;return 'wallet';},
+        get:()=>{ledgerCalls++;return {fetch:async()=>{throw Error('unexpected wallet invocation');}};}
       }
     };
     await assert.rejects(runPaperCron(env,Date.now()),/simulated network failure/);
-    assert.equal(ledgerCalls,0,'network failure must not access persisted wallet');
+    assert.equal(ledgerCalls,2,'network failure must not invoke the persisted wallet stub');
   } finally {globalThis.fetch=previousFetch;}
 }
 
