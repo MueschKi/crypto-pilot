@@ -262,7 +262,7 @@ const audio={ctx:null,next:0,step:0,master:null,musicBus:null,fxBus:null,limiter
  }
 };
 // Instrumentation is only exposed when ?test is present and is not part of game UI.
-if(new URLSearchParams(location.search).has('test'))window.__pp={getState:()=>({page,paused,finished,score:[...score],mode:settings.mode,points:settings.points,theme:theme.id,puck:{...puck},near:{...near},far:{...far},turned:view.turned}),setPuck:(x,y,vx,vy)=>{puck={x,y,vx,vy,spin:0};kickoff=0},setScore:(a,b)=>{score=[a,b];hudScore()},goal:goalFor,reflectX};
+if(new URLSearchParams(location.search).has('test'))window.__pp={getState:()=>({page,paused,finished,score:[...score],mode:settings.mode,points:settings.points,theme:theme.id,powerups:settings.powerups,volume:settings.volume,powerup:powerup?{...powerup}:null,shield:shieldUntil.map(x=>Math.max(0,x-matchTime)),magnet:magnetUntil.map(x=>Math.max(0,x-matchTime)),lastTouch,aiTarget:{...aiTarget},soundtrack:soundtracks[theme.id].groove,puck:{...puck},near:{...near},far:{...far},turned:view.turned}),setPuck:(x,y,vx,vy)=>{puck={x,y,vx,vy,spin:0};kickoff=0},setScore:(a,b)=>{score=[a,b];hudScore()},setPowerups:v=>{settings.powerups=!!v;syncMenu()},setLastTouch:v=>{lastTouch=v},spawnPowerup:(type,x,y)=>spawnPowerup(type,x,y),goal:goalFor,reflectX};
 requestAnimationFrame(frame);
 })();
 </script>
