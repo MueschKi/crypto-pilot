@@ -117,12 +117,20 @@ window.addEventListener('keydown',e=>{const k=e.key.toLowerCase();if(['arrowup',
 function moveMallet(m,x,y,maxSpeed,dt,minY,maxY){x=clamp(x,WALL+PAD_R+3,W-WALL-PAD_R-3);y=clamp(y,minY,maxY);const dx=x-m.x,dy=y-m.y,dist=hyp(dx,dy);let ratio=dist>0?Math.min(1,maxSpeed*dt/dist):1;m.px=m.x;m.py=m.y;m.x+=dx*ratio;m.y+=dy*ratio;m.vx=(m.x-m.px)/dt;m.vy=(m.y-m.py)/dt;}
 function reflectX(x){const lo=WALL+PUCK_R,hi=W-WALL-PUCK_R,span=hi-lo;let n=(x-lo)%(2*span);if(n<0)n+=2*span;return lo+(n>span?2*span-n:n)}
 function predictX(y){if(Math.abs(puck.vy)<5)return puck.x;const flight=(y-puck.y)/puck.vy;return flight>0?reflectX(puck.x+puck.vx*flight):puck.x}
-function advanceAI(dt){const spec={easy:{speed:640,delay:.19,miss:26,attack:.38},normal:{speed:920,delay:.105,miss:11,attack:.58},hard:{speed:1290,delay:.045,miss:3,attack:.76}}[settings.ai];aiTimer-=dt;if(aiTimer<=0){aiTimer=spec.delay;const coming=puck.vy<0&&puck.y<MID+90;let desiredX=W/2,desiredY=155;
- if(coming){desiredX=predictX(210)+rand(-spec.miss,spec.miss);desiredY=clamp(puck.y-72,90,MID-70);if(puck.y<MID-45)desiredY=clamp(puck.y+56,80,MID-65)}
- else if(puck.y<MID-60&&Math.abs(puck.vy)<400){desiredX=puck.x;desiredY=clamp(puck.y-85,95,MID-72)}
- else{desiredX=W/2+(puck.x-W/2)*spec.attack;desiredY=168}
- aiTarget={x:desiredX,y:desiredY};}moveMallet(far,aiTarget.x,aiTarget.y,spec.speed,dt,WALL+PAD_R+3,MID-PAD_R-10)}
-function inputUpdate(dt){const step=840*dt;let ax=(keys.has('d')?1:0)-(keys.has('a')?1:0),ay=(keys.has('s')?1:0)-(keys.has('w')?1:0);if(ax||ay){near.tx=near.x+ax*step;near.ty=near.y+ay*step}
+// Professional AI forecasts wall bounces and puck spin, then shoots toward the side the human leaves open.
+ function proInterceptX(contactY){let x=puck.x,y=puck.y,vx=puck.vx,vy=puck.vy,spin=puck.spin;const low=WALL+PUCK_R,high=W-WALL-PUCK_R;for(let i=0;i<260;i++){if(y<=contactY)break;const dt=.012,ax=-vy*spin*.12,ay=vx*spin*.12;vx+=ax*dt;vy+=ay*dt;x+=vx*dt;y+=vy*dt;if(x<low){x=low+(low-x);vx=Math.abs(vx)*.985}else if(x>high){x=high-(x-high);vx=-Math.abs(vx)*.985}vx*=.9989;vy*=.9989;spin*=.978;if(vy>=0)break}return clamp(x,low,high)}
+ function proDecision(){const topLimit=WALL+PAD_R+3,lowX=WALL+PAD_R+3,highX=W-WALL-PAD_R-3;const openSide=near.x>W/2?GOAL_L+35:GOAL_R-35;
+  if(puck.vy< -55 && puck.y<MID+135){const reachY=clamp(puck.y-62,topLimit+24,MID-99),hitY=reachY+PAD_R+PUCK_R-4;const aimX=proInterceptX(hitY);return {x:clamp(aimX,lowX,highX),y:reachY}}
+  if(puck.y<MID-38){const angle=clamp((openSide-puck.x)*.15,-25,25);const predictedX=reflectX(puck.x+puck.vx*.045);return {x:clamp(predictedX-angle,lowX,highX),y:clamp(puck.y-44,topLimit+18,MID-86)}}
+  const track=reflectX(puck.x+puck.vx*.2);return {x:clamp(W/2+(track-W/2)*.45,lowX,highX),y:158}
+ }
+ function advanceAI(dt){if(settings.ai==='hard'){aiTimer-=dt;if(aiTimer<=0){aiTimer=.027;aiTarget=proDecision()}moveMallet(far,aiTarget.x,aiTarget.y,1420,dt,WALL+PAD_R+3,MID-PAD_R-10);return}
+  const spec={easy:{speed:640,delay:.19,miss:26,attack:.38},normal:{speed:920,delay:.105,miss:11,attack:.58}}[settings.ai];aiTimer-=dt;if(aiTimer<=0){aiTimer=spec.delay;const coming=puck.vy<0&&puck.y<MID+90;let desiredX=W/2,desiredY=155;
+  if(coming){desiredX=predictX(210)+rand(-spec.miss,spec.miss);desiredY=clamp(puck.y-72,90,MID-70);if(puck.y<MID-45)desiredY=clamp(puck.y+56,80,MID-65)}
+  else if(puck.y<MID-60&&Math.abs(puck.vy)<400){desiredX=puck.x;desiredY=clamp(puck.y-85,95,MID-72)}
+  else{desiredX=W/2+(puck.x-W/2)*spec.attack;desiredY=168}
+  aiTarget={x:desiredX,y:desiredY}}moveMallet(far,aiTarget.x,aiTarget.y,spec.speed,dt,WALL+PAD_R+3,MID-PAD_R-10)}
+ function inputUpdate(dt){const step=840*dt;let ax=(keys.has('d')?1:0)-(keys.has('a')?1:0),ay=(keys.has('s')?1:0)-(keys.has('w')?1:0);if(ax||ay){near.tx=near.x+ax*step;near.ty=near.y+ay*step}
  moveMallet(near,near.tx,near.ty,1950,dt,MID+PAD_R+10,H-WALL-PAD_R-3);
  if(settings.mode==='ai'){advanceAI(dt)}else{let bx=(keys.has('arrowright')?1:0)-(keys.has('arrowleft')?1:0),by=(keys.has('arrowdown')?1:0)-(keys.has('arrowup')?1:0);if(bx||by){far.tx=far.x+bx*step;far.ty=far.y+by*step}moveMallet(far,far.tx,far.ty,1950,dt,WALL+PAD_R+3,MID-PAD_R-10)}}
 function impact(x,y,vx,vy,color,n=10){const a=Math.atan2(vy,vx);for(let i=0;i<n;i++){const t=a+rand(-1.7,1.7),speed=rand(90,420);particles.push({x,y,vx:Math.cos(t)*speed,vy:Math.sin(t)*speed,life:rand(.25,.56),max:.56,size:rand(1.7,5),color})}waves.push({x,y,r:18,life:.4,max:.4,color});shake=Math.max(shake,3.5)}
@@ -152,7 +160,16 @@ function gridPattern(){ctx.save();ctx.beginPath();ctx.rect(WALL,WALL,W-WALL*2,H-
  if(theme.pattern==='ice'){for(let i=0;i<19;i++){const a=i*35;line(WALL,80+a%710,W-30,34+a%750,1,theme.dim)}}
  if(theme.pattern==='lava'){for(let i=0;i<16;i++){const y=25+i*57;line(25,y,150+(i%3)*60,y+35,2,theme.dim);line(350,y-23,495,y+28,2,theme.dim)}}
  if(theme.pattern==='wave'){for(let y=44;y<H;y+=36){ctx.beginPath();for(let x=25;x<W;x+=6){const h=y+Math.sin(x*.027+y*.021)*13;if(x===25)ctx.moveTo(x,h);else ctx.lineTo(x,h)}ctx.lineWidth=1.4;ctx.strokeStyle=theme.line;ctx.stroke()}}
- if(theme.pattern==='gold'){for(let x=0;x<12;x++){line(0,x*79,520,x*79-130,1,theme.dim);line(x*56-180,0,x*56+80,860,1,theme.dim)}}ctx.restore()}
+ if(theme.pattern==='gold'){for(let x=0;x<12;x++){line(0,x*79,520,x*79-130,1,theme.dim);line(x*56-180,0,x*56+80,860,1,theme.dim)}}
+ if(theme.pattern==='wood'){for(let y=18;y<H;y+=22){ctx.beginPath();for(let x=22;x<W;x+=7){const gy=y+Math.sin(x*.019+y*.028)*8+Math.sin(x*.043+y*.018)*3;if(x===22)ctx.moveTo(x,gy);else ctx.lineTo(x,gy)}ctx.strokeStyle=theme.line;ctx.lineWidth=y%3===0?2:1;ctx.stroke()}for(let x of [112,406])for(let y of [245,615]){ctx.beginPath();ctx.ellipse(x,y,38,12,.2,0,Math.PI*2);ctx.strokeStyle=theme.line;ctx.stroke()}}
+ if(theme.pattern==='matrix'){ctx.font='14px monospace';ctx.textAlign='center';ctx.fillStyle=theme.line;for(let x=45;x<W-20;x+=28)for(let i=0;i<13;i++){const y=((i*71+x*13+Math.floor((page==='game'?matchTime:tickCounter)*32))%820)+23;ctx.fillText(((i+x)%2?'1':'0'),x,y)}}
+ if(theme.pattern==='realm'){ctx.font='24px serif';ctx.textAlign='center';ctx.fillStyle=theme.line;for(let i=0;i<13;i++){const x=60+(i%3)*200,y=82+i*57;ctx.fillText(['ᚠ','ᚱ','ᚹ','ᛟ','ᛞ'][i%5],x,y)}for(let x of [95,425]){for(let y of [116,743]){circle(x,y,40,2,theme.dim);circle(x,y,29,1,theme.line)}}}
+ if(theme.pattern==='galaxy'){for(let i=0;i<105;i++){const x=36+((i*137)%450),y=38+((i*241)%780);circle(x,y,i%8===0?2.4:.9,0,'',i%7===0?theme.a:'#cbdfff')}ctx.beginPath();ctx.ellipse(W/2,MID,210,78,-.38,0,Math.PI*2);ctx.strokeStyle=theme.line;ctx.lineWidth=2;ctx.stroke()}
+ if(theme.pattern==='voyager'){for(let y=92;y<H;y+=92){line(40,y,90,y,3,theme.line);line(W-90,y,W-40,y,3,theme.line)}for(let i=0;i<7;i++){ctx.beginPath();ctx.ellipse(W/2,MID,70+i*26,40+i*11,Math.PI/4,0,Math.PI*2);ctx.strokeStyle=theme.line;ctx.lineWidth=1;ctx.stroke()}}
+ if(theme.pattern==='ocean'){for(let y=72;y<H;y+=55){ctx.beginPath();for(let x=25;x<W;x+=8){const gy=y+Math.sin(x*.028+y*.017)*13;if(x===25)ctx.moveTo(x,gy);else ctx.lineTo(x,gy)}ctx.strokeStyle=theme.line;ctx.lineWidth=2;ctx.stroke()}for(let i=0;i<70;i++){const x=25+(i*103)%472,y=35+(i*173)%775;circle(x,y,2+(i%6)*2,1,theme.line)}}
+ if(theme.pattern==='jungle'){for(let y=85;y<H;y+=150)for(let x of [45,W-45]){for(let i=0;i<5;i++){ctx.beginPath();ctx.ellipse(x+(x<W/2?1:-1)*i*9,y+i*12,14,42,(x<W/2?-1:1)*.65,0,Math.PI*2);ctx.strokeStyle=theme.line;ctx.lineWidth=2;ctx.stroke()}}}
+ if(theme.pattern==='sky'){for(let i=0;i<13;i++){const x=45+(i*117)%470,y=62+i*61;ctx.beginPath();ctx.arc(x,y,23,Math.PI,0);ctx.arc(x+30,y,33,Math.PI,0);ctx.arc(x+65,y,19,Math.PI,0);ctx.strokeStyle=theme.line;ctx.lineWidth=2;ctx.stroke()}}
+ ctx.restore()}
 function drawTable(){ctx.save();ctx.shadowColor=theme.glow;ctx.shadowBlur=32;rounded(2,2,W-4,H-4,40);ctx.fillStyle='#02050e';ctx.fill();ctx.shadowBlur=0;
  const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,theme.base);bg.addColorStop(.5,theme.base2);bg.addColorStop(1,theme.base);rounded(10,10,W-20,H-20,32);ctx.fillStyle=bg;ctx.fill();
  gridPattern();
