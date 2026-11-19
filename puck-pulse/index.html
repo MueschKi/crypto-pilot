@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,user-scalable=no"/>
 <meta name="theme-color" content="#090c19"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="icon" type="image/svg+xml" href="icon.svg"/>
+<meta name="apple-mobile-web-app-title" content="PUCK PULSE"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="description" content="PUCK PULSE – Airhockey mit 14 Themenarenen, dynamischen Soundtracks, Profi-KI und optionalen Power-ups."/>
 <title>PUCK PULSE · Air Hockey</title>
@@ -20,6 +23,72 @@
 @media (max-height:730px){.panel{padding:18px 20px}.brand{font-size:45px}.subtitle{margin:9px 0 13px}.section-title{margin:11px 0 7px}.arena-preview{height:36px}.arena-label{margin-top:4px}.start-btn{margin-top:11px;padding:12px}.footer-hint{margin-top:9px}}
 @media (max-height:455px) and (orientation:landscape){#overlay{align-items:flex-start}.panel{width:min(750px,100%);padding:12px 18px}.menu-top{display:flex;justify-content:space-between;align-items:center;gap:12px}.menu-top>div:first-child{flex:0 0 37%}.brand{font-size:37px}.subtitle{margin:6px 0 0}.menu-layout{display:grid;grid-template-columns:1fr 1fr;gap:13px}.section-title{margin:9px 0 5px}.arenas{gap:5px}.arena{padding:4px}.arena-preview{height:27px}.arena-label{font-size:8px;margin-top:3px}.segments button{padding:8px 4px}.start-btn{margin-top:8px;padding:9px}.footer-hint{margin-top:5px}.stats{margin-top:3px}}
 @media (prefers-reduced-motion:reduce){.arena,.start-btn,.action-btn{transition:none}}
+
+/* Native-style fixed-height app shell. No scrolling or overscroll in web or Capacitor WebViews. */
+html,body,#app{width:100%;height:100%;height:100dvh;min-height:0;overflow:hidden!important;overscroll-behavior:none;touch-action:manipulation}
+#app,#rink{touch-action:none}
+#overlay{overflow:hidden!important;overscroll-behavior:none;touch-action:manipulation}
+#overlay.menu-open{background:radial-gradient(ellipse at 50% 4%,#1c3769,#060b1c 73%);padding:0;align-items:stretch}
+.app-shell{position:relative;display:flex;flex-direction:column;width:min(590px,100%);height:100%;max-height:100dvh;min-height:0;margin:0 auto;overflow:hidden;background:linear-gradient(155deg,#121f3a 0%,#080e21 50%,#080c1c 100%);border-inline:1px solid #ffffff0e;padding:calc(env(safe-area-inset-top) + 8px) 0 max(6px,env(safe-area-inset-bottom));}
+.app-header{flex:0 0 clamp(54px,8.5dvh,75px);padding:0 20px;display:flex;align-items:center;gap:12px;min-height:0;border-bottom:1px solid #ffffff0e}
+.app-mark{width:43px;height:43px;flex:0 0 43px;display:grid;place-items:center;font-size:29px;color:#07131e;background:linear-gradient(135deg,#56effc,#8b90fb);border-radius:14px;box-shadow:0 0 28px #45daee45}
+.app-title-group{min-width:0;flex:1}.app-kicker{font-size:9px;font-weight:850;letter-spacing:2px;color:#94a7c9}.app-brand{margin:2px 0 0;font-size:clamp(23px,5vw,32px);font-style:italic;font-weight:1000;line-height:1;letter-spacing:-1.2px}.app-brand span{color:var(--accent)}
+.app-icon-button{border:1px solid #ffffff23;background:#18233c;color:#d9f6ff;border-radius:14px;width:44px;height:44px;flex:0 0 44px;font-size:24px}
+.app-content{min-height:0;flex:1;overflow:hidden;padding:clamp(9px,1.6dvh,16px) clamp(13px,4vw,21px)}
+.tab-page{display:flex;flex-direction:column;min-height:0;height:100%;gap:clamp(7px,1.1dvh,12px);overflow:hidden;touch-action:manipulation}
+.tab-page.hidden{display:none!important}
+.play-top{flex:0 0 clamp(104px,19dvh,170px);min-height:0}
+.feature-stage{height:100%;position:relative;overflow:hidden;border:1px solid #ffffff23;border-radius:19px;background:linear-gradient(125deg,#131e3b,#0b1228);display:flex;align-items:center;gap:clamp(10px,3vw,22px);padding:12px}
+.mini-rink{position:relative;flex:0 0 clamp(83px,18vw,135px);height:100%;max-height:144px;min-height:78px;border-radius:12px;border:4px solid var(--accent);background:linear-gradient(165deg,#091326,#142a49);box-shadow:inset 0 0 18px #04b0cf26,0 0 18px #64d7ff22;overflow:hidden}
+.mini-rink:before{content:"";position:absolute;inset:7%;border:1px solid var(--accent);border-radius:4px;opacity:.4}.mini-mid{position:absolute;top:49.5%;left:0;width:100%;height:2px;background:var(--accent);opacity:.75}.mini-mid:before{content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:2px solid var(--accent);width:34px;height:34px;border-radius:50%}
+.mini-puck{position:absolute;top:54%;left:41%;width:14px;height:14px;border-radius:50%;background:white;box-shadow:0 0 11px var(--accent)}
+.mini-pad{position:absolute;width:23px;height:23px;border-radius:50%;border:4px solid white;box-shadow:0 0 10px currentColor}.mini-pad-a{bottom:12%;left:30%;background:#3fd9fd;color:#56e8ff}.mini-pad-b{top:13%;right:24%;background:#f14ba1;color:#fc55b5}
+.stage-caption{display:flex;flex:1;min-width:0;flex-direction:column;gap:7px}.stage-caption-small{font-weight:850;font-size:9px;letter-spacing:1.6px;color:#8396b8}
+.stage-caption strong{font-size:clamp(15px,3.8vw,22px);line-height:1.15;font-weight:1000;white-space:normal}.stage-caption #currentArenaGenre{color:#869bbd;font-size:10px;font-weight:700;letter-spacing:.7px}
+.stage-change{position:absolute;right:12px;bottom:12px;color:#a8f8ff;background:#15374a;border:1px solid #44d8fa66;border-radius:10px;padding:7px 10px;font-size:10px;font-weight:850}
+.play-setup{min-height:0;flex:1;display:flex;flex-direction:column;justify-content:space-evenly;gap:clamp(4px,.9dvh,10px)}
+.setup-block{min-width:0;min-height:0}.setup-block .section-title{margin:0 0 clamp(4px,.7dvh,8px);font-size:10px;color:#91a3c6;letter-spacing:1.5px}
+.setup-block .segments{min-height:41px}.setup-block .segments button{min-height:40px;padding:9px 6px}
+.play-end{flex:0 0 auto;min-height:0}.play-end .start-btn{margin:0;min-height:53px;padding:12px}.play-end .stats{margin-top:7px}
+.app-bottom-nav{flex:0 0 clamp(55px,8dvh,72px);border-top:1px solid #ffffff19;background:#090f21;display:grid;grid-template-columns:repeat(3,1fr);padding:5px 12px 2px;gap:10px}
+.app-bottom-nav button{display:flex;flex-direction:column;gap:2px;align-items:center;justify-content:center;border:none;border-radius:12px;background:transparent;color:#8394b5;font-size:11px;font-weight:750;line-height:1.2;min-width:0}
+.app-bottom-nav button.active{background:#18364c;color:#b8faff}.nav-symbol{font-size:23px;line-height:1.2;font-weight:900}
+.tab-heading{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center}.tab-heading h2{margin:3px 0 0;font-size:clamp(21px,5.5vw,29px);font-weight:1000;line-height:1}.tab-overline{font-size:9px;letter-spacing:1.8px;color:#85a5c8;font-weight:850}.tab-icon{color:#91e9f8;font-size:30px}
+.arena-pages{flex:0 0 33px;display:flex;align-items:center;justify-content:center;gap:24px;color:#bed6e8;font-size:12px;font-weight:850}.arena-pages button{height:32px;width:54px;border:1px solid #ffffff28;border-radius:11px;background:#1c2b45;font-size:26px;line-height:1;color:#ddfaff}
+.arenas{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));grid-auto-flow:row;grid-auto-columns:auto;min-height:0;flex:1;gap:clamp(6px,1.2dvh,11px);overflow:hidden!important;padding:2px;scroll-snap-type:none}
+.arena{min-height:0;scroll-snap-align:none;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(155deg,#13233d,#11172a);border:1px solid #59708d80;border-radius:16px;gap:clamp(3px,.6dvh,8px)}
+.arena.selected{border:2px solid var(--accent);background:#1c3546;box-shadow:0 0 13px #55dbea42}
+.arena-preview{width:100%;height:auto;min-height:42px;flex:1;max-height:110px;display:grid;place-items:center;border-radius:11px}
+.arena-preview::before,.arena-preview::after{display:none}
+.arena-emblem{display:grid;place-items:center;min-width:50px;min-height:50px;padding:4px;border-radius:14px;background:#050b1a99;border:1px solid #ffffff30;box-shadow:0 0 18px #0007;text-shadow:0 0 11px var(--a-line);font-size:clamp(25px,5.5vw,36px);font-weight:1000;font-family:system-ui,-apple-system,sans-serif;line-height:1}
+.arena-label{width:100%;max-width:100%;line-height:1.1;margin:0;white-space:normal;overflow:visible;text-overflow:clip;font-size:clamp(8px,2.05vw,11px);font-weight:850;letter-spacing:.05px}
+.selected-arena{min-height:51px;flex:0 0 auto;border:1px solid #324e6a;background:#101d35;border-radius:13px;padding:6px 10px;display:flex;align-items:center;gap:10px}.selected-arena>span{font-size:9px;color:#879dc2;font-weight:850}.selected-arena strong{min-width:0;flex:1;font-size:12px}.selected-arena button{color:#05111d;background:#85e6f5;border:0;border-radius:10px;padding:9px;font-size:11px;font-weight:900}
+.options-grid{display:flex;flex-direction:column;gap:clamp(8px,1.4dvh,15px)}.option-card{padding:clamp(12px,2.3dvh,20px);border-radius:17px;background:#101c35;border:1px solid #ffffff1b}.option-card .section-title{margin:0 0 14px;font-size:11px}.option-card .toggle{min-height:44px}.option-note{margin:9px 0 0;font-size:11px;line-height:1.35;color:#91a5c6}.option-card .volume-label{margin-top:16px;font-size:12px}.option-card #musicVolume{height:33px}
+.app-instructions{border-radius:14px;border:1px solid #ffffff1b;background:#0d172c;padding:12px;display:flex;flex-direction:column;gap:6px;font-size:11px;line-height:1.5;color:#91a5c5}.app-instructions strong{color:#d3e9f9;font-size:10px;letter-spacing:1px}.app-version{text-align:center;font-size:9px;letter-spacing:1px;color:#63789e;margin-top:auto}
+#overlay:not(.menu-open) .panel{max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 32px);overflow:hidden}
+@media(max-height:715px) and (orientation:portrait){
+ .app-header{flex-basis:50px}.app-mark{height:36px;width:36px;flex-basis:36px;font-size:24px}.app-brand{font-size:24px}.app-icon-button{height:38px;width:38px;flex-basis:38px}
+ .app-bottom-nav{flex-basis:51px}.nav-symbol{font-size:19px}.app-content{padding-block:7px}
+ .play-top{flex-basis:99px}.feature-stage{padding:8px}.mini-rink{min-height:72px;flex-basis:79px}.stage-change{bottom:6px;right:7px;padding:5px 8px}
+ .play-setup{gap:4px}.setup-block .section-title{margin-bottom:3px}.setup-block .segments{min-height:35px}.setup-block .segments button{min-height:34px;padding:6px 4px;font-size:11px}
+ .play-end .start-btn{min-height:45px;padding:9px;font-size:13px}.play-end .stats{font-size:9px;margin-top:3px}
+ .arena-pages{flex-basis:29px}.selected-arena{min-height:43px}.arena-emblem{min-width:43px;min-height:43px;font-size:24px}
+}
+@media(orientation:landscape) and (max-height:510px){
+ .app-shell{padding-top:max(3px,env(safe-area-inset-top));padding-bottom:max(2px,env(safe-area-inset-bottom))}
+ .app-header{flex-basis:43px;padding-inline:15px}.app-mark{height:33px;width:33px;flex-basis:33px;font-size:21px}.app-kicker{font-size:8px}.app-brand{font-size:21px}.app-icon-button{height:34px;width:34px;flex-basis:34px}
+ .app-bottom-nav{flex-basis:41px;padding:1px 10px}.app-bottom-nav button{flex-direction:row;gap:10px;font-size:10px}.nav-symbol{font-size:19px}
+ .app-content{padding:5px 12px}.tab-page{gap:5px}
+ #tabPlay{display:grid;grid-template-columns:38% 1fr;grid-template-rows:minmax(0,1fr) auto;gap:7px}
+ .play-top{grid-column:1;grid-row:1 / 3;min-height:0;flex:none}.feature-stage{padding:8px}.mini-rink{flex:0 0 45%;max-height:none;min-height:50px}.stage-caption{gap:3px}.stage-caption strong{font-size:13px}.stage-change{bottom:4px;right:5px;padding:4px 5px}
+ .play-setup{grid-column:2;grid-row:1;display:flex;justify-content:space-between;gap:3px;flex:none;min-height:0}.setup-block .section-title{margin:0 0 2px;font-size:8px}.setup-block .segments{min-height:27px}.setup-block .segments button{padding:3px 4px;min-height:27px;font-size:10px}
+ .play-end{grid-column:2;grid-row:2}.play-end .start-btn{min-height:35px;padding:5px;margin:0;font-size:12px}.play-end .stats{display:none}
+ .tab-heading h2{font-size:19px}.tab-overline{font-size:8px}.tab-icon{font-size:20px}.arena-pages{flex-basis:28px}
+ .arenas{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:4px}.arena{padding:3px;gap:2px}.arena-preview{min-height:20px;max-height:68px}.arena-emblem{min-width:34px;min-height:32px;font-size:20px}.arena-label{font-size:8px}.selected-arena{flex-basis:34px;min-height:34px;padding:4px}
+ .options-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.option-card{padding:8px}.option-card .section-title{margin-bottom:7px}.option-card .toggle{padding:6px;min-height:30px;font-size:10px}.option-note{font-size:9px;margin-top:4px}.option-card .volume-label{margin-top:7px}.option-card #musicVolume{height:21px}.app-instructions{display:none}.app-version{display:none}
+}
+@media(max-width:350px){.app-header{padding-inline:12px}.app-content{padding-inline:9px}.arena-emblem{font-size:23px;min-width:38px;min-height:38px}.arena-label{font-size:8px}.stage-caption strong{font-size:14px}}
+
 </style>
 </head>
 <body>
@@ -32,21 +101,60 @@
   <button class="hud-icon" id="pauseBtn" aria-label="Spiel pausieren" title="Pause">Ⅱ</button>
 </div>
 <div id="toast" role="status"></div>
-<div id="overlay"><div class="panel" id="menuPanel">
-  <div class="menu-top"><div><div class="eyebrow">ARCADE AIR HOCKEY</div><h1 class="brand"><b>PUCK</b> <i>PULSE</i></h1><p class="subtitle">Blitzschnell. Eiskalt. Dein Tisch, deine Regeln.</p></div></div>
-  <div class="menu-layout"><div>
-    <div class="section-title">Spielmodus</div>
-    <div class="segments" id="modeGroup"><button data-mode="ai" class="active" aria-pressed="true">⚡ Gegen KI</button><button data-mode="local" aria-pressed="false">♟ Zu zweit</button></div>
-    <div id="aiOptions"><div class="section-title">KI-Stärke</div><div class="segments compact" id="aiGroup"><button data-ai="easy">Locker</button><button data-ai="normal" class="active">Sportlich</button><button data-ai="hard">Profi</button></div></div>
-    <div class="section-title">Sieg bei</div><div class="segments compact" id="scoreGroup"><button data-points="5">5 Toren</button><button data-points="7" class="active">7 Toren</button><button data-points="11">11 Toren</button></div>
-  </div><div>
-    <div class="section-title">Dein Tisch <span class="section-help">14 Arenen · seitlich wischen →</span></div><div class="arenas" id="arenas"></div>
-    <div class="section-title">Soundtrack &amp; Effekte</div><div class="switch-line"><button class="toggle on" id="musicToggle" aria-pressed="true">♫ Musik AN</button><button class="toggle on" id="fxToggle" aria-pressed="true">✦ Effekte AN</button></div><label class="volume-label" for="musicVolume">Musiklautstärke <strong id="volumeValue">80 %</strong></label><input id="musicVolume" type="range" min="0" max="100" step="5" value="80" aria-label="Musiklautstärke"/><div class="section-title">Spielvarianten</div><button class="toggle wide" id="powerToggle" aria-pressed="false">⚡ Power-ups AUS · Klassisch spielen</button>
-  </div></div>
-  <button class="start-btn" id="startBtn">JETZT SPIELEN <span aria-hidden="true">➜</span></button>
-  <div class="stats" id="stats">Solo-Siege: <b>0</b> · Spiele: <b>0</b></div>
-  <div class="footer-hint" id="touchHint">Mobil: Finger bewegen • Am PC: Maus oder WASD<br/>Zu zweit: gleichzeitig an gegenüberliegenden Tischhälften spielen</div>
-</div></div>
+<div id="overlay" class="menu-open"><section class="app-shell" id="menuPanel" aria-label="PUCK PULSE Hauptmenü">
+  <header class="app-header">
+    <div class="app-mark" aria-hidden="true">◈</div>
+    <div class="app-title-group"><div class="app-kicker">AIR HOCKEY ARCADE</div><h1 class="app-brand">PUCK <span>PULSE</span></h1></div>
+    <button type="button" id="quickSoundMenu" class="app-icon-button" aria-label="Musik ein- oder ausschalten" title="Musik">♫</button>
+  </header>
+  <div class="app-content">
+    <section class="tab-page" id="tabPlay" data-page="play" aria-label="Spielen">
+      <div class="play-top">
+        <div class="feature-stage">
+          <div class="mini-rink" aria-hidden="true"><span class="mini-mid"></span><span class="mini-puck"></span><span class="mini-pad mini-pad-a"></span><span class="mini-pad mini-pad-b"></span></div>
+          <div class="stage-caption"><span class="stage-caption-small">DEINE ARENA</span><strong id="currentArenaName">NEON CIRCUIT</strong><span id="currentArenaGenre">NEON ARCADE</span></div>
+          <button id="changeArena" class="stage-change" type="button">Ändern <span aria-hidden="true">›</span></button>
+        </div>
+      </div>
+      <div class="play-setup">
+        <div class="setup-block">
+          <div class="section-title">Spielmodus</div>
+          <div class="segments" id="modeGroup"><button data-mode="ai" class="active" aria-pressed="true">⚡ Gegen KI</button><button data-mode="local" aria-pressed="false">● Zu zweit</button></div>
+        </div>
+        <div class="setup-block" id="aiOptions"><div class="section-title">KI-Stärke</div><div class="segments compact" id="aiGroup"><button data-ai="easy">Locker</button><button data-ai="normal" class="active">Sportlich</button><button data-ai="hard">Profi</button></div></div>
+        <div class="setup-block"><div class="section-title">Sieg bei</div><div class="segments compact" id="scoreGroup"><button data-points="5">5 Toren</button><button data-points="7" class="active">7 Toren</button><button data-points="11">11 Toren</button></div></div>
+      </div>
+      <div class="play-end"><button class="start-btn" id="startBtn">JETZT SPIELEN <span aria-hidden="true">▶</span></button><div class="stats" id="stats">Solo-Siege: <b>0</b> · Spiele: <b>0</b></div></div>
+    </section>
+    <section class="tab-page hidden" id="tabArenas" data-page="arenas" aria-label="Tische auswählen">
+      <div class="tab-heading"><div><span class="tab-overline">DEIN SPIELFELD</span><h2>14 Themen-Tische</h2></div><span class="tab-icon" aria-hidden="true">◈</span></div>
+      <div class="arena-pages"><button id="arenaPrev" type="button" aria-label="Vorherige Tische">‹</button><span id="arenaPageLabel" aria-live="polite">1 / 3</span><button id="arenaNext" type="button" aria-label="Nächste Tische">›</button></div>
+      <div class="arenas" id="arenas" role="group" aria-label="Tischauswahl"></div>
+      <div class="selected-arena"><span>GEWÄHLT</span><strong id="arenaSelectedName">NEON CIRCUIT</strong><button type="button" id="arenaDone">Übernehmen <span aria-hidden="true">✓</span></button></div>
+    </section>
+    <section class="tab-page hidden" id="tabOptions" data-page="options" aria-label="Einstellungen">
+      <div class="tab-heading"><div><span class="tab-overline">DEINE EINSTELLUNGEN</span><h2>Sound &amp; Spiel</h2></div><span class="tab-icon" aria-hidden="true">♫</span></div>
+      <div class="options-grid">
+        <div class="option-card"><div class="section-title">Audio</div>
+          <div class="switch-line"><button class="toggle on" id="musicToggle" aria-pressed="true">♫ Musik AN</button><button class="toggle on" id="fxToggle" aria-pressed="true">✦ Effekte AN</button></div>
+          <label class="volume-label" for="musicVolume">Musiklautstärke <strong id="volumeValue">80 %</strong></label><input id="musicVolume" type="range" min="0" max="100" step="5" value="80" aria-label="Musiklautstärke"/>
+          <p class="option-note">Jede Arena hat ihren eigenen Soundtrack.</p>
+        </div>
+        <div class="option-card"><div class="section-title">Spielvariante</div>
+          <button class="toggle wide" id="powerToggle" aria-pressed="false">⚡ Power-ups AUS · Klassisch spielen</button>
+          <p class="option-note">Turbo, Tor-Schild und Magnet: fair für beide Seiten.</p>
+        </div>
+      </div>
+      <div class="app-instructions"><strong>STEUERUNG</strong><span>Finger auf deinem Schläger bewegen. Zu zweit berührt jeder seine eigene Spielfeldhälfte. Das Spiel bleibt beim Wischen fest auf dem Bildschirm.</span></div>
+      <div class="app-version">PUCK PULSE · VERSION 2.1 · BROWSER &amp; APP</div>
+    </section>
+  </div>
+  <nav class="app-bottom-nav" aria-label="App-Navigation">
+    <button type="button" class="active" data-tab="play" aria-current="page"><span class="nav-symbol" aria-hidden="true">◉</span><span>Spielen</span></button>
+    <button type="button" data-tab="arenas"><span class="nav-symbol" aria-hidden="true">▦</span><span>Tische</span></button>
+    <button type="button" data-tab="options"><span class="nav-symbol" aria-hidden="true">☷</span><span>Optionen</span></button>
+  </nav>
+</section></div>
 </main>
 <script>
 (()=>{'use strict';
