@@ -39,7 +39,7 @@ jobs:
       - name: Install Playwright Chromium
         run: |
           python -m pip install playwright==1.56.0
-          python -m playwright install --with-deps --only-shell chromium
+          python -m playwright install --only-shell chromium
       - name: Test phone, landscape, tablet and puck physics
         run: python scripts/test-puck-pulse-browser.py
   deploy:
