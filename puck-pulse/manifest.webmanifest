@@ -1,0 +1,21 @@
+{
+  "name": "PUCK PULSE – Air Hockey",
+  "short_name": "PUCK PULSE",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "lang": "de",
+  "description": "Airhockey mit KI, lokalem Duell und Themenarenen",
+  "background_color": "#080e21",
+  "theme_color": "#080e21",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
