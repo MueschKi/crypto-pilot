@@ -103,7 +103,7 @@ with sync_playwright() as p:
     page.locator('[data-tab="play"]').click()
     page.locator('[data-ai="hard"]').click()
     page.locator('[data-tab="arenas"]').click()
-    page.locator('#arenaNext').click()
+    assert page.locator('#arenaPageLabel').inner_text() == '2 / 3', 'Arena picker should remember selection page'
     page.locator('[data-theme="realm"]').click()
     page.locator('#arenaDone').click()
     assert page.evaluate('window.__pp.getState().soundtrack') == 'epic'
