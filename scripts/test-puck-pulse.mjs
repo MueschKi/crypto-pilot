@@ -21,7 +21,25 @@ assert.match(html,/pointerdown/);
 assert.match(html,/pointermove/);
 assert.match(html,/goalFor\(/);
 assert.match(html,/AudioContext/);
-for(const theme of ['neon','ice','lava','wave','gold','arcade'])assert.match(html,new RegExp("id:'"+theme+"'"));
+const ARENAS=['neon','ice','lava','wave','gold','arcade','wood','matrix','realm','galaxy','voyager','ocean','jungle','sky'];
+for(const theme of ARENAS){
+ assert.match(html,new RegExp("id:'"+theme+"'"));
+ assert.match(html,new RegExp(" "+theme+":\\{bpm:"));
+}
+assert.equal(html.split("{id:'").length-1,14,'Expected 14 selectable arenas');
+assert.equal((html.match(/groove:'[a-z]+'/g)||[]).length,14,'Expected 14 custom arena compositions');
+for(const id of ['powerToggle','musicVolume','volumeValue'])assert.match(html,new RegExp('id="'+id+'"'));
+assert.ok(html.includes('function proDecision('));
+assert.ok(html.includes('function proInterceptX('));
+assert.ok(html.includes('function collectPowerup('));
+assert.ok(html.includes('function blockShield('));
+assert.ok(html.includes('function drawPowerups('));
+assert.ok(html.includes('function updatePowerups('));
+assert.match(html,/createDynamicsCompressor/);
+assert.match(html,/musicBus.gain.setTargetAtTime/);
+assert.match(html,/\bboost\b/);
+assert.match(html,/\bshield\b/);
+assert.match(html,/\bmagnet\b/);
 const scripts=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]);
 assert.equal(scripts.length,1,'Must have one self-contained inline script');
 new vm.Script(scripts[0],{filename:'puck-pulse-inline.js'});
