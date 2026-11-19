@@ -79,6 +79,7 @@ let page='menu',paused=false,score=[0,0],matchTime=0,serveAt=0,kickoff=0,last=pe
 let view={s:1,ox:0,oy:0,turned:false};let pointers=new Map(),keys=new Set(),particles=[],waves=[],trail=[],sparks=[],toastTimeout=0;
 let tickCounter=0;let near={x:W/2,y:H-150,px:W/2,py:H-150,vx:0,vy:0,tx:W/2,ty:H-150},far={x:W/2,y:150,px:W/2,py:150,vx:0,vy:0,tx:W/2,ty:150};
 let puck={x:W/2,y:MID,vx:0,vy:0,spin:0},aiTarget={x:W/2,y:142},aiTimer=0;
+let powerup=null,powerSpawnAt=7,shieldUntil=[0,0],magnetUntil=[0,0],lastTouch=null;
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v)),rand=(a,b)=>a+Math.random()*(b-a),hyp=Math.hypot;
 function resize(){const width=window.innerWidth,height=window.innerHeight,dpr=Math.min(window.devicePixelRatio||1,2);
  canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);canvas.style.width=width+'px';canvas.style.height=height+'px';
@@ -103,10 +104,10 @@ function syncMenu(){for(const [id,key,data] of [['modeGroup','mode','mode'],['ai
 syncMenu();
 function hudScore(){$('nearScore').textContent=score[0];$('farScore').textContent=score[1]}
 function showToast(message,duration=2300){const e=$('toast');e.textContent=message;e.classList.add('show');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>e.classList.remove('show'),duration)}
-function menu(){page='menu';paused=false;finished=false;pointers.clear();keys.clear();$('hud').classList.remove('show');$('overlay').classList.remove('hidden');$('overlay').replaceChildren(originalMenu);originalMenu.classList.remove('hidden');syncMenu();}
-function startGame(){page='game';paused=false;finished=false;score=[0,0];matchTime=0;particles=[];waves=[];trail=[];pointers.clear();near={x:W/2,y:H-150,px:W/2,py:H-150,vx:0,vy:0,tx:W/2,ty:H-150};far={x:W/2,y:150,px:W/2,py:150,vx:0,vy:0,tx:W/2,ty:150};$('overlay').classList.add('hidden');$('hud').classList.add('show');hudScore();kickoff=2.25;serveAt=0;centerPuck();showToast(settings.mode==='local'?'ZWEI SPIELER · GLEICHZEITIG WISCHEN':'DU BIST BLAU · VERTEIDIGE DEIN TOR');}
+function menu(){page='menu';paused=false;finished=false;powerup=null;pointers.clear();keys.clear();$('hud').classList.remove('show');$('overlay').classList.remove('hidden');$('overlay').replaceChildren(originalMenu);originalMenu.classList.remove('hidden');syncMenu();}
+function startGame(){page='game';paused=false;finished=false;score=[0,0];matchTime=0;particles=[];waves=[];trail=[];pointers.clear();powerup=null;powerSpawnAt=6+rand(0,3);shieldUntil=[0,0];magnetUntil=[0,0];lastTouch=null;aiTimer=0;aiTarget={x:W/2,y:142};audio.changeTrack();near={x:W/2,y:H-150,px:W/2,py:H-150,vx:0,vy:0,tx:W/2,ty:H-150};far={x:W/2,y:150,px:W/2,py:150,vx:0,vy:0,tx:W/2,ty:150};$('overlay').classList.add('hidden');$('hud').classList.add('show');hudScore();kickoff=2.25;serveAt=0;centerPuck();showToast(settings.mode==='local'?'ZWEI SPIELER · GLEICHZEITIG WISCHEN':'DU BIST BLAU · VERTEIDIGE DEIN TOR');}
 function centerPuck(){puck={x:W/2,y:MID,vx:0,vy:0,spin:0};trail=[]}
-function serve(){const direction=Math.random()>.5?1:-1;puck.vx=rand(-150,150);puck.vy=direction*rand(390,460);puck.spin=0;audio.whistle()}
+function serve(){const direction=Math.random()>.5?1:-1;puck.vx=rand(-150,150);puck.vy=direction*rand(390,460);puck.spin=0;lastTouch=null;audio.whistle()}
 function showPause(){if(page!=='game'||finished)return;paused=true;pointers.clear();$('overlay').classList.remove('hidden');$('overlay').innerHTML=`<div class="panel small"><div class="eyebrow">PAUSE</div><div class="pause-heading">Verschnaufpause</div><p class="pause-sub">Der Puck wartet auf dein Comeback.</p><button class="start-btn" id="resume">WEITERSPIELEN ➜</button><button class="secondary" id="restart">Neu starten</button><button class="secondary" id="backMenu">Zum Hauptmenü</button></div>`;$('resume').onclick=()=>{paused=false;kickoff=Math.max(kickoff,.55);$('overlay').classList.add('hidden');audio.touch()};$('restart').onclick=()=>{audio.touch();startGame()};$('backMenu').onclick=menu;}
 function gameOver(winner){finished=true;stats.games++;if(settings.mode==='ai'&&winner===0)stats.wins++;persist();audio.victory(winner===0);const won=winner===0;const heading=settings.mode==='ai'?(won?'DU HAST GEWONNEN!':'DIE KI GEWINNT!'):`SPIELER ${won?1:2} GEWINNT!`;$('overlay').classList.remove('hidden');$('overlay').innerHTML=`<div class="panel small"><div class="eyebrow">MATCH BEENDET</div><div class="win-trophy">${won?'🏆':'⚡'}</div><div class="pause-heading">${heading}</div><div class="win-score" style="color:${won?theme.a:theme.b}">${score[0]} <span style="color:#70809e">:</span> ${score[1]}</div><p class="pause-sub">${settings.mode==='ai'&&won?'Stark gespielt. Die Arena gehört dir!':'Lust auf eine Revanche?'}</p><button class="start-btn" id="rematch">REVANCHE ➜</button><button class="secondary" id="endMenu">Andere Arena / Menü</button></div>`;$('rematch').onclick=()=>{audio.touch();startGame()};$('endMenu').onclick=menu;}
 function worldFromPointer(e){const x=e.clientX-view.ox,y=e.clientY-view.oy;return view.turned?{x:y/view.s,y:H-x/view.s}:{x:x/view.s,y:y/view.s}}
@@ -135,10 +136,12 @@ function predictX(y){if(Math.abs(puck.vy)<5)return puck.x;const flight=(y-puck.y
  if(settings.mode==='ai'){advanceAI(dt)}else{let bx=(keys.has('arrowright')?1:0)-(keys.has('arrowleft')?1:0),by=(keys.has('arrowdown')?1:0)-(keys.has('arrowup')?1:0);if(bx||by){far.tx=far.x+bx*step;far.ty=far.y+by*step}moveMallet(far,far.tx,far.ty,1950,dt,WALL+PAD_R+3,MID-PAD_R-10)}}
 function impact(x,y,vx,vy,color,n=10){const a=Math.atan2(vy,vx);for(let i=0;i<n;i++){const t=a+rand(-1.7,1.7),speed=rand(90,420);particles.push({x,y,vx:Math.cos(t)*speed,vy:Math.sin(t)*speed,life:rand(.25,.56),max:.56,size:rand(1.7,5),color})}waves.push({x,y,r:18,life:.4,max:.4,color});shake=Math.max(shake,3.5)}
 function collideMallet(m,color){let dx=puck.x-m.x,dy=puck.y-m.y,dist=hyp(dx,dy),limit=PAD_R+PUCK_R;if(dist>=limit)return;let nx=dist>.00001?dx/dist:0,ny=dist>.00001?dy/dist:(m===near?-1:1);puck.x=m.x+nx*(limit+.6);puck.y=m.y+ny*(limit+.6);const relative=(puck.vx-m.vx)*nx+(puck.vy-m.vy)*ny;
- if(relative<0){const speed=Math.max(220,Math.abs(relative)*1.21+Math.max(0,m.vx*nx+m.vy*ny)*.13);puck.vx+=(speed-relative)*nx;puck.vy+=(speed-relative)*ny;const vel=hyp(puck.vx,puck.vy),max=1500;if(vel>max){puck.vx*=max/vel;puck.vy*=max/vel}puck.spin+=clamp((m.vx*-ny+m.vy*nx)*.00015,-.45,.45);impact(puck.x-nx*PUCK_R,puck.y-ny*PUCK_R,puck.vx*.65,puck.vy*.65,color,11);audio.hit(Math.min(1,vel/1100))}}
+ if(relative<0){lastTouch=m===near?0:1;const speed=Math.max(220,Math.abs(relative)*1.21+Math.max(0,m.vx*nx+m.vy*ny)*.13);puck.vx+=(speed-relative)*nx;puck.vy+=(speed-relative)*ny;const vel=hyp(puck.vx,puck.vy),max=1500;if(vel>max){puck.vx*=max/vel;puck.vy*=max/vel}puck.spin+=clamp((m.vx*-ny+m.vy*nx)*.00015,-.45,.45);impact(puck.x-nx*PUCK_R,puck.y-ny*PUCK_R,puck.vx*.65,puck.vy*.65,color,11);audio.hit(Math.min(1,vel/1100))}}
 function wallHit(horizontal){audio.wall();shake=Math.max(shake,1.3);if(horizontal)waves.push({x:puck.x,y:puck.y,r:14,life:.25,max:.25,color:theme.line})}
+function blockShield(player){shieldUntil[player]=0;puck.y=player===1?WALL+PUCK_R+7:H-WALL-PUCK_R-7;puck.vy=player===1?Math.max(520,Math.abs(puck.vy)*.94):-Math.max(520,Math.abs(puck.vy)*.94);puck.vx+=rand(-110,110);impact(puck.x,puck.y,puck.vx,puck.vy,theme.a,24);audio.power('shield');showToast('🛡 SCHILD HÄLT!')}
 function goalFor(player){score[player]++;hudScore();goalFlash=1;shake=14;audio.goal();for(let i=0;i<80;i++){const x=player===0?W/2:W/2,y=player===0?40:H-40;particles.push({x,y,vx:rand(-700,700),vy:rand(-700,700),life:rand(.55,1.5),max:1.5,size:rand(2,7),color:Math.random()>.4?(player===0?theme.a:theme.b):'#fff8c5'})}centerPuck();if(score[player]>=settings.points){gameOver(player)}else{kickoff=1.3;showToast(player===0?(settings.mode==='ai'?'TOR! DEIN PUNKT':'TOR FÜR SPIELER 1'):(settings.mode==='ai'?'TOR FÜR DIE KI':'TOR FÜR SPIELER 2'),1150)}}
 function physics(dt){let slices=3,step=dt/slices;for(let s=0;s<slices;s++){
+ if(settings.powerups){for(let player=0;player<2;player++){if(magnetUntil[player]<=matchTime)continue;const mallet=player===0?near:far,dx=mallet.x-puck.x,dy=mallet.y-puck.y,dist=hyp(dx,dy);if(dist>60&&dist<260){const strength=340*(1-dist/280);puck.vx+=(dx/dist)*strength*step;puck.vy+=(dy/dist)*strength*step}}}
  puck.vx+=-puck.vy*puck.spin*.12*step;puck.vy+=puck.vx*puck.spin*.12*step;puck.spin*=Math.exp(-1.8*step);
  puck.x+=puck.vx*step;puck.y+=puck.vy*step;
  puck.vx*=Math.exp(-.09*step);puck.vy*=Math.exp(-.09*step);
@@ -146,11 +149,26 @@ function physics(dt){let slices=3,step=dt/slices;for(let s=0;s<slices;s++){
  if(puck.y<WALL+PUCK_R&&!(puck.x>GOAL_L+PUCK_R*.3&&puck.x<GOAL_R-PUCK_R*.3)){puck.y=WALL+PUCK_R;puck.vy=Math.abs(puck.vy)*.99;wallHit(true)}
  else if(puck.y>H-WALL-PUCK_R&&!(puck.x>GOAL_L+PUCK_R*.3&&puck.x<GOAL_R-PUCK_R*.3)){puck.y=H-WALL-PUCK_R;puck.vy=-Math.abs(puck.vy)*.99;wallHit(true)}
  collideMallet(near,theme.a);collideMallet(far,theme.b);
- if(puck.y<-PUCK_R){goalFor(0);return}if(puck.y>H+PUCK_R){goalFor(1);return}
+ if(settings.powerups&&powerup&&hyp(puck.x-powerup.x,puck.y-powerup.y)<PUCK_R+25)collectPowerup();
+ if(puck.y<-PUCK_R){if(settings.powerups&&shieldUntil[1]>matchTime){blockShield(1);return}goalFor(0);return}if(puck.y>H+PUCK_R){if(settings.powerups&&shieldUntil[0]>matchTime){blockShield(0);return}goalFor(1);return}
  }
  trail.unshift({x:puck.x,y:puck.y});if(trail.length>14)trail.pop();
 }
-function update(dt){if(page==='game'&&!paused&&!finished){matchTime+=dt;inputUpdate(dt);if(kickoff>0){kickoff-=dt;if(kickoff<=0)serve()}else physics(dt)}else if(page==='menu'){tickCounter+=dt;near.x=W/2+Math.sin(tickCounter*.7)*115;near.y=H-170+Math.sin(tickCounter*.6)*23;far.x=W/2+Math.sin(tickCounter*.92+1)*105;far.y=170+Math.cos(tickCounter*.4)*23;puck.x=W/2+Math.sin(tickCounter*1.35)*118;puck.y=MID+Math.cos(tickCounter*.97)*167;trail.unshift({x:puck.x,y:puck.y});if(trail.length>14)trail.pop()}
+const POWER_TYPES=['boost','shield','magnet'];
+const POWER_ICON={boost:'⚡',shield:'◆',magnet:'✦'};
+const POWER_LABEL={boost:'TURBO',shield:'SCHILD',magnet:'MAGNET'};
+function spawnPowerup(type=null,x=null,y=null){if(!settings.powerups)return;const choice=POWER_TYPES.includes(type)?type:POWER_TYPES[Math.floor(Math.random()*POWER_TYPES.length)];powerup={type:choice,x:x??rand(98,W-98),y:y??rand(MID-165,MID+165),expires:matchTime+8.5}}
+function collectPowerup(){if(!powerup)return;const item=powerup;powerup=null;powerSpawnAt=matchTime+rand(9,13);const player=lastTouch===null?(puck.vy<0?0:1):lastTouch;
+ if(item.type==='boost'){const length=Math.max(1,hyp(puck.vx,puck.vy)),speed=Math.min(1500,Math.max(870,length*1.5));puck.vx=puck.vx/length*speed;puck.vy=puck.vy/length*speed;puck.spin+=rand(-.15,.15)}
+ if(item.type==='shield')shieldUntil[player]=matchTime+10;
+ if(item.type==='magnet')magnetUntil[player]=matchTime+7;
+ impact(item.x,item.y,puck.vx,puck.vy,theme.line,20);audio.power(item.type);
+ showToast(POWER_ICON[item.type]+' '+POWER_LABEL[item.type]+' · '+(settings.mode==='ai'&&player===0?'DU':settings.mode==='ai'?'KI':'SPIELER '+(player+1)))}
+function updatePowerups(){if(!settings.powerups){powerup=null;return}if(powerup&&matchTime>powerup.expires){powerup=null;powerSpawnAt=matchTime+rand(5,8)}if(!powerup&&matchTime>=powerSpawnAt&&kickoff<=0)spawnPowerup()}
+function drawPowerups(){if(!settings.powerups||page!=='game'||finished)return;const now=matchTime;
+ for(let player=0;player<2;player++){if(shieldUntil[player]>now){const y=player===0?H-29:29;ctx.save();ctx.globalAlpha=.54+.2*Math.sin(now*8);line(GOAL_L+13,y,GOAL_R-13,y,9,theme.a,25);ctx.restore()}if(magnetUntil[player]>now){const m=player===0?near:far;ctx.save();ctx.globalAlpha=.22+.08*Math.sin(now*8);circle(m.x,m.y,77,3,theme.b,null,11);ctx.restore()}}
+ if(powerup){const p=powerup,pulse=Math.sin(now*6)*4;ctx.save();ctx.translate(p.x,p.y);ctx.shadowColor=theme.line;ctx.shadowBlur=27;circle(0,0,27+pulse,2,theme.line,'#051424b8',16);circle(0,0,19,2,theme.a,'#10233d');ctx.shadowBlur=0;ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 23px system-ui';ctx.fillStyle='#ffffff';ctx.fillText(POWER_ICON[p.type],0,1);ctx.restore()}}
+function update(dt){if(page==='game'&&!paused&&!finished){matchTime+=dt;inputUpdate(dt);if(kickoff>0){kickoff-=dt;if(kickoff<=0)serve()}else physics(dt);if(!finished)updatePowerups()}else if(page==='menu'){tickCounter+=dt;near.x=W/2+Math.sin(tickCounter*.7)*115;near.y=H-170+Math.sin(tickCounter*.6)*23;far.x=W/2+Math.sin(tickCounter*.92+1)*105;far.y=170+Math.cos(tickCounter*.4)*23;puck.x=W/2+Math.sin(tickCounter*1.35)*118;puck.y=MID+Math.cos(tickCounter*.97)*167;trail.unshift({x:puck.x,y:puck.y});if(trail.length>14)trail.pop()}
  particles=particles.filter(p=>{p.life-=dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=Math.exp(-3*dt);p.vy*=Math.exp(-3*dt);return p.life>0});waves=waves.filter(w=>{w.life-=dt;w.r+=330*dt;return w.life>0});shake*=Math.exp(-10*dt);goalFlash*=Math.exp(-3.5*dt);flash*=Math.exp(-4*dt);
 }
 function line(x1,y1,x2,y2,width,color,glow=0){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.lineWidth=width;ctx.strokeStyle=color;ctx.shadowBlur=glow;ctx.shadowColor=color;ctx.stroke();ctx.shadowBlur=0}
@@ -195,7 +213,7 @@ function drawCenterText(){if(page!=='game'||paused||finished||kickoff<=0)return;
 function draw(){const dpr=Math.min(window.devicePixelRatio||1,2),cw=canvas.width/dpr,ch=canvas.height/dpr;ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,cw,ch);
  const ambient=ctx.createRadialGradient(cw*.5,ch*.5,10,cw*.5,ch*.5,Math.max(cw,ch)*.75);ambient.addColorStop(0,theme.glow+'20');ambient.addColorStop(1,'#05071100');ctx.fillStyle=ambient;ctx.fillRect(0,0,cw,ch);
  ctx.save();ctx.translate(view.ox+(shake>0?rand(-shake,shake):0),view.oy+(shake>0?rand(-shake,shake):0));ctx.scale(view.s,view.s);if(view.turned){ctx.translate(H,0);ctx.rotate(Math.PI/2)}
- drawTable();drawEffects();drawMallet(near,theme.a);drawMallet(far,theme.b);drawPuck();drawCenterText();ctx.restore();}
+ drawTable();drawPowerups();drawEffects();drawMallet(near,theme.a);drawMallet(far,theme.b);drawPuck();drawCenterText();ctx.restore();}
 function frame(now){let dt=clamp((now-last)/1000,0,.034);last=now;update(dt);draw();audio.schedule();requestAnimationFrame(frame)}
 // All sounds/music are original procedural synthesizer tones; no sampled or copyrighted recordings.
 const audio={ctx:null,next:0,step:0,master:null,musicBus:null,fxBus:null,
