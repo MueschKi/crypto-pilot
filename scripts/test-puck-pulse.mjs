@@ -1,11 +1,27 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
+import {execFileSync} from 'node:child_process';
 const html=fs.readFileSync('puck-pulse/index.html','utf8');
 const config=JSON.parse(fs.readFileSync('puck-pulse-worker.jsonc','utf8'));
 assert.equal(config.name,'puck-pulse');
 assert.equal(config.workers_dev,true);
 assert.equal(config.assets.directory,'./puck-pulse');
+// Native project copies the exact same browser assets into the Android/iOS WebView bundle.
+const native=JSON.parse(fs.readFileSync('puck-pulse-native/capacitor.config.json','utf8'));
+const nativePkg=JSON.parse(fs.readFileSync('puck-pulse-native/package.json','utf8'));
+const manifest=JSON.parse(fs.readFileSync('puck-pulse/manifest.webmanifest','utf8'));
+assert.equal(native.appName,'PUCK PULSE');
+assert.equal(native.webDir,'www');
+assert.ok(!native.server?.url,'Native app must never depend on the public website');
+assert.ok(nativePkg.dependencies['@capacitor/android']);
+assert.ok(nativePkg.dependencies['@capacitor/ios']);
+assert.equal(manifest.display,'standalone');
+assert.equal(manifest.icons[0].src,'icon.svg');
+assert.match(fs.readFileSync('puck-pulse/icon.svg','utf8'),/<svg/);
+execFileSync(process.execPath,['puck-pulse-native/scripts/sync-web.mjs']);
+for(const file of ['index.html','manifest.webmanifest','icon.svg'])
+ assert.ok(fs.readFileSync('puck-pulse/'+file).equals(fs.readFileSync('puck-pulse-native/www/'+file)),'Native drift in '+file);
 assert.ok(html.startsWith('<!doctype html>'));
 assert.match(html,/<title>PUCK PULSE/);
 assert.match(html,/name="viewport"/);
@@ -14,6 +30,17 @@ assert.match(html,/id="modeGroup"/);
 assert.match(html,/data-mode="ai"/);
 assert.match(html,/data-mode="local"/);
 assert.match(html,/id="arenas"/);
+assert.match(html,/class="app-bottom-nav"/);
+assert.match(html,/id="tabPlay"/);
+assert.match(html,/id="tabArenas"/);
+assert.match(html,/id="tabOptions"/);
+assert.match(html,/id="arenaNext"/);
+assert.match(html,/id="arenaPrev"/);
+assert.match(html,/class="arena-emblem"/);
+assert.ok(html.includes('#overlay{overflow:hidden!important'));
+assert.ok(html.includes("document.addEventListener('touchmove'"));
+assert.ok(!html.includes("if(page==='game'&&!paused&&!finished)showPause()"),'Safari blur may not trigger pause');
+
 assert.match(html,/id="startBtn"/);
 assert.match(html,/id="musicToggle"/);
 assert.match(html,/id="fxToggle"/);

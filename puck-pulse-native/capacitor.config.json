@@ -1,0 +1,15 @@
+{
+  "appId": "de.mueschki.puckpulse",
+  "appName": "PUCK PULSE",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "backgroundColor": "#080e21"
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#080e21"
+  }
+}

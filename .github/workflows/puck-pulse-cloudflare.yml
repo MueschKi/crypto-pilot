@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'puck-pulse/**'
+      - 'puck-pulse-native/**'
       - 'puck-pulse-worker.jsonc'
       - 'scripts/test-puck-pulse.mjs'
       - 'scripts/test-puck-pulse-browser.py'
@@ -12,6 +13,7 @@ on:
     branches: [main]
     paths:
       - 'puck-pulse/**'
+      - 'puck-pulse-native/**'
       - 'puck-pulse-worker.jsonc'
       - 'scripts/test-puck-pulse.mjs'
       - 'scripts/test-puck-pulse-browser.py'
@@ -21,7 +23,7 @@ permissions:
   contents: read
 concurrency:
   group: puck-pulse-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   test:
     name: Validate PUCK PULSE + mobile Chromium
@@ -37,7 +39,7 @@ jobs:
       - name: Install Playwright Chromium
         run: |
           python -m pip install playwright==1.56.0
-          python -m playwright install --with-deps chromium
+          python -m playwright install --only-shell chromium
       - name: Test phone, landscape, tablet and puck physics
         run: python scripts/test-puck-pulse-browser.py
   deploy:
