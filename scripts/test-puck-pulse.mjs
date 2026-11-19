@@ -26,15 +26,15 @@ for(const theme of ARENAS){
  assert.match(html,new RegExp("id:'"+theme+"'"));
  assert.match(html,new RegExp(" "+theme+":\\{bpm:"));
 }
-assert.equal((html.match(/\\{id:'[a-z]+',name:/g)||[]).length,14,'Expected 14 selectable arenas');
+assert.equal(html.split("{id:'").length-1,14,'Expected 14 selectable arenas');
 assert.equal((html.match(/groove:'[a-z]+'/g)||[]).length,14,'Expected 14 custom arena compositions');
 for(const id of ['powerToggle','musicVolume','volumeValue'])assert.match(html,new RegExp('id="'+id+'"'));
-assert.match(html,/function proDecision\\(/);
-assert.match(html,/function proInterceptX\\(/);
-assert.match(html,/function collectPowerup\\(/);
-assert.match(html,/function blockShield\\(/);
-assert.match(html,/function drawPowerups\\(/);
-assert.match(html,/function updatePowerups\\(/);
+assert.ok(html.includes('function proDecision('));
+assert.ok(html.includes('function proInterceptX('));
+assert.ok(html.includes('function collectPowerup('));
+assert.ok(html.includes('function blockShield('));
+assert.ok(html.includes('function drawPowerups('));
+assert.ok(html.includes('function updatePowerups('));
 assert.match(html,/createDynamicsCompressor/);
 assert.match(html,/musicBus.gain.setTargetAtTime/);
 assert.match(html,/\bboost\b/);
