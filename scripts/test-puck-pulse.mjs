@@ -37,8 +37,8 @@ assert.match(html,/id="tabOptions"/);
 assert.match(html,/id="arenaNext"/);
 assert.match(html,/id="arenaPrev"/);
 assert.match(html,/class="arena-emblem"/);
-assert.match(html,/#overlay\\{overflow:hidden!important/);
-assert.match(html,/document.addEventListener\\('touchmove'/);
+assert.ok(html.includes('#overlay{overflow:hidden!important'));
+assert.ok(html.includes("document.addEventListener('touchmove'"));
 assert.ok(!html.includes("if(page==='game'&&!paused&&!finished)showPause()"),'Safari blur may not trigger pause');
 
 assert.match(html,/id="startBtn"/);
